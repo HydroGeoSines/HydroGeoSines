@@ -1,3 +1,3 @@
-# 01 Fully unconfined conditions example
+# 01 Fully unconfined conditions
 Synthetic example of fully unconfined conditions.
 
