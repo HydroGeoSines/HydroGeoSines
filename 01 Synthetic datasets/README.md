@@ -1,2 +1,2 @@
 # 01 Synthetic Datasets
-Synthetic datasets developed for method testing.
+Synthetic datasets created for method development testing.
