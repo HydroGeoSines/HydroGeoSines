@@ -1,3 +1,3 @@
-# 02 Fully confined conditions example
+# 02 Fully confined conditions
 Synthetic example of fully confined conditions.
 
