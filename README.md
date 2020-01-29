@@ -1,2 +1,2 @@
 # SinesHydro
-Signal In the Noise Exploration Software for Hydrological datasets
+Signal In the Noise Exploration Software for Hydrogeological datasets
