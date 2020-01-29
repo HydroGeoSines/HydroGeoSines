@@ -1,2 +1,2 @@
 # HydroGeoSines
-Signal In the Noise Exploration Software for Hydrogeological datasets
+Signal In the Noise Exploration Software for hydrogeological datasets
