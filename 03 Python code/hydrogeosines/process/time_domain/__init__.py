@@ -68,22 +68,52 @@ def calc_regress_deconv(self):
 '''    
 Subroutines for future inclusion:
 
+# Calculate BE using average of ratios method
+def Calc_BE_AoR(self):
+    return self
+    
+    
+# Calculate BE using average of ratios method
+def Calc_BE_AoR(self):
+    return self
+    
+    
+# Calculate BE using median of ratios method
+def Calc_BE_MoR(self):
+    return self
+    
+    
+# Calculate BE using linear regression method
+def Calc_BE_LR(self):
+    return self
+    
+    
+# Calculate BE using Clark (1967) method
+def Calc_BE_Clark(self):
+    return self
+    
+    
+# Calculate BE using Rahi (2010) method
+def Calc_BE_Rahi(self):
+    return self
+    
+    
 # Estimate air diffusivity
 def calc_air_diffusivity(self):
-    return
+    return self
 
 
 # Calculate nonlinear trend
 def calc_nonlin(self):
-    return
+    return self
 
 
 # Extract functions
 def extract_fns(self):
-    return
+    return self
 
 
 # Calculate amplitudes    
 def calc_amps(self):
-    return
+    return self
 '''
