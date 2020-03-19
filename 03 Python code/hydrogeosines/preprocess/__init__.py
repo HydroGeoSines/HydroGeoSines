@@ -41,6 +41,16 @@ def detrend_linear(self, dataset):
     slope, intercept = regression(dataset)
     return dataset - slope*range(len(dataset))+intercept
     # Could include other detrending methods; e.g. moving average?
+
+
+# Remove nonlinear trend
+def detrend_nonlinear(self, dataset): 
+    return
+    
+    
+# Remove periodic trend
+def detrend_periodic(self, dataset): 
+    return
     
 
 # Match manual measurements via offsets
