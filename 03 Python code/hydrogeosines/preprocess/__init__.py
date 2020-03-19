@@ -52,9 +52,8 @@ def match_manual(self, dataset, manual_obs):
 def calc_delta(self, dataset): 
     return diff(dataset)
 
-def calc_fwhead(): 
-    # Function to convert groundwater pressure data to equivalent 
-    # freshwater head values.
-    # (why?)
+
+# Calculate equivalent freshwater head from GW p measurements
+def calc_fwhead(self): 
     return
 '''
