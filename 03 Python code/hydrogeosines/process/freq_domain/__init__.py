@@ -36,3 +36,11 @@ def calc_ft_BA(self):
     A = 2.*(2./n)*np.abs(ft)[:n/2]
     P = np.angle(ft[:n/2])   
     return F, A, P
+
+'''    
+Subroutines for future inclusion:
+
+# Calculate continous wavelet transform
+def calc_cwt(self):
+    return
+'''
