@@ -109,7 +109,7 @@ def plot_ft_avf_BA(self, pname=None):
 # Plot phase versus amplitude of BA p data
 def plot_ft_pva_BA(self, pname=None):
     f,s = plt.subplots()
-    f.suptitle('Groundwater pressure ('+self.id+')')
+    f.suptitle('Barometric pressure ('+self.id+')')
     amp = self.BA.amp[(self.BA.frq>=0.5) & (self.BA.frq<=2.5)]
     phs = self.BA.phs[(self.BA.frq>=0.5) & (self.BA.frq<=2.5)]
     s.plot(amp, phs, 'o', ms=4, mfc='r', mec='r')
