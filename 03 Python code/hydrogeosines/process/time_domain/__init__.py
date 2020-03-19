@@ -68,6 +68,11 @@ def calc_regress_deconv(self):
 '''    
 Subroutines for future inclusion:
 
+# Estimate air diffusivity
+def calc_air_diffusivity(self):
+    return
+
+
 # Calculate nonlinear trend
 def calc_nonlin(self):
     return
