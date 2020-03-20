@@ -1,6 +1,17 @@
 
+# Import packages
+import numpy as np
+
 # This package contains subroutines for the preprocessing of datasets
 
+# Calculate temporal derivatives of GW data 
+def calc_delta_GW(self): 
+    return np.diff(self.GW.p)
+
+
+# Calculate temporal derivatives of BA data 
+def calc_delta_BA(self): 
+    return np.diff(self.BA.p)
 
 '''
 Subroutines for future inclusion:
@@ -56,11 +67,6 @@ def detrend_periodic(self, dataset):
 # Match manual measurements via offsets
 def match_manual(self, dataset, manual_obs):
     return
-
-
-# Calculate temporal derivative of input data
-def calc_delta(self, dataset): 
-    return diff(dataset)
 
 
 # Calculate equivalent freshwater head from GW p measurements

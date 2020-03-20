@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # Plot GW p data vs t
 def plot_GW(self, pname=None):
     f,s = plt.subplots()
-    f.suptitle('Barometric pressure')
+    f.suptitle(self.id)
     s.plot(self.GW.t, self.GW.p, 'k-')
     s.set_xlabel('Time')
     s.set_ylabel('Groundwater pressure')
@@ -26,6 +26,7 @@ def plot_GW(self, pname=None):
 # Plot BA p data vs t
 def plot_BA(self, pname=None):
     f,s = plt.subplots()
+    f.suptitle('Barometric pressure')
     s.plot(self.BA.t, self.BA.p, 'k-')
     s.set_xlabel('Time')
     s.set_ylabel('Barometric pressure')
@@ -37,15 +38,50 @@ def plot_BA(self, pname=None):
     return
 
 
-# Plot GW p data vs BA p data, with estimated linear trend
+# Plot dGWp/dt vs dBAp/dt, with estimated linear trend
 def plot_linregress(self, pname=None):
     f,s = plt.subplots()
     f.suptitle(self.id)
-    s.plot(self.BA.p, self.GW.p, 'ko', alpha=0.5)
-    s.plot(self.BA.p, self.M*self.BA.p+self.C, 'r-')
-    s.set_xlabel('Barometric pressure')
-    s.set_ylabel('Groundwater pressure')
+    s.plot(self.BA.dp, self.GW.dp, 'ko', alpha=0.5)
+    s.plot(self.BA.dp, self.M*self.BA.dp+self.C, 'r-')
+    s.set_xlabel('$\Delta$ BA p / $\Delta$ t')
+    s.set_ylabel('$\Delta$ GW p / $\Delta$ t')
     plt.tight_layout(rect=[0.00, 0.00, 1.00, 0.95])
+    if pname!=None: 
+        plt.savefig(pname)
+    #plt.close(f)
+    return
+
+
+# Plot Convergence of time domain BE metrics over time
+def plot_BE_vs_time(self, pname):
+    f,s = plt.subplots()
+    f.suptitle(self.id)
+    try:
+        s.plot(self.BE_AoR_all, '-', label='Average-of-ratios')
+    except:
+        pass
+    try:
+        s.plot(self.BE_MoR_all, '-', label='Median-of-ratios')
+    except:
+        pass
+    try:
+        s.plot(self.BE_LR_all,  '-', label='Linear regression')
+    except:
+        pass
+    try:
+        s.plot(self.BE_Clk_all, '-', label='Clark (1967)')
+    except:
+        pass
+    try:
+        s.plot(self.BE_Rah_all, '-', label='Rahi (2010)')
+    except:
+        pass
+    s.set_xlabel('Time')
+    s.set_ylabel('Barometric efficiency')
+    s.set_ylim(0,1)
+    plt.tight_layout(rect=[0.00, 0.00, 1.00, 0.95])
+    f.legend(loc=1, bbox_to_anchor=(1.30, 0.92), bbox_transform=f.transFigure, labelspacing=1.)
     if pname!=None: 
         plt.savefig(pname)
     #plt.close(f)
@@ -109,7 +145,7 @@ def plot_ft_avf_BA(self, pname=None):
 # Plot phase versus amplitude of BA p data
 def plot_ft_pva_BA(self, pname=None):
     f,s = plt.subplots()
-    f.suptitle('Barometric pressure ('+self.id+')')
+    f.suptitle('Barometric pressure')
     amp = self.BA.amp[(self.BA.frq>=0.5) & (self.BA.frq<=2.5)]
     phs = self.BA.phs[(self.BA.frq>=0.5) & (self.BA.frq<=2.5)]
     s.plot(amp, phs, 'o', ms=4, mfc='r', mec='r')

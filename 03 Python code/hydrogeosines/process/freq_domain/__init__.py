@@ -16,7 +16,7 @@ def calc_ft_GW(self):
     F = k/T    
     F = F[:n/2]
     #ft = np.fft.fft(self.GW.p) 
-    ft = np.fft.fft(np.hanning(n)*self.GW.p)
+    ft = np.fft.fft(np.hanning(n)*(self.GW.p-np.mean(self.GW.p)))
     A = 2.*(2./n)*np.abs(ft)[:n/2]
     P = np.angle(ft[:n/2])   
     return F, A, P
@@ -32,7 +32,7 @@ def calc_ft_BA(self):
     F = k/T    
     F = F[:n/2]
     #ft = np.fft.fft(self.GW.p) 
-    ft = np.fft.fft(np.hanning(n)*self.BA.p)
+    ft = np.fft.fft(np.hanning(n)*(self.BA.p-np.mean(self.BA.p)))
     A = 2.*(2./n)*np.abs(ft)[:n/2]
     P = np.angle(ft[:n/2])   
     return F, A, P
@@ -43,4 +43,14 @@ Subroutines for future inclusion:
 # Calculate continous wavelet transform
 def calc_cwt(self):
     return
+    
+
+# Calculate BE using Quilty and Roeloffs (1991) method
+def calc_BE_QaR(self):
+    return self.BE_QaR
+
+
+# Calculate BE using Acworth et al. (2016) method
+def calc_BE_Acw(self):
+    return self.BE_Acw
 '''
