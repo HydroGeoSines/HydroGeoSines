@@ -1,6 +1,7 @@
 <img src="https://github.com/hydrogeoscience/HydroGeoSines/blob/master/HGS_v0.jpg" width="400" />
 
-## __S__ignal __I__n __T__he __N__oise __E__xploration __S__oftware (SINES) for hydrogeological datasets
+## Signal In The Noise Exploration Software (SINES) for hydrogeological datasets
+## =
 
 A collaborative effort by: 
 * Chris Turnadge - CSIRO (Australia)
