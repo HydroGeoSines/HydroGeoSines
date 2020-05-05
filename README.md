@@ -10,6 +10,6 @@ A collaborative effort by:
 * Jose Bastias - Karlsruhe Institude of Technology (Germany)
 * Jonathan Kennel - University of Guelph (Canada)
 
-Check out the notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://github.com/SinesHydro/HydroGeoSines/blob/master/hydrogeosines_demo_v0.ipynb)
+Check out the notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://github.com/SinesHydro/HydroGeoSines/blob/master/hydrogeosines_baldry_demo_v0.ipynb)
 
 Note that this is currently under development ...
