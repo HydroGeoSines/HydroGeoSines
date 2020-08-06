@@ -1,12 +1,14 @@
 import numpy as np
 import datetime
 import pandas as pd
+import warnings
 import inspect
 import re
 import pytz
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from scipy.signal import detrend as detrend_func
+from scipy.linalg import svdvals
 
 #%% the modelling class
 class model(object):
@@ -16,7 +18,7 @@ class model(object):
         pass
     
     #%% 
-    def regress_deconv(self, tf, GW, BP, ET=None, lag_h=24, et=False, et_method='harmonic', fqs=None):
+    def regress_deconv(self, tf, GW, BP, ET=None, lag_h=24, et=False, et_method='hals', fqs=None):
         self.method = {'function': inspect.currentframe().f_code.co_name}
         if fqs is None:
             fqs = np.array(list(self.site._etfqs.values()))
@@ -27,7 +29,7 @@ class model(object):
         if (len(tf) != len(GW) != len(BP)):
             raise Exception("Error: All input arrays must have the same length!")
         # decite if Earth tides are included or not
-        if (et_method == 'harmonic'):
+        if (et_method == 'hals'):
             t  = tf
             # make time relative to avoid ET least squares errors
             dt = t[1] - t[0]
@@ -89,6 +91,15 @@ class model(object):
             c = 0.5*np.ones(Z.shape[1])
             c, covar = curve_fit(brf_total(Z), t, dWL, p0=c)
 
+            #%% compute the singular values
+            sgl = svdvals(Z)
+            # 'singular value' is important: 1 is perfect, 
+            # larger than 10^5 or 10^6 there's a problem
+            condnum = np.max(sgl) / np.min(sgl)
+            print('Conditioning number: {:,.0f}'.format(condnum))
+            if (condnum > 1e6): 
+                warnings.warn('The solution is ill-conditioned!')
+            
             # ----------------------------------------------
             nc = len(c)
             # calculate the head corrections
@@ -198,7 +209,16 @@ class model(object):
                 return brf
             c = 0.5*np.ones(Z.shape[1])
             c, covar = curve_fit(brf_total(Z), t, dWL, p0=c)
-
+            
+            #%% compute the singular values
+            sgl = svdvals(Z)
+            # 'singular value' is important: 1 is perfect, 
+            # larger than 10^5 or 10^6 there's a problem
+            condnum = np.max(sgl) / np.min(sgl)
+            print('Conditioning number: {:,.0f}'.format(condnum))
+            if (condnum > 1e6): 
+                warnings.warn('The solution is ill-conditioned!')
+            
             #%% determine the results
             nc = len(c)
             # calculate the head corrections
@@ -252,7 +272,7 @@ class model(object):
             raise Exception("Error: Please only use available Earth tide methods!")
             
     #%% estimate amplitudes and phases based on linear least squares
-    def apes_lsq(self, tf, data, freqs='ET'):
+    def hals(self, tf, data, freqs='ET'):
         self.method = {'function': inspect.currentframe().f_code.co_name}
         if (len(tf) != len(data)):
             raise Exception("Error: All input arrays must have the same length!")
@@ -280,37 +300,40 @@ class model(object):
              minimized, where Phi is the matrix defined by
              freqs and tt that when multiplied by theta is a
              sum of sinusoids.'''
-        # time
-        tt = tf
+        time = tf
         y = data
         N = y.shape[0]
         f = freqs*2*np.pi
         num_freqs = len(f)
-        Phi = np.empty((N, 2*num_freqs))
-        Sins = np.zeros((N,num_freqs))
-        Coss = np.zeros((N,num_freqs))
-        for i in range(N):
-            for j in range(num_freqs):
-                Sins[i,j] = np.sin(f[j]*tt[i])
-                Coss[i,j] = np.cos(f[j]*tt[i])
-
-        Phi[:,::2] = Sins
-        Phi[:,1::2] = Coss
-        Phi = np.hstack((Phi,np.ones((N,1))))
+        # make sure that time vectors are relative
+        # avoiding additional numerical errors
+        time = time - np.floor(time[0])
+        # assemble the matrix
+        Phi = np.empty((N, 2*num_freqs + 1))
+        for j in range(num_freqs):
+            Phi[:,2*j] = np.cos(f[j]*time)
+            Phi[:,2*j+1] = np.sin(f[j]*time)
+        # account for any DC offsets
+        Phi[:,-1] = 1
+        # solve the system of linear equations
+        theta, residuals, rank, singular = np.linalg.lstsq(Phi, y, rcond=None)
+        # calculate the error variance
+        error_variance = residuals[0]/y.shape[0]
         # when data is short, 'singular value' is important!
         # 1 is perfect, larger than 10^5 or 10^6 there's a problem
-        theta = np.linalg.lstsq(Phi, y, rcond=None)[0]
+        condnum = np.max(singular) / np.min(singular)
+        print('Conditioning number: {:,.0f}'.format(condnum))
+        if (condnum > 1e6): 
+            warnings.warn('The solution is ill-conditioned!')
+        # 	print(Phi)
         y_hat = Phi@theta
-        #mean = theta[:,0]
-        theta_nomean = theta[:-1]
-        a_hat = theta_nomean[::2]
-        b_hat = theta_nomean[1::2]
-
-        alpha_est = np.sqrt(a_hat**2 + b_hat**2)
-        phi_est = np.arctan2(b_hat,a_hat)
-
-        error_variance = float(np.linalg.norm(y - y_hat)**2/y.shape[0])
-        result = {'freq': freqs, 'alpha': alpha_est.flatten(), 'phi': phi_est.flatten(), 'var': error_variance, 'theta': theta.flatten()}
+        # the DC component
+        dc_comp = theta[-1]
+        # create complex coefficients
+        hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
+        alpha_est = np.abs(hals_comp)
+        phi_est = np.angle(hals_comp)
+        result = {'freq': freqs, 'alpha': alpha_est, 'phi': phi_est, 'var': error_variance, 'theta': theta, 'condition': condnum, 'offset': dc_comp}
         return y_hat, result
     
     #%% detrend function for regular and irregular datasets

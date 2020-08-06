@@ -123,7 +123,7 @@ class data(_time.time, _series.series):
         return self.all
 
     #%% This function uses
-    def correct_heads(self, locs=None, lag_h=24, et=False, et_method='harmonic'):
+    def correct_heads(self, locs=None, lag_h=24, et=False, et_method='hals'):
         if locs is None:
             locs = self.gw
         results = pd.DataFrame(index=self.all.index)
@@ -154,18 +154,18 @@ class data(_time.time, _series.series):
             s2_idx = list(self.site._etfqs.keys()).index("S2")
             # BP data: detrend followed by apes
             bp_detr, tmp = _model.model.lin_window_ovrlp(self, self.tf.values, self.all['{BP}'].values)
-            bp_mod, bp_apes = _model.model.apes_lsq(self, self.tf.values, bp_detr)
+            bp_mod, bp_apes = _model.model.hals(self, self.tf.values, bp_detr)
             # ET data: no need to detrend
             # ???????????????????????????
             # here we could use M2 and S2 components from Earth tides only!!!!!
             # ???????????????????????????
-            et_mod, et_apes = _model.model.apes_lsq(self, self.tf.values, self.all['{ET}'].values)
+            et_mod, et_apes = _model.model.hals(self, self.tf.values, self.all['{ET}'].values)
             BE_val = {}
             for i, loc in enumerate(locs):
                 # perform detrend
                 gw_detr, tmp = _model.model.lin_window_ovrlp(self, self.tf.values, self.all[loc].values)
                 # perform apes
-                gw_mod, gw_apes = _model.model.apes_lsq(self, self.tf.values, gw_detr)
+                gw_mod, gw_apes = _model.model.hals(self, self.tf.values, gw_detr)
                 # calculate BE from spectral details
                 del_phi = et_apes['phi'][s2_idx] -  bp_apes['phi'][s2_idx]
                 BE = (gw_apes['alpha'][s2_idx] + et_apes['alpha'][s2_idx]*np.cos(del_phi)*(gw_apes['alpha'][m2_idx]/et_apes['alpha'][m2_idx]))/bp_apes['alpha'][s2_idx]
