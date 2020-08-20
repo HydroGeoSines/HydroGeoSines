@@ -9,8 +9,6 @@ from . import _time
 from . import _series
 from . import _model
 
-# insert a line here to test pushing/pulling
-
 #%% the data handling class
 class data(_time.time, _series.series):
     def __init__(self, site, BP, GW, ET, results):
