@@ -6,20 +6,20 @@ Submodules
 
 .. toctree::
 
-   HydroGeoSines._init
-   HydroGeoSines._data
-   HydroGeoSines._BP
-   HydroGeoSines._ET
-   HydroGeoSines._GW
-   HydroGeoSines._model
-   HydroGeoSines._results
-   HydroGeoSines._series
-   HydroGeoSines._time
+   hydrogeosines._init
+   hydrogeosines._data
+   hydrogeosines._BP
+   hydrogeosines._ET
+   hydrogeosines._GW
+   hydrogeosines._model
+   hydrogeosines._results
+   hydrogeosines._series
+   Hydrogeosines._time
 
 Module contents
 ---------------
 
-.. automodule:: HydroGeoSines
+.. automodule:: hydrogeosines
     :members:
     :undoc-members:
     :show-inheritance:
