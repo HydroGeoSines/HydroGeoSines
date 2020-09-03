@@ -1,3 +1,3 @@
 # Documentation
-Documentation of HydroGeoSines software: https://hydrogeosines.readthedocs.io/en/latest/
+Documentation for HydroGeoSines is available here: https://hydrogeosines.readthedocs.io/en/latest/
 
