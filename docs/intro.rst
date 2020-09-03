@@ -1,4 +1,4 @@
 Introduction
 ------------
 
-Welly is a family of classes to facilitate the loading, processing, and analysis of subsurface wells and well data, such as striplogs, well log curves, and synthetic seismograms. 
+HydroGeoSines is a package to facilitate the analysis of subsurface responses to Earth tides, ocean tides, and barometric loading. 
