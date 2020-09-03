@@ -3,7 +3,7 @@
    :name: mastertoc
 
    Home <intro>
-   Requirements <req>
+   Requirements <requirements>
    API <api_toc>
    Contributors <contributors>
    Index <indices>
