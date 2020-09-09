@@ -1,4 +1,4 @@
-HydriGeoSines package
+HydroGeoSines package
 =====================
 
 Submodules
