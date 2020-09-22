@@ -12,8 +12,8 @@ print(fg_data)
 
 timefloat = hgs.data.tf.values
 data = hgs.data.all['{BP}'].values
-data1, result1 = hgs.model.lin_window_ovrlp(timefloat, data)
-data2, result2 = hgs.model.hals(timefloat, data1, freqs='AT')
+data1, result1 = hgs.method.lin_window_ovrlp(timefloat, data)
+data2, result2 = hgs.method.hals(timefloat, data1, freqs='AT')
 
 #%%
 fig, axs = plt.subplots(2)

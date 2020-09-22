@@ -5,55 +5,81 @@ import inspect
 import re
 import pytz
 
+from . import _data
+
 #%% the series class
 class series(object):
-    def __init__(self, data, results):
-        self.data = data
-        self.results = results
 
-    #%%
-    @property
-    def gw(self, obj=None):
-        if obj is None:
-            obj = self
-        columns = list(set(obj.all.columns) - set(['{BP}', '{ET}']))
-        return columns
+    def __init__(self, *args, **kwargs):
+        super(series, self).__init__(*args, **kwargs)
+        pass
+    
+    # this function helps to assign a new DF to the existing object instance
+    def _update_self(self, new):
+        if self.shape[0] >= new.shape[0]:
+            # decimate dataset
+            dix = self.index.difference(new.index)
+            print(dix)
+            # drop other entries
+            self.drop(dix, inplace=True)
+        else:
+            # expand dataset
+            dix = new.index.difference(self.index)
+            # print(dix)
+            # self.loc[dix, :] = new.loc[dix, :]
+            # this is very slow!!!
+            for i in dix:
+                self.loc[i, :] = new.loc[i, :]
+            
+        # update all values
+        self.sort_index(inplace=True)
+        return self
+    
+    #%% various functions
+    def respl(self, period):
+        tmp = self.resample('{:d}S'.format(np.round(period))).asfreq()
+        self._update_self(tmp)
+        return self
+    
+    def make_regular(self):
+        new = self.resample('{:d}S'.format(self.spl_period())).asfreq()
+        self._update_self(new)
+        return self
     
     #%%
-    def make_regular(self, obj=None):
-        if obj is None:
-            obj = self
-        # print("Try to fill gaps ...")
-        # print(obj.spl_period())
-        obj.all = obj.all.resample('{:d}S'.format(obj.spl_period())).asfreq()
-        # update the time object
-        return obj.all
-    
-    #%%
-    def fill_gaps(self, obj=None, limit=1, method='linear'):
-        if obj is None:
-            obj = self
+    def decimate(self, factor):
+        dix = self.index.difference(self.index[::int(factor)])
+        self.drop(dix, inplace=True)
+        return self
 
-        # print("Try to fill gaps ...")
-        self.all = obj.all.interpolate(limit=limit, method=method)
-        # update the time object
-        return self.all
+    def somthing(self):
+        self = tmp
+        return self
     
     #%%
-    def kill_gaps(self, obj=None, method='baro'):
-        if obj is None:
-            obj = self
+    def fill_gaps(self, limit=1, method='linear'):
+        # print("Try to fill gaps ...")
+        self.interpolate(limit=limit, method=method, inplace=True)
+        # update the time object
+        return self
+    
+    #%%
+    def kill_gaps(self, method='baro'):
         # print("Try to kill gaps ...")
         # TO DO HOW TO DROP ROWS WITH NAN VALUES!!!!!
         if (method == 'baro'):
-            col2 = obj.all.columns.str.contains('baro', case=False, na=False)
-            baro_col = obj.all.columns[col2]
+            col2 = self.columns.str.contains('{BP}', case=False, na=False)
+            baro_col = self.columns[col2]
             if (len(baro_col) > 0):
-                idx = obj.all[baro_col].isnull().values
-                obj.all = obj.all.loc[~idx, :]
+                idx = self[baro_col].isnull().values.flatten()
+                print(idx)
+                self.drop(self.index[idx], inplace=True)
+        elif(method=='any'):
+            idx = self.isnull().any(axis=1)
+            self.drop(self.index[idx], inplace=True)
         elif(method=='all'):
-            obj.all = obj.all.dropna(how='all')
-        # update the time object
-        obj.t = pd.Series(obj.all.index.values, name='datetime')
-        return obj.all
+            self.dropna(how='all', inplace=True)
+        else:
+            raise Exception("Error: kill_gaps method does not exist!")
+        return self
     

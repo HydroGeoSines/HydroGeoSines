@@ -9,7 +9,7 @@ import pytz
 from . import _time
 
 #%% the barometric pressure class
-class BP(object):
+class BP(_time.time):
     def __init__(self, site):
         self.data = []
         self.utc_offset = []
