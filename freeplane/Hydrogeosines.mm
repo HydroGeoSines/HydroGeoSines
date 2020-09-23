@@ -1,7 +1,7 @@
-<map version="freeplane 1.7.0">
+<map version="freeplane 1.8.0">
 <!--To view this file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net -->
 <node TEXT="Hydrogeosines" FOLDED="false" ID="ID_1251593758" CREATED="1599746266745" MODIFIED="1600785040343" COLOR="#000000" BACKGROUND_COLOR="#ff0000"><hook NAME="MapStyle" zoom="0.425">
-    <properties edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff" fit_to_viewport="false" show_note_icons="true" show_icon_for_attributes="true"/>
+    <properties show_icon_for_attributes="true" fit_to_viewport="false" show_note_icons="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -75,7 +75,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <cloud COLOR="#f0f0f0" SHAPE="ARC"/>
 <node TEXT="Data/Input" ID="ID_1847062878" CREATED="1599753790542" MODIFIED="1600784533786" HGAP_QUANTITY="79.99999803304678 pt" VSHIFT_QUANTITY="-143.24999573081746 pt" STYLE="bubble">
@@ -229,7 +228,6 @@
     </table>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="Barometric Pressure (BP)" ID="ID_1286273993" CREATED="1599747654483" MODIFIED="1600784187467" HGAP_QUANTITY="40.99999919533737 pt" VSHIFT_QUANTITY="-110.24999671429407 pt"/>
 <node TEXT="Earth Tides (ET)" ID="ID_1681079759" CREATED="1599747690318" MODIFIED="1600784704207" HGAP_QUANTITY="46.249999038875174 pt" VSHIFT_QUANTITY="-44.999998658895535 pt"><richcontent TYPE="DETAILS">
@@ -244,7 +242,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="pygtide" ID="ID_1265032885" CREATED="1600764704535" MODIFIED="1600764777546" HGAP_QUANTITY="78.49999807775026 pt" VSHIFT_QUANTITY="-6.74999979883433 pt"/>
 </node>
@@ -260,7 +257,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="" ID="ID_1540822677" CREATED="1600770345443" MODIFIED="1600770345443"/>
 </node>
@@ -280,7 +276,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="longitude" ID="ID_124041280" CREATED="1600770123924" MODIFIED="1600770134012"/>
 <node TEXT="latitude" ID="ID_1608487656" CREATED="1600770134948" MODIFIED="1600770136380"/>
@@ -314,7 +309,6 @@
     </ul>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="Frequency Domain" ID="ID_975887606" CREATED="1600782313082" MODIFIED="1600783815589" HGAP_QUANTITY="77.749998100102 pt" VSHIFT_QUANTITY="-59.999998211860714 pt"><richcontent TYPE="DETAILS">
 
@@ -450,7 +444,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node TEXT="Time Domain" ID="ID_1367846476" CREATED="1600782384985" MODIFIED="1600784198442" HGAP_QUANTITY="83.74999792128807 pt" VSHIFT_QUANTITY="-32.99999901652339 pt"/>
@@ -596,7 +589,6 @@
     </table>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -639,7 +631,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node TEXT="excel" ID="ID_932294249" CREATED="1599750511136" MODIFIED="1599753915349" HGAP_QUANTITY="28.999999552965193 pt" VSHIFT_QUANTITY="11.249999664723884 pt">
@@ -676,7 +667,6 @@
     </ul>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node TEXT="DataType" ID="ID_834880363" CREATED="1599751469855" MODIFIED="1600764252097" HGAP_QUANTITY="40.24999921768904 pt" VSHIFT_QUANTITY="0.0 pt"><richcontent TYPE="DETAILS">
@@ -696,7 +686,6 @@
     </ul>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node TEXT="" ID="ID_1944040543" CREATED="1600695512501" MODIFIED="1600695512501"/>
@@ -734,7 +723,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="ET" ID="ID_578956500" CREATED="1600765204576" MODIFIED="1600769719216" HGAP_QUANTITY="157.9999957084657 pt" VSHIFT_QUANTITY="-20.24999939650298 pt">
 <attribute NAME="Variable" VALUE="_etfqs"/>
@@ -870,7 +858,6 @@
     </table>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node TEXT="AT" ID="ID_1719459231" CREATED="1600766291998" MODIFIED="1600769722421" HGAP_QUANTITY="166.9999954402448 pt" VSHIFT_QUANTITY="-112.49999664723883 pt">
@@ -935,7 +922,6 @@
     </table>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -951,7 +937,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="Pressure" ID="ID_139684192" CREATED="1600766503415" MODIFIED="1600772042545" HGAP_QUANTITY="104.74999729543933 pt" VSHIFT_QUANTITY="181.49999459087866 pt">
 <arrowlink SHAPE="LINE" COLOR="#000000" WIDTH="2" TRANSPARENCY="200" DASH="7 7" FONT_SIZE="9" FONT_FAMILY="SansSerif" DESTINATION="ID_1286273993" MIDDLE_LABEL="Input" STARTINCLINATION="-17;-6;" ENDINCLINATION="-288;23;" STARTARROW="NONE" ENDARROW="DEFAULT"/>
@@ -1100,7 +1085,6 @@
     </table>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
