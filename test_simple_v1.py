@@ -10,6 +10,7 @@ print(test.data.dtypes)
 
 #%%
 pivot = test.data.dt_pivot()
+dtnum = test.data.dt_num()
 #%%
 hello = test.data.decimate(2)
 print(hello)

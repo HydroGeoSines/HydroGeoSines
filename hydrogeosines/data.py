@@ -19,8 +19,12 @@ class Data(pd.DataFrame,Processing,Analysis,Visualize):
     def _constructor(self):
         return Data
         
-    def mymethod(self):
-        """Do my stuff"""
+    def dt_num(self):
+        t = pd.to_numeric(self.datetime)
+        t = t - t[0]
+        t = t/ 10**9 # from ns to seconds
+        t = t/(60*60*24) # to days
+        return t
     
     def dt_pivot(self):
         return self.pivot_table(index="datetime", columns=["dtype","location"], values="value")

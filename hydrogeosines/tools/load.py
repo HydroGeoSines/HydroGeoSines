@@ -21,7 +21,8 @@ class Load(Processing):
                     
     def import_csv(self,filepath,input_type: str, utc_offset: int, unit: str = "m", method: str ="add", check_dublicates=False):
         VALID_TYPE = {"ET", "BP", "GW"}
-        #TODO: add header=True and location as keywords to enable a more fleixble location naming 
+        #TODO: add header=True and location as keywords to enable a more fleixble location naming
+        #TODO: add dt_num column?
         
         if input_type not in VALID_TYPE:
             raise ValueError("data input type must be one of %r." % VALID_TYPE)
@@ -52,6 +53,9 @@ class Load(Processing):
         # sort the data in a standard way for easier identification of dublicates
         data.sort_values(by=["location", "dtype","datetime"], inplace = True)
         
+        #if dt_num == True:
+        #    data.insert(1,"dt_num",self.data.day_num())
+            
         if method == "add":
             try:    
                 self.data = self.data.append(data)
@@ -65,7 +69,7 @@ class Load(Processing):
         #TODO: Implement other methods    
         else:     
             self.data = data   
-            
+                        
         if check_dublicates == True:                       
             self.data.check_dublicates()
 
