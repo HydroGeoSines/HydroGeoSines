@@ -25,7 +25,7 @@ class Site(Load):
         # The Geo-Location
         self.geoloc = geoloc
         # Create a Dataframe from the extended Dataframe class "Data"
-        self.data = Data(columns=["datetime","type","location","value","unit"])
+        self.data = Data(columns=["datetime","dtype","location","value","unit"])
 
     @property
     def geoloc(self):

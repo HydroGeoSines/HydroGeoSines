@@ -56,7 +56,7 @@ class Load(Processing):
             try:    
                 self.data = self.data.append(data)
             except AttributeError:
-                self.data = Data(columns=["datetime","type","location","value","unit"])
+                self.data = Data(columns=["datetime","dtype","location","value","unit"])
                 self.data = self.data.append(data)
                 
             self.data.sort_values(by=["location", "dtype","datetime"], inplace = True)

@@ -21,4 +21,7 @@ class Data(pd.DataFrame,Processing,Analysis,Visualize):
         
     def mymethod(self):
         """Do my stuff"""
+    
+    def dt_pivot(self):
+        return self.pivot_table(index="datetime", columns=["dtype","location"], values="value")
   
