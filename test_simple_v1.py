@@ -1,15 +1,12 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
 import hydrogeosines as hgs
 
 #%% test the model
-test = hgs.site('TEST', geoloc=[141.762065, -31.065781, 160])
+test = hgs.Site('TEST', geoloc=[141.762065, -31.065781, 160])
 
 #%%
-hello = test.import_csv('test_data/fowlers_gap/acworth_gaps.csv', dt_fmt='%d/%m/%Y %H:%M')
-print(hello)
+test.import_csv('test_data/fowlers_gap/acworth_short_2.csv',input_type="GW",utc_offset=10, unit="cm",method="add",check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'
+print(test.data)
+print(test.data.dtypes)
 
 #%%
 hello = test.data.decimate(2)
