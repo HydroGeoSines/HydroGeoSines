@@ -4,49 +4,35 @@ import hydrogeosines as hgs
 test = hgs.Site('TEST', geoloc=[141.762065, -31.065781, 160])
 
 #%%
-test.import_csv('test_data/fowlers_gap/acworth_short_2.csv',input_type="ET",utc_offset=10, unit="cm",method="add",check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'
-print(test.data)
-print(test.data.dtypes)
-
-#%%
-pivot = test.data.dt_pivot()
-dtnum = test.data.dt_num()
-#%%
-hello = test.data.decimate(2)
-print(hello)
+# test.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'
 print(test.data)
 
-#%%
-hello = test.data.respl(300)
-print(hello)
-print(test.data)
+test.import_csv('test_data/fowlers_gap/acworth_gw.csv', utc_offset=10, input_type='GW', unit='m', method="add", check_dublicates=True) 
+test.import_csv('test_data/fowlers_gap/acworth_bp.csv', utc_offset=10, input_type='BP', unit='m', method="add", check_dublicates=True) 
+test.import_csv('test_data/fowlers_gap/acworth_et.csv', utc_offset=10, input_type='ET', unit='nm/s^2', method="add", check_dublicates=True)
+
+data = test.data
 
 #%%
-hello = test.data.decimate(3600)
-print(hello)
+test.drop_nan()
 
 #%%
-hello = test.data.kill_gaps(method='any')
-print(hello)
+pivot = test.dt_pivot
+print(pivot)
+
+regular = test.make_regular()
+print(pivot)
 
 #%%
-hello = test.data.make_regular()
-print(hello)
+# data = test.dt_regular
 
 #%%
-hello = test.correct()
-print(hello)
+# test.remove(['Smith_5', 'FG822-1_2'])
 
-#%%
-test2 = test.data.fill_gaps()
-print(test2)
+# #%% 
+# tmp = test.data.dtf
+# print(tmp)
 
-#%%
-# hello1 = test.calc_BE(method='acworth')
-# print(hello1)
+# #%%
+# pivot = test.data.dt_pivot()
 
-# hello1 = test.calc_BE(method='rau')
-# print(hello1)
-
-#%%
-test.export_data('decimated.csv')
