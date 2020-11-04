@@ -5,24 +5,25 @@ import pandas as pd
 from scipy.optimize import leastsq
 
 # import sub-classes
-from .tools.load import Load
+from .interface.load import Load
+
+# import extended DataFrame
 from .data import Data
-from .tools.time import Time
 
 # import global parameters
 from .glob import const
 
 #%% define a class for the investigated site
-
-class dtprop(object):
-    pass
     
 class Site(Load):
     "Optional class documentation string, can be accessed via Site.__doc__"   
     
     # define all class attributes here 
-    const   = const
-
+    data_header = ["datetime", "location","category","unit","value"]
+    #data_types  = 
+    const       = const
+    utc_offset  = {}
+    
     def __init__(self, name, geoloc=None,*args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -30,8 +31,12 @@ class Site(Load):
         self.name = name
         # The Geo-Location
         self.geoloc = geoloc
-        # Create a Dataframe from the extended Dataframe class "Data"
-        self.data = Data(columns=["datetime","dt_num","utc_offset","type","location","value","unit"])
+        # Create a Dataframe from the extended Dataframe class "Data" 
+        self.data = Data({"datetime":pd.Series([], dtype="datetime64[ns]"),
+                          "location":pd.Series([], dtype='object'),
+                          "category":pd.Series([], dtype='object'),
+                          "unit":pd.Series([], dtype='object'),
+                          "value":pd.Series([], dtype='float')})         
 
     @property
     def geoloc(self):
@@ -58,45 +63,45 @@ class Site(Load):
     #%% GW properties
     @property
     def gw_locs(self):
-        return self.data[self.data['type'] == 'GW']['location'].unique()
+        return self.data[self.data['category'] == 'GW']['location'].unique()
     
     @property
     def gw_data(self):
-        return self.data[self.data['type'] == 'GW'].pivot(index='datetime', columns='location', values='value')
+        return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')
     
     @property
     def gw_dt(self):
-        return self.data[self.data['type'] == 'GW']['datetime'].drop_duplicates().reset_index(drop=True)
+        return self.data[self.data['category'] == 'GW']['datetime'].drop_duplicates().reset_index(drop=True)
     
-    @property
-    def gw_dtf(self):
-        return Time.dt_num(self.gw_dt)
+    #@property
+    #def gw_dtf(self):
+    #    return Time.dt_num(self.gw_dt)
     
-    @property
-    def gw_dts(self):
-        return Time.dt_str(self.gw_dt)
+    #@property
+    #def gw_dts(self):
+    #    return Time.dt_str(self.gw_dt)
     
-    @property
-    def gw_spd(self):
-        return 86400/Time.spl_period(self.gw_dt, unit='s')
+    #@property
+    #def gw_spd(self):
+    #    return 86400/Time.spl_period(self.gw_dt, unit='s')
     
     #%% BP properties
     @property
     def bp_locs(self):
-        return self.data[self.data['type'] == 'BP']['location'].unique()
+        return self.data[self.data['category'] == 'BP']['location'].unique()
 
     @property
     def bp_data(self):
-        return self.data[self.data['type'] == 'BP'].pivot(index='datetime', columns='location', values='value')
+        return self.data[self.data['category'] == 'BP'].pivot(index='datetime', columns='location', values='value')
     
     #%% ET properties
     @property
     def et_locs(self):
-        return self.data[self.data['type'] == 'ET']['location'].unique()
+        return self.data[self.data['category'] == 'ET']['location'].unique()
     
     @property
     def et_data(self):
-        return self.data[self.data['type'] == 'ET'].pivot(index='datetime', columns='location', values='value')
+        return self.data[self.data['category'] == 'ET'].pivot(index='datetime', columns='location', values='value')
 
     @property
     def is_aligned(self):
@@ -116,11 +121,11 @@ class Site(Load):
     def dt_pivot(self):
         return self.data.pivot(index='datetime', columns=['location'], values='value')
 
-    def make_regular(self):
-        tmp = self.dt_pivot
-        period = Time.spl_period(tmp.index.to_series())
-        tmp = tmp.resample('{:.0f}S'.format(period)).asfreq()
-        return tmp
+    #def make_regular(self):
+    #    tmp = self.dt_pivot
+    #    period = Time.spl_period(tmp.index.to_series())
+    #    tmp = tmp.resample('{:.0f}S'.format(period)).asfreq()
+    #    return tmp
     
     @property
     # https://traces.readthedocs.io/en/master/examples.html
@@ -163,28 +168,10 @@ class Site(Load):
 
         result = leastsq(residuals, x0=(0, 5), args=(tdata))
         print(result)
-        dt = np.arange(result[0][0], (max_dt_num - min_dt_num)/24/60, result[0][1]/24/60)
+        out = np.arange(result[0][0], (max_dt_num - min_dt_num)/24/60, result[0][1]/24/60)
         # print(tdata)
-        return dt
+        return out
     
-    #%% define methods
-    def remove(self, locs):
-        if isinstance(locs, str):
-            idx = (self.data['location'] == locs)
-            print(idx)
-            self.data = self.data[~idx]
-            # self.data.drop(labels=idx, axis=0, inplace=True)
-        if isinstance(locs, list):
-            for loc in locs:
-                idx = (self.data['location'] == loc)
-                self.data = self.data[~idx]
-        return self.data
-
-    def drop_nan(self):
-        idx = self.data['value'].isnull()
-        self.data.drop(self.data.index[idx], inplace=True)
-        
-        return self.data
         
     #%% SOPHISTICATED DATA ALIGNMENT
     def make_congruent(self, dt_master):

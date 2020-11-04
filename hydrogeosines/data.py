@@ -2,16 +2,15 @@ import numpy as np
 import pandas as pd
 
 # import sub-classes
-from .tools.processing import Processing
-from .tools.analysis import Analysis
-from .tools.visualize import Visualize
-from .tools.time import Time
+from .manipulation.processing import Processing
+from .manipulation.time import Time
+from .manipulation.series import Series
 
 #%% the data handling class
 
-class Data(pd.DataFrame,Processing,Analysis,Visualize):
+class Data(pd.DataFrame,Processing,Time,Series):
     
-    # this method is makes it so our methods return an instance
+    # this makes it so our class returns an instance
     # of ExtendedDataFrame, instead of a regular DataFrame
     @property
     def _constructor(self):
@@ -19,34 +18,31 @@ class Data(pd.DataFrame,Processing,Analysis,Visualize):
 
     @property
     def dtf(self):
-        return Time.dt_num(self.datetime)
+        return self.dt_num(self.datetime)
 
     @property
     def dts(self):
-        return Time.dt_str(self.datetime)
+        return self.dt_str(self.datetime)
     
     @property
     def dtf_utc(self):
-        return Time.dt_num(self.datetime, utc=True)
+        return self.dt_num(self.datetime, utc=True)
     
     @property
     def dts_utc(self):
-        return Time.dt_str(self.datetime, utc=True)
+        return self.dt_str(self.datetime, utc=True)
 
     @property
     def spd(self):
-        return 86400/Time.spl_period(self.datetime, unit='s')
+        return 86400/self.spl_period(self.datetime, unit='s')
 
     def is_regular(self, loc: str):
         tmp = self[self['location'] == loc]['datetime']
-        tmp = np.diff(Time.dt_num(tmp)*86400)
+        tmp = np.diff(self.dt_num(tmp)*86400)
         idx = (tmp != tmp[0])
         if np.any(idx):
             return False
         else:
             return True
+    
 
-    #%% EXPERIMENTAL
-    def dt_pivot(self):
-        return self.pivot_table(index="datetime", columns=["type", "location"], values="value")
-  

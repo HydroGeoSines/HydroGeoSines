@@ -1,7 +1,7 @@
 <map version="freeplane 1.8.0">
 <!--To view this file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net -->
-<node TEXT="Hydrogeosines" FOLDED="false" ID="ID_1251593758" CREATED="1599746266745" MODIFIED="1600785040343" COLOR="#000000" BACKGROUND_COLOR="#ff0000"><hook NAME="MapStyle" zoom="0.425">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" show_note_icons="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+<node TEXT="Hydrogeosines" FOLDED="false" ID="ID_1251593758" CREATED="1599746266745" MODIFIED="1600785040343" COLOR="#000000" BACKGROUND_COLOR="#ff0000"><hook NAME="MapStyle" zoom="0.685">
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" show_note_icons="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -77,7 +77,7 @@
 </html>
 </richcontent>
 <cloud COLOR="#f0f0f0" SHAPE="ARC"/>
-<node TEXT="Data/Input" ID="ID_1847062878" CREATED="1599753790542" MODIFIED="1600784533786" HGAP_QUANTITY="79.99999803304678 pt" VSHIFT_QUANTITY="-143.24999573081746 pt" STYLE="bubble">
+<node TEXT="Data" ID="ID_1847062878" CREATED="1599753790542" MODIFIED="1603448345938" HGAP_QUANTITY="79.99999803304678 pt" VSHIFT_QUANTITY="-143.24999573081746 pt" STYLE="bubble">
 <edge COLOR="#0000ff"/>
 <richcontent TYPE="DETAILS">
 
@@ -93,34 +93,54 @@
       <tr>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
-            <b>Index (dt) </b>
+            <b>index</b>
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
-            <b>Loc </b>
+            <b>datetime </b>
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
-            <b>Type </b>
+            <b>UTC</b>
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
-            <b>Unit </b>
+            <b>location </b>
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
-            <b>Value</b>
+            <b>category </b>
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            <b>unit </b>
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            <b>value</b>
           </p>
         </td>
       </tr>
       <tr>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            1
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
             01:15:00
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            10
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
@@ -147,7 +167,17 @@
       <tr>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            2
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
             01:15:00
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            10
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
@@ -174,7 +204,17 @@
       <tr>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            3
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
             01:15:00
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            10
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
@@ -201,7 +241,17 @@
       <tr>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
           <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            4
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
             01:30:00
+          </p>
+        </td>
+        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
+          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
+            10
           </p>
         </td>
         <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
@@ -219,15 +269,11 @@
             m
           </p>
         </td>
-        <td valign="top" style="width: 20%; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1; border-right-width: 1; border-bottom-width: 1; border-left-width: 1">
-          <p style="margin-top: 1; margin-right: 1; margin-bottom: 1; margin-left: 1">
-            
-          </p>
-        </td>
       </tr>
     </table>
   </body>
 </html>
+
 </richcontent>
 <node TEXT="Barometric Pressure (BP)" ID="ID_1286273993" CREATED="1599747654483" MODIFIED="1600784187467" HGAP_QUANTITY="40.99999919533737 pt" VSHIFT_QUANTITY="-110.24999671429407 pt"/>
 <node TEXT="Earth Tides (ET)" ID="ID_1681079759" CREATED="1599747690318" MODIFIED="1600784704207" HGAP_QUANTITY="46.249999038875174 pt" VSHIFT_QUANTITY="-44.999998658895535 pt"><richcontent TYPE="DETAILS">
@@ -594,7 +640,7 @@
 </node>
 </node>
 <node TEXT="Tools" POSITION="right" ID="ID_325469186" CREATED="1600784976046" MODIFIED="1600785122160" HGAP_QUANTITY="119.7499968484045 pt" VSHIFT_QUANTITY="131.99999606609356 pt" STYLE="bubble">
-<node TEXT="Data Processing" ID="ID_1079847568" CREATED="1599753844765" MODIFIED="1600785156349" HGAP_QUANTITY="146.74999604374182 pt" VSHIFT_QUANTITY="29.24999912828207 pt" STYLE="bubble">
+<node TEXT="Data Processing" ID="ID_1079847568" CREATED="1599753844765" MODIFIED="1600936887879" HGAP_QUANTITY="146.74999604374182 pt" VSHIFT_QUANTITY="29.24999912828207 pt" STYLE="bubble">
 <edge COLOR="#0000ff"/>
 <cloud COLOR="#f0f0f0" SHAPE="ARC"/>
 <node TEXT="Merge/Combine" ID="ID_1559543463" CREATED="1599750184664" MODIFIED="1600775482407" HGAP_QUANTITY="70.24999832361942 pt" VSHIFT_QUANTITY="78.7499976530672 pt"/>
@@ -691,6 +737,7 @@
 <node TEXT="" ID="ID_1944040543" CREATED="1600695512501" MODIFIED="1600695512501"/>
 </node>
 </node>
+<node TEXT="Export" ID="ID_1059739356" CREATED="1600785126143" MODIFIED="1600936887875" STYLE="bubble" HGAP_QUANTITY="67.99999839067465 pt" VSHIFT_QUANTITY="-26.249999217689062 pt"/>
 </node>
 <node TEXT="Data Analysis" ID="ID_540528521" CREATED="1599754009470" MODIFIED="1600785162961" HGAP_QUANTITY="127.99999660253533 pt" VSHIFT_QUANTITY="-220.49999342858808 pt" STYLE="bubble">
 <edge COLOR="#0000ff"/>
@@ -706,7 +753,6 @@
 <edge COLOR="#0000ff"/>
 <cloud COLOR="#f0f0f0" SHAPE="ARC"/>
 </node>
-<node TEXT="Export" ID="ID_1059739356" CREATED="1600785126143" MODIFIED="1600785140460" STYLE="bubble"/>
 </node>
 <node TEXT="Global Parameters" POSITION="left" ID="ID_959385634" CREATED="1600765025623" MODIFIED="1600785040343" HGAP_QUANTITY="29.74999953061345 pt" VSHIFT_QUANTITY="-2.999999910593047 pt" STYLE="bubble">
 <edge COLOR="#ff0000"/>
@@ -938,8 +984,8 @@
   </body>
 </html>
 </richcontent>
-<node TEXT="Pressure" ID="ID_139684192" CREATED="1600766503415" MODIFIED="1600772042545" HGAP_QUANTITY="104.74999729543933 pt" VSHIFT_QUANTITY="181.49999459087866 pt">
-<arrowlink SHAPE="LINE" COLOR="#000000" WIDTH="2" TRANSPARENCY="200" DASH="7 7" FONT_SIZE="9" FONT_FAMILY="SansSerif" DESTINATION="ID_1286273993" MIDDLE_LABEL="Input" STARTINCLINATION="-17;-6;" ENDINCLINATION="-288;23;" STARTARROW="NONE" ENDARROW="DEFAULT"/>
+<node TEXT="Pressure" ID="ID_139684192" CREATED="1600766503415" MODIFIED="1603448408590" HGAP_QUANTITY="104.74999729543933 pt" VSHIFT_QUANTITY="181.49999459087866 pt">
+<arrowlink SHAPE="LINE" COLOR="#000000" WIDTH="2" TRANSPARENCY="200" DASH="7 7" FONT_SIZE="9" FONT_FAMILY="SansSerif" DESTINATION="ID_1286273993" MIDDLE_LABEL="Input" STARTINCLINATION="-1180;0;" ENDINCLINATION="762;159;" STARTARROW="NONE" ENDARROW="DEFAULT"/>
 <attribute NAME="Variable" VALUE="_pucf"/>
 <attribute NAME="Format" VALUE="dict"/>
 <richcontent TYPE="DETAILS">
