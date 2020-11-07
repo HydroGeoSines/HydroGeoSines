@@ -2,13 +2,12 @@ import numpy as np
 import pandas as pd
 
 # import sub-classes
-from .manipulation.processing import Processing
-from .manipulation.time import Time
-from .manipulation.series import Series
+from .time import Time
+from .series import Series
 
 #%% the data handling class
 
-class Data(pd.DataFrame,Processing,Time,Series):
+class Data(pd.DataFrame,Time,Series):
     
     # this makes it so our class returns an instance
     # of ExtendedDataFrame, instead of a regular DataFrame
@@ -36,6 +35,7 @@ class Data(pd.DataFrame,Processing,Time,Series):
     def spd(self):
         return 86400/self.spl_period(self.datetime, unit='s')
 
+#%% does not belong here and needs to be rewritten
     def is_regular(self, loc: str):
         tmp = self[self['location'] == loc]['datetime']
         tmp = np.diff(self.dt_num(tmp)*86400)

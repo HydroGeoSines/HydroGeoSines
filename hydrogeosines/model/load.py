@@ -5,14 +5,13 @@ Created on Wed Sep 23 16:13:00 2020
 @author: Daniel
 """
 
-from ..tools import Tools
-from ..manipulation.processing import Processing
+from .tools import Tools
 
 import pandas as pd
 import numpy as np
 import pytz
 
-class Load(Tools,Processing):
+class Load(Tools):
     # define all class attributes here 
     #attr = attr
     VALID_CATEGORY = {"ET", "BP", "GW"}

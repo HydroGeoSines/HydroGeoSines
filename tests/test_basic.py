@@ -3,8 +3,31 @@ import hydrogeosines as hgs
 #%% test the model
 test = hgs.Site('TEST', geoloc=[141.762065, -31.065781, 160])
 
-#wf_abc = hgs.Workflow('abc')
-#wf_abc.process(test);
+#%%
+## MODEL
+mountain_site   = hgs.Site('MOUNTAIN', geoloc=[141.762065, -31.065781, 160])
+## CONTROLLER
+hals_wf         = hgs.Workflow('hals')
+## VIEW
+terminal_output = hgs.TerminalOutput()
+
+# Trennung von Daten und Logik, damit die Objekte nicht so riesig werden
+# NICHT: hals_wf.site.do_something()
+data_result = hals_wf.process_site_data(mountain_site.data)
+terminal_output.print_data(data_result)
+# ODER (falls Daten "behalten" werden sollen)
+mountain_site.preprocessed['hals'] = hals_wf.process_site_data(mountain_site.data)
+#
+gw_data = mountain_site.gw_data ## INSTEAD: mountain_site.get_gw_data() <- METHOD
+
+#___
+
+filter_result = SiteFilter.by_location('loc')['datetime']
+is_reg = filter_result.is_reguar # ()
+# generischer Ansatz: Site.by('location').where('loc')
+
+
+
 
 #%%
 # test.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'

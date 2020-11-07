@@ -1,3 +1,5 @@
+# gobal variables
+
 # generally accessible constants
 
 const = {}

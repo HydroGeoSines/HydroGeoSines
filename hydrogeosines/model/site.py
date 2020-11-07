@@ -5,7 +5,7 @@ import pandas as pd
 from scipy.optimize import leastsq
 
 # import sub-classes
-from .interface.load import Load
+from .load import Load
 
 # import extended DataFrame
 from .data import Data
@@ -26,7 +26,16 @@ class Site(Load):
     
     def __init__(self, name, geoloc=None,*args, **kwargs):
         super().__init__(*args, **kwargs)
+        """   
+        def func(cat):
+            def inner(): # maybe: (self)
+                return self.__get_data(cat)
+            return inner
 
+            
+        for attr in ['GW', 'BP']:
+             setattr(self, f'get_{attr.lower()}_data', func(attr))
+        """
         # The site name
         self.name = name
         # The Geo-Location
@@ -59,16 +68,22 @@ class Site(Load):
     def __getitem__(self, index):
         print(index)
         return self[index]
+
+    #%% general private getter private methods
+    def __get_data(self,cat):
+        return self.data[self.data['category'] == cat].pivot(index='datetime', columns='location', values='value')
+
     
     #%% GW properties
     @property
     def gw_locs(self):
         return self.data[self.data['category'] == 'GW']['location'].unique()
     
-    @property
-    def gw_data(self):
-        return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')
-    
+    #@property
+    #def gw_data(self):
+    #    # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')
+    #    return self.__get_data('GW')
+        
     @property
     def gw_dt(self):
         return self.data[self.data['category'] == 'GW']['datetime'].drop_duplicates().reset_index(drop=True)

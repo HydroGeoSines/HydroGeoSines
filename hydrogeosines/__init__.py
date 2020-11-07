@@ -1,1 +1,1 @@
-from .site import Site
+from .model.site import Site

@@ -8,7 +8,27 @@ class Tools(object):
     def __init__(self, *args, **kwargs):        
         pass  
         #add attributes specific to Processing here
-        #self.attribute = variable    
+        #self.attribute = variable  
+    
+
+    def pucf_converter(self,row): # loop based
+        """
+        convert pressure units for GW and BP into SI unit meter
+        """
+        if row["category"] in ("GW", "BP") and row["unit"] != "m":
+            return row["value"] * self.const['_pucf'][row["unit"].lower()], "m"
+        else:
+            return row["value"], "m" 
+        
+    def pucf_converter_vec(self,df): # using vectorization
+        """
+        convert pressure units for GW and BP into SI unit meter
+        """
+        idx     = ((df.category == "GW") | (df.category == "BP") & (df.unit != "m"))
+        val     = np.where(idx, df.value*np.vectorize(self.const["_pucf"].__getitem__)(df.unit.str.lower()),df.value) 
+        unit    = np.where(idx, "m", df.unit) 
+        return val, unit     
+    
     def check_affiliation(self,values,valid):
             if not all(x in valid for x in np.array([values]).flatten()):
                 raise ValueError("%r contains values that are not part of %r." % (values,valid))                 

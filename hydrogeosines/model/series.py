@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from ..tools import Tools
+#from ..tools import Tools
 
 class Series(object):
     # define all class attributes here 
@@ -9,8 +9,19 @@ class Series(object):
     def __init__(self, *args, **kwargs):        
         pass  
         #add attributes specific to Processing here
-        #self.attribute = variable
+        #self.attribute = variable            
     
+    def check_dublicates(self):
+        # search for dublicates (in rows)
+        if any(self.duplicated(subset=None, keep='first')):                
+            print("Dublicate entries detected and deleted")            
+            return self.drop_duplicates(subset=None, keep='first', ignore_index=True)
+        else:
+            print("No dublicates being found ...")
+            return self    
+                
+    def dt_pivot(self):
+        return self.pivot_table(index=self.datetime,columns=["category", "location"], values="value")
     # Check ups
     def is_nan(self):
         return self['value'].isnull().values.any()
