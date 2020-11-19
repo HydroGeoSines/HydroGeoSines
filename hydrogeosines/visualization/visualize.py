@@ -8,7 +8,8 @@ Created on Wed Sep 23 16:13:00 2020
 import pandas as pd
 import numpy as np
 
-class Visualize:
+class Visualize(object):
+    
   def __init__(self, *args, **kwargs):
     pass  
     #add attributes specific to Visualize here

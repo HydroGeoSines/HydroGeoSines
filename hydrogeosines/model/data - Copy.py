@@ -2,37 +2,20 @@ import numpy as np
 import pandas as pd
 
 # import sub-classes
+
 from .time import Time
 from .series import Series
+from .read import Read
 
 #%% the data handling class
-class Data(pd.DataFrame,Time,Series):
+
+class Data(pd.DataFrame,Time,Series,Read):
     
     # this makes it so our class returns an instance
     # of ExtendedDataFrame, instead of a regular DataFrame
     @property
     def _constructor(self):
-        return Data(pd.DataFrame({"datetime":pd.Series([], dtype="datetime64[ns]"),
-                                  "location":pd.Series([], dtype='object'),
-                                  "category":pd.Series([], dtype='object'),
-                                  "unit":pd.Series([], dtype='object'),
-                                  "value":pd.Series([], dtype='float')}))
-    
-    """
-    @_constructor.setter
-    def _constructor(self, df):
-        self.__geoloc = value
-        
-    def __init__(self, *args, **kwargs):
-        df = pd.DataFrame({"datetime":pd.Series([], dtype="datetime64[ns]"),
-                           "location":pd.Series([], dtype='object'),
-                           "category":pd.Series([], dtype='object'),
-                           "unit":pd.Series([], dtype='object'),
-                           "value":pd.Series([], dtype='float')}) 
-
-        super().__init__(data = df, *args, **kwargs)
-    """     
-
+        return Data
 
     @property
     def dtf(self):

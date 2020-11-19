@@ -16,17 +16,29 @@ class Site():
     
     def __init__(self,*args, **kwargs):
         
-        for attr in ['gw', 'bp']:
-             setattr(self, f'{attr}_data', self.__func(attr))    
+        for attr in VALID_CATEGORY:
+             setattr(self,f'get_{attr.lower()}_data', self.func(attr))    
              
     @property
     def name(self):
         return 'nah'      
 
     #self.name2 = name 
-    @staticmethod
-    def __func(cat):
+    #@staticmethod
+    def func(self,cat): 
         @property
         def inner():
-            return cat
+            return self.__get_data(cat)
         return inner    
+    
+    #@property
+    #def gw_data(self):
+    #    # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')
+#        return self.__get_data('GW')
+    @property
+    def location(self,category):
+        pass
+        #return self.f"get_{category}_data'
+    
+    
+site = Site()    

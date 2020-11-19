@@ -5,63 +5,73 @@ import pandas as pd
 from scipy.optimize import leastsq
 
 # import sub-classes
-from .load import Load
+from .read import Read
 
 # import extended DataFrame
-from .data import Data
+from ..ext import hgs_pd
+#from .data import Data
 
-# import global parameters
 from .glob import const
 
 #%% define a class for the investigated site
-    
-class Site(Load):
+
+class Site(Read):
     "Optional class documentation string, can be accessed via Site.__doc__"   
-    
+    VALID_CATEGORY = {"ET", "BP", "GW"}
     # define all class attributes here 
-    data_header = ["datetime", "location","category","unit","value"]
+    #data_header = ["datetime", "location","category","unit","value"]
     #data_types  = 
     const       = const
     utc_offset  = {}
     
-    def __init__(self, name, geoloc=None,*args, **kwargs):
+    def __init__(self, name, geoloc=None, data=None,*args, **kwargs):
         super().__init__(*args, **kwargs)
-        """   
-        def func(cat):
-            def inner(): # maybe: (self)
-                return self.__get_data(cat)
-            return inner
-
-            
-        for attr in ['GW', 'BP']:
-             setattr(self, f'get_{attr.lower()}_data', func(attr))
-        """
+        
+        for attr in self.VALID_CATEGORY:
+             setattr(self,f'get_{attr.lower()}_data', self.func(attr))    
+             
         # The site name
-        self.name = name
+        self._name  = name
         # The Geo-Location
         self.geoloc = geoloc
         # Create a Dataframe from the extended Dataframe class "Data" 
-        self.data = Data({"datetime":pd.Series([], dtype="datetime64[ns]"),
-                          "location":pd.Series([], dtype='object'),
-                          "category":pd.Series([], dtype='object'),
-                          "unit":pd.Series([], dtype='object'),
-                          "value":pd.Series([], dtype='float')})         
+        self.data   = data        
 
+    #@staticmethod
+    def func(self,category): 
+        @property
+        def inner():
+            return self.__get_category(category)
+        return inner   
+    
     @property
     def geoloc(self):
         return self.__geoloc # property of self
         
     @geoloc.setter
-    def geoloc(self, value):
-        if value is not None:
-            if not isinstance(value, (list, np.ndarray)):
+    def geoloc(self, geoloc):
+        if geoloc is not None:
+            if not isinstance(geoloc, (list, np.ndarray)):
                 raise Exception("Error: Input 'geoloc' must be a list with 3 values: Longitude, latitude, height in WGS84!")
-            if (value[0] < -180) or (value[0] > 180) or (value[1] < -90) or (value[1] > 90) or (value[2] < -1000) or (value[2] > 8500):
+            if (geoloc[0] < -180) or (geoloc[0] > 180) or (geoloc[1] < -90) or (geoloc[1] > 90) or (geoloc[2] < -1000) or (geoloc[2] > 8500):
                 raise Exception("Error: Input 'geoloc' must contain valid geo-coordinates in WGS84!")
-            self.__geoloc = value
+            self.__geoloc = geoloc
         else:
             self.__geoloc = None
 
+    @property
+    def data(self):
+        return self.__data
+       
+    @data.setter
+    def data(self,data):
+        if data is None:
+            self.__data = pd.DataFrame({"datetime":pd.Series([], dtype="datetime64[ns]"),
+                                    "location":pd.Series([], dtype='object'),
+                                    "category":pd.Series([], dtype='object'),
+                                    "unit":pd.Series([], dtype='object'),
+                                    "value":pd.Series([], dtype='float')}) 
+            
     #%% slicing
     # inheritance? https://stackoverflow.com/questions/25511436/python-is-is-possible-to-have-a-class-method-that-acts-on-a-slice-of-the-class
     
@@ -70,19 +80,21 @@ class Site(Load):
         return self[index]
 
     #%% general private getter private methods
-    def __get_data(self,cat):
-        return self.data[self.data['category'] == cat].pivot(index='datetime', columns='location', values='value')
-
+    def __get_category(self, cat):
+        return self.data[self.data['category'] == cat]
+    
+    @property
+    def gw_data(self):
+        # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')        
+        return self.__get_category('GW').pivot(index='datetime', columns='location', values='value')
+    
     
     #%% GW properties
     @property
     def gw_locs(self):
         return self.data[self.data['category'] == 'GW']['location'].unique()
     
-    #@property
-    #def gw_data(self):
-    #    # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')
-    #    return self.__get_data('GW')
+
         
     @property
     def gw_dt(self):
