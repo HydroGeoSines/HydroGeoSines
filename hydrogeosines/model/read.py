@@ -5,7 +5,7 @@ Created on Wed Sep 23 16:13:00 2020
 @author: Daniel
 """
 
-from ..ext.tools import Tools
+from ..utils.tools import Tools
 
 import pandas as pd
 import numpy as np
@@ -14,32 +14,12 @@ import pytz
 class Read(object):
     # define all class attributes here 
     #attr = attr
-    VALID_CATEGORY = {"ET", "BP", "GW"}
         
     def __init__(self, *args, **kwargs):        
         pass  
         #add attributes specific to Load here
         #self.attribute = variable            
-   
-    
-    def pucf_converter(self,row): # loop based
-        """
-        convert pressure units for GW and BP into SI unit meter
-        """
-        if row["category"] in ("GW", "BP") and row["unit"] != "m":
-            return row["value"] * self.const['_pucf'][row["unit"].lower()], "m"
-        else:
-            return row["value"], "m" 
-        
-    def pucf_converter_vec(self,df): # using vectorization
-        """
-        convert pressure units for GW and BP into SI unit meter
-        """
-        idx     = ((df.category == "GW") | (df.category == "BP") & (df.unit != "m"))
-        val     = np.where(idx, df.value*np.vectorize(self.const["_pucf"].__getitem__)(df.unit.str.lower()),df.value) 
-        unit    = np.where(idx, "m", df.unit) 
-        return val, unit 
-        
+           
     def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", header=None, check_dublicates=False):        
         
         #check for non valid categories 
@@ -73,7 +53,8 @@ class Read(object):
 
         # reformat unit column to SI units
         #data["value"], data["unit"] = zip(*data.apply(self.pucf_converter,axis=1)) # looping
-        data["value"], data["unit"] = self.pucf_converter_vec(data) # vectorizing
+        #data["value"], data["unit"] = self.pucf_converter_vec(data) # vectorizing
+        data["value"], data["unit"] = data.hgs.pucf_converter_vec(self.const["_pucf"]) # vectorizing
                 
         # add utc_offset to site instead of data, to keep number of columns at a minimum
         self.utc_offset.update(dict(Tools.zip_formatter(locations, utc_offset)))
@@ -86,16 +67,16 @@ class Read(object):
         #TODO: Implement other methods    
         else:     
             raise ValueError("Method not available")   
-        """    
+            
         # make sure the datetime is formated correctly for later use
         self.data["datetime"] = pd.to_datetime(self.data["datetime"]) 
         # sort data in a standard way -> easier to read
         self.data.sort_values(by=["location", "category"], inplace = True)
         # no dublicate indices
         self.data.reset_index(inplace=True, drop=True)             
-        # no dublicate entries
+        # no dublicate entries        
         if check_dublicates == True:                       
-            self.data = self.data.check_dublicates()
-        """
+            self.data = self.data.hgs.check_dublicates
+        
 
  

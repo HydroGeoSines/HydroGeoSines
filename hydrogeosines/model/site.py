@@ -7,43 +7,32 @@ from scipy.optimize import leastsq
 # import sub-classes
 from .read import Read
 
-# import extended DataFrame
-from ..ext import hgs_pd
+# import extended pandas DataFrame
+from ..ext import pandas_hgs
 #from .data import Data
 
-from .glob import const
+from .const import const
 
 #%% define a class for the investigated site
 
 class Site(Read):
-    "Optional class documentation string, can be accessed via Site.__doc__"   
-    VALID_CATEGORY = {"ET", "BP", "GW"}
+    """Optional class documentation string, can be accessed via Site.__doc__"""       
     # define all class attributes here 
-    #data_header = ["datetime", "location","category","unit","value"]
-    #data_types  = 
+    
     const       = const
     utc_offset  = {}
     
     def __init__(self, name, geoloc=None, data=None,*args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        for attr in self.VALID_CATEGORY:
-             setattr(self,f'get_{attr.lower()}_data', self.func(attr))    
-             
         # The site name
         self._name  = name
         # The Geo-Location
         self.geoloc = geoloc
         # Create a Dataframe from the extended Dataframe class "Data" 
         self.data   = data        
-
-    #@staticmethod
-    def func(self,category): 
-        @property
-        def inner():
-            return self.__get_category(category)
-        return inner   
     
+    ## setting the geoloc property    
     @property
     def geoloc(self):
         return self.__geoloc # property of self
@@ -58,7 +47,8 @@ class Site(Read):
             self.__geoloc = geoloc
         else:
             self.__geoloc = None
-
+    
+    ## setting the data property
     @property
     def data(self):
         return self.__data
@@ -72,6 +62,15 @@ class Site(Read):
                                     "unit":pd.Series([], dtype='object'),
                                     "value":pd.Series([], dtype='float')}) 
             
+        elif isinstance(data,pd.DataFrame):
+           # verify the required hgs columns exist
+           data.hgs._validate(data)
+           self.__data = data           
+        else:
+           raise Exception("Error: Input 'data' must be a pd.DataFrame")
+       
+ 
+                
     #%% slicing
     # inheritance? https://stackoverflow.com/questions/25511436/python-is-is-possible-to-have-a-class-method-that-acts-on-a-slice-of-the-class
     
@@ -79,16 +78,10 @@ class Site(Read):
         print(index)
         return self[index]
 
-    #%% general private getter private methods
-    def __get_category(self, cat):
-        return self.data[self.data['category'] == cat]
+
+    #%% Site methods
     
-    @property
-    def gw_data(self):
-        # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')        
-        return self.__get_category('GW').pivot(index='datetime', columns='location', values='value')
-    
-    
+    """
     #%% GW properties
     @property
     def gw_locs(self):
@@ -208,3 +201,4 @@ class Site(Read):
         # https://stackoverflow.com/questions/31977442/scipy-optimize-leastsq-how-to-specify-non-parameters
         # perform a fit to (start, dt) with existing data
         pass
+    """

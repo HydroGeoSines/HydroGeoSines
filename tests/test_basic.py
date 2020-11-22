@@ -6,9 +6,9 @@ acworth_site = hgs.Site('acworth', geo=[141.762065, -31.065781, 160])
 print(acworth_site.data)
 
 #%%
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', input_category=["GW","GW","GW"], utc_offset=10, unit=["M","mm","cm"], how="add", check_dublicates=True) 
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit=["hpa"], how="add", check_dublicates=False) 
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit="cm", how="add", check_dublicates=True) 
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"], how="add", check_dublicates=True) 
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit=["Hpa"], how="add", check_dublicates=False) 
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit="Cm", how="add", check_dublicates=True) 
 #acworth_site.import_csv('tests/data/fowlers_gap/acworth_et.csv', input_category='ET', utc_offset=10,  unit='nm/s^2', how="add", check_dublicates=True)
 #acworth_site.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'
 
@@ -25,9 +25,9 @@ mountain_site   = hgs.Site('MOUNTAIN', geoloc=[141.762065, -31.065781, 160])
 mountain_site.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True))
 
 ## CONTROLLER
-hals_wf         = hgs.Workflow('hals')
+hals_wf         = hgs.Processing.hals()
 ## VIEW
-terminal_output = hgs.TerminalOutput()
+#terminal_output = hgs.TerminalOutput()
 
 # Trennung von Daten und Logik, damit die Objekte nicht so riesig werden
 # NICHT: hals_wf.site.do_something()

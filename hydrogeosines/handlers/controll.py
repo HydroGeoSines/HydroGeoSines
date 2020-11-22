@@ -1,9 +1,9 @@
 import os,sys
 
-from hydrogeoscines.controllers.site import Site
-#from hydrogeoscines.view import View
+from ..model.site import Site
+from ..visualization.visualize import Visualize
 
-class Workflow(object):
+class Controller(object):
 
     def __init__(self, model, view):
         self.site  = Site
