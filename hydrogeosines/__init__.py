@@ -1,6 +1,7 @@
 from .model.site import Site
-from .visualization.visualize import Visualize 
-#from .controllers.processing import Processing 
+from .handlers.processing import Processing 
+#from .visualization.visualize import Visualize 
+
 #if __name__ == "__main__":
 #	 model = Model.Model()
 #	 view = View.View(Controller)

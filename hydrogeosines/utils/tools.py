@@ -31,3 +31,9 @@ class Tools(object):
         else:
             args_list = args
         return list(zip(arg1,*args_list)) 
+    
+    @staticmethod
+    def find_nearest_idx(array,value):
+        # find index nearest to value
+        idx = np.argmin(np.array(np.abs(array-value)))
+        return idx
