@@ -8,8 +8,10 @@ Created on Wed Sep 23 16:14:12 2020
 import os,sys
 import pandas as pd
 import numpy as np
+import warnings
 from scipy.signal import detrend as detrend_func # for lin_window_ovrlp
 
+from ..utils.tools import Tools
 
 # static class
 class Analysis(object):
@@ -17,58 +19,63 @@ class Analysis(object):
     #    pass
     
     @staticmethod
+    def quantise(signal, step):
+        return step*np.floor((signal/step)+1/2)
+    
+    @staticmethod
     def harmonic_lsqr(tf, data, freqs):        
-            '''
-            Inputs:
-                tf      - time float. Should be an N x 1 numpy array.
-                data    - estimated output. Should be an N x 1 numpy array.
-                freqs   - frequencies to look for.
-            Outputs:
-                alpha_est - estimated amplitudes of the sinusoids.
-                phi_est - estimated phases of the sinusoids.
-                error_variance - variance of the error. MSE of reconstructed signal compared to y.
-                theta - parameters such that ||y - Phi*theta|| is
-                 minimized, where Phi is the matrix defined by
-                 freqs and tt that when multiplied by theta is a
-                 sum of sinusoids.
-            '''
-            time = tf
-            y = data
-            N = y.shape[0]
-            f = freqs*2*np.pi
-            num_freqs = len(f)
-            # make sure that time vectors are relative
-            # avoiding additional numerical errors
-            time = time - np.floor(time[0])
-            # assemble the matrix
-            Phi = np.empty((N, 2*num_freqs + 1))
-            for j in range(num_freqs):
-                Phi[:,2*j] = np.cos(f[j]*time)
-                Phi[:,2*j+1] = np.sin(f[j]*time)
-            # account for any DC offsets
-            Phi[:,-1] = 1
-            # solve the system of linear equations
-            theta, residuals, rank, singular = np.linalg.lstsq(Phi, y, rcond=None)
-            # calculate the error variance
-            error_variance = residuals[0]/y.shape[0]
-            # when data is short, 'singular value' is important!
-            # 1 is perfect, larger than 10^5 or 10^6 there's a problem
-            condnum = np.max(singular) / np.min(singular)
-            # print('Conditioning number: {:,.0f}'.format(condnum))
-            if (condnum > 1e6): 
-                warnings.warn('The solution is ill-conditioned!')
-            # 	print(Phi)
-            y_hat = Phi@theta
-            # the DC component
-            dc_comp = theta[-1]
-            # create complex coefficients
-            hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
-            result = {'freq': freqs, 'comp': hals_comp, 'err_var': error_variance, 'cond_num': condnum, 'offset': dc_comp}
-            return y_hat, result
+        '''
+        Inputs:
+            tf      - time float. Should be an N x 1 numpy array.
+            data    - estimated output. Should be an N x 1 numpy array.
+            freqs   - frequencies to look for.
+        Outputs:
+            alpha_est - estimated amplitudes of the sinusoids.
+            phi_est - estimated phases of the sinusoids.
+            error_variance - variance of the error. MSE of reconstructed signal compared to y.
+            theta - parameters such that ||y - Phi*theta|| is
+             minimized, where Phi is the matrix defined by
+             freqs and tt that when multiplied by theta is a
+             sum of sinusoids.
+        '''
+        time = tf
+        y = data
+        N = y.shape[0]
+        f = freqs*2*np.pi
+        num_freqs = len(f)
+        # make sure that time vectors are relative
+        # avoiding additional numerical errors
+        time = time - np.floor(time[0])
+        # assemble the matrix
+        Phi = np.empty((N, 2*num_freqs + 1))
+        for j in range(num_freqs):
+            Phi[:,2*j] = np.cos(f[j]*time)
+            Phi[:,2*j+1] = np.sin(f[j]*time)
+        # account for any DC offsets
+        Phi[:,-1] = 1
+        # solve the system of linear equations
+        theta, residuals, rank, singular = np.linalg.lstsq(Phi, y, rcond=None)
+        # calculate the error variance
+        error_variance = residuals[0]/y.shape[0]
+        # when data is short, 'singular value' is important!
+        # 1 is perfect, larger than 10^5 or 10^6 there's a problem
+        condnum = np.max(singular) / np.min(singular)
+        # print('Conditioning number: {:,.0f}'.format(condnum))
+        if (condnum > 1e6): 
+            warnings.warn('The solution is ill-conditioned!')
+        # 	print(Phi)
+        y_hat = Phi@theta
+        # the DC component
+        dc_comp = theta[-1]
+        # create complex coefficients
+        hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
+        result = {'freq': freqs, 'comp': hals_comp, 'err_var': error_variance, 'cond_num': condnum, 'offset': dc_comp}
+        
+        return y_hat, result
         
     @staticmethod    
     def lin_window_ovrlp(tf, data, length=3, stopper=3, n_ovrlp=3):
-        """   
+        '''  
         Inputs:
             tf      - time float. Should be an N x 1 numpy array.
             data    - signal values. Should be an N x 1 numpy array.
@@ -83,7 +90,7 @@ class Analysis(object):
                 stopper values will cause reducion in window numbers at time array boundaries.
             3.  detrend window gaps are replaced with zeros    
             4.  handling of gaps (np.nan) in signal (y) that cause error in scipy detrend function
-        """
+        '''
         x           = tf
         y           = data
         y_detr      = np.zeros(shape=(y.shape[0])) 
@@ -122,3 +129,31 @@ class Analysis(object):
             print("Warning: Detrend window overlaps at t[-1] reduced to {}. Consider adjusting value of stopper or n_ovrlp.".format(counter[-1]-1))
         
         return y_detrend
+    
+    @staticmethod    
+    def fft_analys(tf,data,freqs,spd): 
+        fft_N = len(tf)
+        hanning = np.hanning(fft_N)
+        # perform FFT
+        fft_f = np.fft.fftfreq(int(fft_N), d=1/spd)[0:int(fft_N/2)]
+        # FFT windowed for amplitudes
+        fft_win   = np.fft.fft(hanning*data) # use signal with trend        
+        fft_amps = 2*(np.abs(fft_win)/(fft_N/2))[0:int(fft_N/2)]
+        fft_phs = np.angle(fft_win)[0:int(fft_N/2)] 
+        # np.fft.fft default is a cosinus input. Thus for sinus the np.angle function returns a phase with a -np.pi shift.
+        #fft_phs = fft_phs  + np.pi/2  # + np.pi/2 for a sinus signal as input
+        #fft_phs = -(np.arctan(fft_win.real/fft_win.imag)) 
+    
+        phi_fft = []
+        A_fft  = []
+        for f in freqs:
+            f_idx = Tools.find_nearest(fft_f,f)
+            A_fft.append(fft_amps[f_idx])               
+            # PHASE CORRECTION FOR TIDAL COMPONENTS
+            num_waves = (tf[-1] - tf[0] + 1/spd)*f
+            phase_corr = (num_waves - np.round(num_waves))*np.pi     
+            phi_temp = fft_phs[f_idx] - phase_corr
+            phi_temp = Tools.pi_range(phi_temp)          
+            phi_fft.append(phi_temp)
+            
+        return freqs, A_fft, phi_fft  

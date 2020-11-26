@@ -63,20 +63,11 @@ class Site(Read):
                                     "value":pd.Series([], dtype='float')}) 
             
         elif isinstance(data,pd.DataFrame):
-           # verify the required hgs columns exist
+           # verify the required hgs columns exist and that they are properly formated
+           # TODO: add unit test/conversion and datetime check -> best include in hgs._validate
            data.hgs._validate(data)
            self.__data = data           
         else:
            raise Exception("Error: Input 'data' must be a pd.DataFrame")
-       
- 
-                
-    #%% slicing
-    # inheritance? https://stackoverflow.com/questions/25511436/python-is-is-possible-to-have-a-class-method-that-acts-on-a-slice-of-the-class
-    
-    def __getitem__(self, index):
-        print(index)
-        return self[index]
-
-
+                      
     

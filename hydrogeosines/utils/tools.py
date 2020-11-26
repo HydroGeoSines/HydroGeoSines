@@ -1,4 +1,4 @@
-import pandas as pd
+#import pandas as pd
 import numpy as np 
 
 class Tools(object):
@@ -36,4 +36,17 @@ class Tools(object):
     def find_nearest_idx(array,value):
         # find index nearest to value
         idx = np.argmin(np.array(np.abs(array-value)))
-        return idx
+        return idx.astype(int)
+    
+    @staticmethod                      
+    def check_all_equal(arr):
+        return print((arr[:] == arr[0]).all(axis=0))
+    
+    @staticmethod
+    def pi_range(value):
+        value = np.array(value)
+        idx = (value < np.pi)
+        np.add.at(value,idx,2*np.pi)
+        idx = (value > np.pi)
+        np.add.at(value,idx,-2*np.pi)
+        return value

@@ -13,8 +13,7 @@ import pandas as pd
 import numpy as np
 
 from .time import Time
-from .series import Series
-#from .filters import Filter
+from .hgs_filters import HgsFilters
 
 @pd.api.extensions.register_dataframe_accessor("hgs")
 class HgsAccessor(object):
@@ -22,29 +21,34 @@ class HgsAccessor(object):
         super().__init__()
         self._validate(pandas_obj)
         self._obj   = pandas_obj
+    
+    @staticmethod
+    def _validate(obj):
+        #TODO: verify that datetime localization exists (absolut, non-naive datetime)
+        # verify there is a column datetime, location, category, unit and value
+        if not set(["datetime", "location", "category", "unit","value"]).issubset(obj.columns):
+            raise AttributeError("Must have 'datetime',location','category','unit' and 'value'.")               
         
-    ## setting the datetime property
+    ## setting datetime as a property and extending it by the Time methods
     @property
     def dt(self):
         return Time(self._obj.datetime)
+    
+    ## setting filters as a property and extending it by the HgsFilters methods
+    @property
+    def filters(self):
+        return HgsFilters(self._obj)
 
-    @staticmethod
-    def _validate(obj):
-        # verify there is a column datetime, location, category, unit and value
-        if not set(["datetime", "location", "category", "unit","value"]).issubset(obj.columns):
-            raise AttributeError("Must have 'datetime',location','category','unit' and 'value'.")    
+    @property
+    def dt_pivot(self):
+        return self.pivot_table(index=self.datetime,columns=self.filters.obj_col, values="value")    
         
     @property
-    def df_obj(self):
-        # returns df object columns as list
-        return list(self._obj.select_dtypes(include=['object']).columns)
-        
-    @property
-    def freq_median(self):
+    def spl_freq_groupby(self):
         # returns median sample frequency grouped by object-dtype columns, in minutes
         df = self._obj[self._obj.value.notnull()]
-        return df.groupby(self.df_obj)["datetime"].apply(lambda x: (x.diff(periods=1).dt.seconds.div(60)).median())
-    
+        return df.groupby(self.filters.obj_col)["datetime"].apply(lambda x: (x.diff(periods=1).dt.seconds.div(60)).median())
+       
     @property
     def check_dublicates(self):
         # search for dublicates (in rows)
@@ -72,54 +76,39 @@ class HgsAccessor(object):
             return row["value"] * self.const['_pucf'][row["unit"].lower()], "m"
         else:
             return row["value"], "m" 
+    
+    #TODO: add upsampling method with interpolation based on ffill() and/or pad()
+    def upsample(self,freq):
+        pass        
+ 
+    def resample(self, freq):
+        # resamples by group and by a given frequency in "min".
+        # should be used on the calculated median frequency of the datetime
+        out = self._obj.groupby(self.filters.obj_col).resample(str(int(freq))+"min", on="datetime").mean()
+        # reorganize index and column structure to match original hgs dataframe
+        out = out.reset_index()[self._obj.columns]
+        return out
                     
-    #%% Open for testing    
-    """    
-    for attr in VALID_CATEGORY:
-        setattr(self,f'get_{attr.lower()}_data', self.func(attr))    
-     
-    #@staticmethod
-    def func(self,category): 
-        @property
-        def inner():
-            return self.__get_category(category)
-        return inner  
-    
-    # general private getter private methods
-    def __get_category(self, cat):
-        return self.data[self.data['category'] == cat]
-    
-    @property
-    def gw_data(self):
-        # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')        
-        return self.__get_category('GW').pivot(index='datetime', columns='location', values='value')
-    """
-    
-    
+    def resample_by_group(self,freq_groupby):
+        #TODO: write logic for feq_median. It needs same length as len(cat*loc*unit)
+        # resample by median for each location and category individually
+        out = []
+        for i in range(len(freq_median)):
+            a = self._obj.loc[:,self.filters.obj_col] == freq_median.reset_index().loc[i,self.filters.obj_col]
+            a = a.values
+            a = (a == a[:, [0]]).all(axis=1)                   
+            temp = self._obj.iloc[a].groupby(self.filters.obj_col).resample(str(int(freq_median[i]))+"min", on="datetime").mean()
+            temp.reset_index(inplace=True)
+            out.append(temp) 
+        out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
+        # reorganize index and column structure to match original hgs dataframe
+        out = out.reset_index()[self._obj.columns]
+        return out     
+  
     
     """
-
-    @property
-    def dtf(self):
-        return Time.dt_num(self.datetime)
-
-    @property
-    def dts(self):
-        return self.dt_str(self.datetime)
+    #%%  needs to be rewritten and/or moved
     
-    @property
-    def dtf_utc(self):
-        return self.dt_num(self.datetime, utc=True)
-    
-    @property
-    def dts_utc(self):
-        return self.dt_str(self.datetime, utc=True)
-
-    @property
-    def spd(self):
-        return 86400/self.spl_period(self.datetime, unit='s')
-
-#%% does not belong here and needs to be rewritten
     def is_regular(self, loc: str):
         tmp = self[self['location'] == loc]['datetime']
         tmp = np.diff(self.dt_num(tmp)*86400)
@@ -129,16 +118,14 @@ class HgsAccessor(object):
         else:
             return True
     """    
-    #%% hgs methods
+    #%% hgs filters
     
     """
     #%% GW properties
     @property
     def gw_locs(self):
         return self.data[self.data['category'] == 'GW']['location'].unique()
-    
-
-        
+            
     @property
     def gw_dt(self):
         return self.data[self.data['category'] == 'GW']['datetime'].drop_duplicates().reset_index(drop=True)
@@ -252,3 +239,11 @@ class HgsAccessor(object):
         # perform a fit to (start, dt) with existing data
         pass
     """
+    
+    #%% slicing
+    # inheritance? https://stackoverflow.com/questions/25511436/python-is-is-possible-to-have-a-class-method-that-acts-on-a-slice-of-the-class
+    
+    def __getitem__(self, index):
+        print(index)
+        return self[index]
+
