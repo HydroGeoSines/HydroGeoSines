@@ -1,14 +1,19 @@
 Model
-- Datenhaltung
-- zB: Site, Data
-- It consists of pure application logic, which interacts with the database. It includes all the information to represent data to the end user.
+- Data management and storage
+- Site, Data
+- It consists of pure application logic, which interacts with the database. It includes all the information to and methods specific to the data.
 
 View
-- Formatierung / Terminal Ausgabe
-- It presents the model’s data to user.
+- Formating / terminal output / export
+- It presents the model’s data to the user.
 
-Control
-- Prozesse / Logik
-- zB: Worklfows
-- It acts as an intermediary between view and model. It listens to the events triggered by view and queries model for the same.
+Control/Handlers
+- Data processing and logic
+- It acts as an intermediary between view and model (access by user). The model is loaded into the controllers without changing the original model instance.
 
+Ext
+- Extension specific to the hgs package
+- most importantly the hgs accessor for pandas which implements all the data methods unique to hgs.
+
+Utils
+- general utilities that are not specific to hgs or the model and useful anywhere in the package
