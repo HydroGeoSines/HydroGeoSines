@@ -15,6 +15,9 @@ acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category=
 #out = acworth_site.data.dtf()
 out = acworth_site.data
 
+#%% Processing
+process_acworth = hgs.Processing(acworth_site)
+hals_results  = process_acworth.hals()
 
 #%%
 ## MODEL
