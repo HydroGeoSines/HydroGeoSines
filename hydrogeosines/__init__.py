@@ -1,4 +1,4 @@
-from .model.site import Site
+from .models.site import Site
 from .handlers.processing import Processing 
 #from .visualization.visualize import Visualize 
 

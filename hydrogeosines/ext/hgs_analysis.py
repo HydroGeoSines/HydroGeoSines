@@ -19,8 +19,8 @@ class Analysis(object):
     #    pass
     
     @staticmethod
-    def quantise(signal, step):
-        return step*np.floor((signal/step)+1/2)
+    def quantise(data, step):
+        return step*np.floor((data/step)+1/2)
     
     @staticmethod
     def harmonic_lsqr(tf, data, freqs):        

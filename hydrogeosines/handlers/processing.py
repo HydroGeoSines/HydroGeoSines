@@ -10,10 +10,10 @@ import numpy as np
 import os,sys
 
 from ..ext.hgs_analysis import Analysis
-from ..model.site import Site
+from ..models.site import Site
 #from ...view import View
 
-from ..model.const import const
+from ..models.const import const
 
 class Processing(object):
     # define all class attributes here 
