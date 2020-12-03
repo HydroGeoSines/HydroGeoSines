@@ -40,8 +40,8 @@ class HgsAccessor(object):
         return HgsFilters(self._obj)
 
     @property
-    def dt_pivot(self):
-        return self.pivot_table(index=self.datetime,columns=self.filters.obj_col, values="value")    
+    def pivot(self):
+        return self._obj.pivot_table(index=self.dt._obj,columns=self.filters.obj_col, values="value")    
         
     @property
     def spl_freq_groupby(self):
@@ -93,11 +93,11 @@ class HgsAccessor(object):
         #TODO: write logic for feq_median. It needs same length as len(cat*loc*unit)
         # resample by median for each location and category individually
         out = []
-        for i in range(len(freq_median)):
-            a = self._obj.loc[:,self.filters.obj_col] == freq_median.reset_index().loc[i,self.filters.obj_col]
+        for i in range(len(freq_groupby)):
+            a = self._obj.loc[:,self.filters.obj_col] == freq_groupby.reset_index().loc[i,self.filters.obj_col]
             a = a.values
             a = (a == a[:, [0]]).all(axis=1)                   
-            temp = self._obj.iloc[a].groupby(self.filters.obj_col).resample(str(int(freq_median[i]))+"min", on="datetime").mean()
+            temp = self._obj.iloc[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"min", on="datetime").mean()
             temp.reset_index(inplace=True)
             out.append(temp) 
         out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
@@ -106,18 +106,6 @@ class HgsAccessor(object):
         return out     
   
     
-    """
-    #%%  needs to be rewritten and/or moved
-    
-    def is_regular(self, loc: str):
-        tmp = self[self['location'] == loc]['datetime']
-        tmp = np.diff(self.dt_num(tmp)*86400)
-        idx = (tmp != tmp[0])
-        if np.any(idx):
-            return False
-        else:
-            return True
-    """    
     #%% hgs filters
     
     """

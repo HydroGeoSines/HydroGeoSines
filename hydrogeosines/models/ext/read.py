@@ -5,7 +5,7 @@ Created on Wed Sep 23 16:13:00 2020
 @author: Daniel
 """
 
-from ..utils.tools import Tools
+from ...utils.tools import Tools
 
 import pandas as pd
 import numpy as np

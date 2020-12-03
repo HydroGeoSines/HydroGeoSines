@@ -4,8 +4,8 @@ import pandas as pd
 
 from scipy.optimize import leastsq
 
-# import sub-classes
-from .read import Read
+# import additional functionalities
+from .ext.read import Read
 
 # import extended pandas DataFrame
 from ..ext import pandas_hgs
@@ -20,7 +20,7 @@ class Site(Read):
     # define all class attributes here 
     VALID_CATEGORY = {"ET", "BP", "GW"}
     const       = const
-    utc_offset  = {}
+    utc_offset  = {} # move to instance?
     
     def __init__(self, name, geoloc=None, data=None,*args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,7 +64,7 @@ class Site(Read):
             
         elif isinstance(data,pd.DataFrame):
            # verify the required hgs columns exist and that they are properly formated
-           # TODO: add unit test/conversion and datetime check -> best include in hgs._validate
+           # TODO: add unit test/ automatic conversion and datetime check -> best include in hgs._validate
            data.hgs._validate(data)
            self.__data = data           
         else:
