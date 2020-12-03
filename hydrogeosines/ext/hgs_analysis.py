@@ -38,25 +38,23 @@ class Analysis(object):
              freqs and tt that when multiplied by theta is a
              sum of sinusoids.
         '''
-        time = tf
-        y = data
-        N = y.shape[0]
+        N = data.shape[0]
         f = freqs*2*np.pi
         num_freqs = len(f)
         # make sure that time vectors are relative
         # avoiding additional numerical errors
-        time = time - np.floor(time[0])
+        tf = tf - np.floor(tf[0])
         # assemble the matrix
         Phi = np.empty((N, 2*num_freqs + 1))
         for j in range(num_freqs):
-            Phi[:,2*j] = np.cos(f[j]*time)
-            Phi[:,2*j+1] = np.sin(f[j]*time)
+            Phi[:,2*j] = np.cos(f[j]*tf)
+            Phi[:,2*j+1] = np.sin(f[j]*tf)
         # account for any DC offsets
         Phi[:,-1] = 1
         # solve the system of linear equations
-        theta, residuals, rank, singular = np.linalg.lstsq(Phi, y, rcond=None)
+        theta, residuals, rank, singular = np.linalg.lstsq(Phi, data, rcond=None)
         # calculate the error variance
-        error_variance = residuals[0]/y.shape[0]
+        error_variance = residuals[0]/N
         # when data is short, 'singular value' is important!
         # 1 is perfect, larger than 10^5 or 10^6 there's a problem
         condnum = np.max(singular) / np.min(singular)

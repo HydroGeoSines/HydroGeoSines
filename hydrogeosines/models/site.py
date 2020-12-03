@@ -64,7 +64,7 @@ class Site(Read):
             
         elif isinstance(data,pd.DataFrame):
            # verify the required hgs columns exist and that they are properly formated
-           # TODO: add unit test/conversion and datetime check -> best include in hgs._validate
+           # TODO: add unit test/ automatic conversion and datetime check -> best include in hgs._validate
            data.hgs._validate(data)
            self.__data = data           
         else:

@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_datetime64_any_dtype as is_datetime
-import pytz
 
 class HgsFilters(object):
     """
@@ -46,14 +44,13 @@ class HgsFilters(object):
             
     @property
     def is_nan(self):
-        return self['value'].isnull().values.any()
+        return self._obj['value'].isnull().values.any()
     
-    # Methods
     @property
     def drop_nan(self):              
-        return self.dropna(axis=0,how="any",subset=["value"]).reset_index(drop=True)
+        return self._obj.dropna(axis=0,how="any",subset=["value"]).reset_index(drop=True)
                
-    def remove(self,locs):
+    def drop_loc(self,locs):
         locs = np.array(locs).flatten()
-        idx = self.location.isin(locs)   
-        return self[~idx].reset_index()         
+        idx = self._obj.location.isin(locs)   
+        return self._obj[~idx].reset_index()         

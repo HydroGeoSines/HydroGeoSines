@@ -9,7 +9,7 @@ class Time(object):
     """
     ## define all class attributes here 
     # Excel origin: includes feb 29th even though it did not exist (Lotus 123 bug)
-    dt_base = "1900-01-01"
+    dt_xls = "1900-01-01"
     epoch = pd.Timestamp(1970,1,1)
     #Epoch (defined as 1 January 1970 00:00:00 at GMT timezone +00:00 offset). 
     #Epoch is anchored on the GMT timezone and therefore is an absolute point in time.
@@ -23,7 +23,16 @@ class Time(object):
     def _validate(obj):
         if not is_datetime(obj):
             raise AttributeError("Must be a 'datetime64'")
-            
+    
+    @property
+    def is_regular(self):
+        tmp = np.diff(self.to_num)
+        idx = (tmp != tmp[0])
+        if np.any(idx):
+            return False
+        else:
+            return True 
+        
     @property    
     def to_num(self):
         delta = (self._obj.dt.tz_localize(None) - self.epoch).dt
@@ -45,23 +54,23 @@ class Time(object):
     
     # what is the correct output of this method?
     @property
-    def excel2dt(self):
+    def to_num_xls(self):
         # ATTENTION: the time is rounded to the nearest second. This is due to an interface problem
         # where Excel does not offer sufficient resolution to work in Pandas
-        return (np.datetime64(self.dt_base) + pd.to_timedelta(pd.Series(self.to_float()), unit='d')).dt.round('1s')
+        return (np.datetime64(self.dt_xls) + pd.to_timedelta(pd.Series(self.to_num_ext(dt_base = self.dt_xls)), unit='d')).dt.round('1s')
        
-    def to_float(self, utc=False, dt_base=None):
+    def to_num_ext(self, utc=False, dt_base=None):
         if dt_base == None:
-            dt_base = self.dt_base
+            dt_base = self.epoch
         # calculate time difference to the base
         if utc:
             # convert to UTC and strip time zone offset
             td = (self._obj.dt.tz_convert('UTC').dt.tz_localize(None) - np.datetime64(dt_base)).dt
-            return (td.days + td.seconds/86400)
+            return (td.days + td.seconds/86400).values
         else:
             # strip time zone offset
             td = (self._obj.dt.tz_localize(None) - np.datetime64(dt_base)).dt
-            return (td.days + td.seconds/86400)
+            return (td.days + td.seconds/86400).values
     
     def to_str(self, utc=False, format="%d/%m/%Y %H:%M:%S"):
         if utc:
@@ -81,7 +90,8 @@ class Time(object):
         else:
             raise Exception("Error: Time unit must either be 'h' (hour), 'm' (minute) or 's' (second)!")
         return np.round(np.median(np.diff(self.to_num))*24*factor)
-           
+    
+   
     #data.index = pd.to_datetime(data.index.tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)) 
     """
     @property

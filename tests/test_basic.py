@@ -12,8 +12,20 @@ acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category=
 #acworth_site.import_csv('tests/data/fowlers_gap/acworth_et.csv', input_category='ET', utc_offset=10,  unit='nm/s^2', how="add", check_dublicates=True)
 #acworth_site.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'
 
-#out = acworth_site.data.dtf()
-out = acworth_site.data
+#%%
+## Model
+acworth_site = hgs.Site('acworth', geo=[141.762065, -31.065781, 160])
+# read
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', 
+                        input_category=["GW","BP","GW"], 
+                        utc_offset=10, unit=["Cm","mm","M"], 
+                        how="add", check_dublicates=True) 
+# data
+data = acworth_site.data
+# hgs methods
+data.hgs.resample(freq = 5)
+# datetime methods
+data.hgs.dt.to_num
 
 #%% Processing
 process_acworth = hgs.Processing(acworth_site)
