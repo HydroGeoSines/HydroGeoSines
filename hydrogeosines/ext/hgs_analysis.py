@@ -28,7 +28,7 @@ class Analysis(object):
         Inputs:
             tf      - time float. Should be an N x 1 numpy array.
             data    - estimated output. Should be an N x 1 numpy array.
-            freqs   - frequencies to look for.
+            freqs   - frequencies to look for. Should be a numpy array.
         Outputs:
             alpha_est - estimated amplitudes of the sinusoids.
             phi_est - estimated phases of the sinusoids.

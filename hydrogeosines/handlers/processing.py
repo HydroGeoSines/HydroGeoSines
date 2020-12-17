@@ -13,13 +13,13 @@ from ..ext.hgs_analysis import Analysis
 from ..models.site import Site
 #from ...view import View
 
-from ..models.const import const
+from ..utils.tools import Tools
 
 class Processing(object):
     # define all class attributes here 
     #attr = attr
 
-    def __init__(self, site_obj):
+    def __init__(self, site_obj, loc=None):
         self._validate(site_obj)
         self._obj   = site_obj
     
@@ -28,25 +28,21 @@ class Processing(object):
         if not isinstance(obj,Site):
             raise AttributeError("Must be a 'Site' object!")                       
             #print(id(Site)) # test id of class location to compare across package
-                
-    def hals(self, constituents = "ET", loc=None, cat=None):
-        #TODO: add loc and cat attribute. 
-        #Is it possible to choose constituents by data category and replace the conditioning below?
-        
-        if constituents is 'ET':
-            freqs = np.array(list(const['_etfqs'].values()))
-        elif constituents is 'AT':
-            freqs = np.array(list(const['_atfqs'].values()))
-        elif isinstance(constituents, (list,np.ndarray)):
-            raise Exception("Error: Variable 'freqs' must be a list or numpy array!")
-        else:
-            raise Exception("Error: Variable 'freqs' is not valid!")
+    
             
-        tf = self._obj.data.hgs.dt.to_zero
-        data = self._obj.data.value.values        
-        data = Analysis.lin_window_ovrlp(tf,data)
-        data = Analysis.harmonic_lsqr(tf, data, freqs)
-        return data
+    def hals(self, cat = "GW"):         
+        #check for non valid categories 
+        Tools.check_affiliation(cat,self._obj.VALID_CATEGORY)
+        #ET = ET, GW = {ET, AT}, BP = AT        
+        freqs = Site.freq_select(cat)
+        #TODO: define a function for this type of category extraction
+        data = self._obj.data[self._obj.data.category == cat] 
+        
+        tf      = data.hgs.dt.to_zero
+        values  = data.value.values        
+        values  = Analysis.lin_window_ovrlp(tf,values)
+        values  = Analysis.harmonic_lsqr(tf, values, freqs)
+        return values #View.table(data)
 
 
 

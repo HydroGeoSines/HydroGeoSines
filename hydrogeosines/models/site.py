@@ -18,9 +18,8 @@ from .const import const
 class Site(Read):
     """Optional class documentation string, can be accessed via Site.__doc__"""       
     # define all class attributes here 
-    VALID_CATEGORY = {"ET", "BP", "GW"}
-    const       = const
-    utc_offset  = {} # move to instance?
+    VALID_CATEGORY  = {"ET", "BP", "GW"}
+    const           = const    
     
     def __init__(self, name, geoloc=None, data=None,*args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,7 +29,9 @@ class Site(Read):
         # The Geo-Location
         self.geoloc = geoloc
         # Create a Dataframe from the extended Dataframe class "Data" 
-        self.data   = data        
+        self.data   = data  
+        # UTC offset
+        self.utc_offset = {} # move to instance?
     
     ## setting the geoloc property    
     @property
@@ -70,4 +71,15 @@ class Site(Read):
         else:
            raise Exception("Error: Input 'data' must be a pd.DataFrame")
                       
+    #%% Site specific functions
+    @staticmethod
+    def freq_select(cat):
+        # returns a set of unique frequency values for a given input category
+        freqs = []
+        if cat in ("ET","GW"):
+            freqs.append(const['_etfqs'].values())
+        if cat in ("AT","GW"):
+            freqs.append(const['_atfqs'].values())
+        #flatten list of lists and return unique values
+        return np.array(list(dict.fromkeys([item for sublist in freqs for item in sublist])))
     

@@ -32,7 +32,13 @@ class Time(object):
             return False
         else:
             return True 
-        
+   
+    @property
+    def unique(self):
+        # similar to check_dublicates function, adapted from Gabriels dt_overlap method
+        no_dublicates = self._obj.drop_duplicates(keep='first',inplace=False)
+        return no_dublicates
+    
     @property    
     def to_num(self):
         delta = (self._obj.dt.tz_localize(None) - self.epoch).dt

@@ -25,7 +25,9 @@ class HgsAccessor(object):
     @staticmethod
     def _validate(obj):
         #TODO: verify that datetime localization exists (absolut, non-naive datetime)
+        #TODO: varify that only valid data categories exist!
         # verify there is a column datetime, location, category, unit and value
+        
         if not set(["datetime", "location", "category", "unit","value"]).issubset(obj.columns):
             raise AttributeError("Must have 'datetime',location','category','unit' and 'value'.")               
         
@@ -42,12 +44,19 @@ class HgsAccessor(object):
     @property
     def pivot(self):
         return self._obj.pivot_table(index=self.dt._obj,columns=self.filters.obj_col, values="value")    
-        
+    
+    #@property
+    #def make_regular(self):
+    #    tmp = self.pivot
+    #    period = self.dt.spl_freq(tmp.index.to_series())
+    #    tmp = tmp.resample('{:.0f}S'.format(period)).asfreq()
+    #    return tmp  
+    
     @property
     def spl_freq_groupby(self):
-        # returns median sample frequency grouped by object-dtype columns, in minutes
+        # returns median sample frequency grouped by object-dtype columns, in seconds
         df = self._obj[self._obj.value.notnull()]
-        return df.groupby(self.filters.obj_col)["datetime"].apply(lambda x: (x.diff(periods=1).dt.seconds.div(60)).median())
+        return df.groupby(self.filters.obj_col)["datetime"].apply(lambda x: (x.diff(periods=1).dt.seconds).median())
        
     @property
     def check_dublicates(self):
@@ -58,7 +67,7 @@ class HgsAccessor(object):
         else:
             print("No dublicates being found ...")
             return self._obj
-
+    
     def unit_converter_vec(self,unit_dict : dict):  
         # adjust values based on a unit conversion factor dictionary
         return self._obj.value*np.vectorize(unit_dict.__getitem__)(self._obj.unit.str.lower())
@@ -82,22 +91,22 @@ class HgsAccessor(object):
         pass        
  
     def resample(self, freq):
-        # resamples by group and by a given frequency in "min".
-        # should be used on the calculated median frequency of the datetime
-        out = self._obj.groupby(self.filters.obj_col).resample(str(int(freq))+"min", on="datetime").mean()
+        # resamples by group and by a given frequency in "seconds".
+        # should be used on the (calculated) median frequency of the datetime
+        out = self._obj.groupby(self.filters.obj_col).resample(str(int(freq))+"S", on="datetime").mean()
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
         return out
                     
     def resample_by_group(self,freq_groupby):
-        #TODO: write logic for feq_median. It needs same length as len(cat*loc*unit)
+        #TODO: write validation logic for freq_groupby. It must be same length as len(cat*loc*unit)
         # resample by median for each location and category individually
         out = []
         for i in range(len(freq_groupby)):
             a = self._obj.loc[:,self.filters.obj_col] == freq_groupby.reset_index().loc[i,self.filters.obj_col]
             a = a.values
             a = (a == a[:, [0]]).all(axis=1)                   
-            temp = self._obj.iloc[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"min", on="datetime").mean()
+            temp = self._obj.iloc[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime").mean()
             temp.reset_index(inplace=True)
             out.append(temp) 
         out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
@@ -106,8 +115,7 @@ class HgsAccessor(object):
         return out     
   
     
-    #%% hgs filters
-    
+    #%% hgs filters    
     """
     #%% GW properties
     @property
@@ -158,19 +166,10 @@ class HgsAccessor(object):
             return False
     
     @property
-    def dt_overlap(self):
-        idx = self.data.duplicated(subset='datetime', keep='first')
-        return self.data.loc[idx, 'datetime'].reset_index(drop=True)
-
-    @property
     def dt_pivot(self):
         return self.data.pivot(index='datetime', columns=['location'], values='value')
 
-    #def make_regular(self):
-    #    tmp = self.dt_pivot
-    #    period = Time.spl_period(tmp.index.to_series())
-    #    tmp = tmp.resample('{:.0f}S'.format(period)).asfreq()
-    #    return tmp
+    
     
     @property
     # https://traces.readthedocs.io/en/master/examples.html
