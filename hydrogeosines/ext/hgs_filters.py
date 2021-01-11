@@ -5,11 +5,21 @@ class HgsFilters(object):
     """
     An extension that features hgs filters by category and location
     """
-
+    VALID_CATEGORY  = {"ET", "BP", "GW"}
+    
     def __init__(self,hgs_obj):        
         ## add attribute specific to Time here   
         #self._validate(hgs_obj)
         self._obj = hgs_obj
+        
+        # dynamically set a attribute that uses a function to access existing data categories
+        for attr in self._obj.category.unique():
+            setattr(self,f'get_{attr.lower()}_data', self.make_attr(attr))                   
+     
+    def make_attr(self,category):
+        def inner():
+            return self._obj[self._obj['category'] == category]
+        return inner  
     
     #@staticmethod
     #def _validate(obj):
@@ -21,21 +31,9 @@ class HgsFilters(object):
         # returns df object columns as list
         return list(self._obj.select_dtypes(include=['object']).columns)
     #%% Open for testing    
-    """    
-    for attr in VALID_CATEGORY:
-        setattr(self,f'get_{attr.lower()}_data', self.func(attr))    
-     
-    #@staticmethod
-    def func(self,category): 
-        @property
-        def inner():
-            return self.__get_category(category)
-        return inner  
-    
-    # general private getter private methods
-    def __get_category(self, cat):
-        return self.data[self.data['category'] == cat]
-    
+       
+
+    """
     @property
     def gw_data(self):
         # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')        
