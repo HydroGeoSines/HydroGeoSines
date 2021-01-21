@@ -93,7 +93,7 @@ class ET(object):
             # !!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
             # change working directory back to normal ...
             os.chdir('..')
-        except ImportError as e:
+        except ImportError:
             raise ValueError('Error: The PyGTide module was not found!')
         pass
         
