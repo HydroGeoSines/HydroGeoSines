@@ -58,7 +58,6 @@ class Read(object):
                 
         # add utc_offset to site instead of data, to keep number of columns at a minimum
         self.utc_offset.update(dict(Tools.zip_formatter(locations, utc_offset)))
-        
 
         # how to use the data       
         if how == "add":
@@ -78,5 +77,3 @@ class Read(object):
         if check_dublicates == True:                       
             self.data = self.data.hgs.check_dublicates
         
-
- 

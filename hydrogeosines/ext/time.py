@@ -35,15 +35,25 @@ class Time(object):
    
     @property
     def unique(self):
-        # similar to check_dublicates function, adapted from Gabriels dt_overlap method
-        no_dublicates = self._obj.drop_duplicates(keep='first',inplace=False)
-        return no_dublicates
+        # similar to check_dublicates function, adapted from Gabriel's dt_overlap method
+        no_duplicates = self._obj.drop_duplicates(keep='first', inplace=False)
+        return no_duplicates
+
+    @property
+    def unique_utc(self):
+        # similar to check_dublicates function, adapted from Gabriel's dt_overlap method
+        no_duplicates = self._obj.drop_duplicates(keep='first', inplace=False)
+        return pd.Series(no_duplicates).dt.tz_convert('UTC')
     
     @property    
     def to_num(self):
         delta = (self._obj.dt.tz_localize(None) - self.epoch).dt
         num = delta.days + (delta.seconds / (60*60*24))
         return num.values 
+
+    @property    
+    def to_utc(self):
+        return pd.Series(self._obj).dt.tz_convert('UTC')
     
     @property
     def to_zero(self):
@@ -55,7 +65,7 @@ class Time(object):
     
     #only for testing the methods internally
     @property
-    def get_timezone(self):
+    def get_tz(self):
         return self._obj.dt.tz
     
     # what is the correct output of this method?

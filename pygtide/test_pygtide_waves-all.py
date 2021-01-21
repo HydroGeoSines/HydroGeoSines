@@ -16,7 +16,7 @@ duration = 60*24
 splrate = 3600
 
 # run ETERNA PREDICT
-pt.predict(lat, lon, height, start, duration, splrate)
+pt.predict(lat, lon, height, start, duration, splrate, tidalcomp=-1)
 
 # retrieve the results as dataframe
 data = pt.results()

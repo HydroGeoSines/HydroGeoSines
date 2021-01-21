@@ -6,6 +6,7 @@ from scipy.optimize import leastsq
 
 # import additional functionalities
 from .ext.read import Read
+from .ext.et import ET
 
 # import extended pandas DataFrame
 from ..ext import pandas_hgs
@@ -15,7 +16,7 @@ from .const import const
 
 #%% define a class for the investigated site
 
-class Site(Read):
+class Site(Read, ET):
     """Optional class documentation string, can be accessed via Site.__doc__"""       
     # define all class attributes here 
     VALID_CATEGORY  = {"ET", "BP", "GW"}

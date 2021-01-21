@@ -115,6 +115,7 @@ class pygtide(object):
         self.fortran_version = etpred.inout.vers.astype(str)
         #print(str(etpred.params.comdir, 'UTF-8').strip())
         self.data_dir = str(etpred.params.comdir, 'UTF-8').strip() + str(etpred.params.pathsep, 'UTF-8').strip()
+        # print(etpred.params.comdir)
         self.args = []
         
         #%% capture end date of file "etddt.dat" from module
