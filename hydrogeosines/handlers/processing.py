@@ -24,6 +24,25 @@ class Processing(object):
         self._obj   = site_obj
     
     @staticmethod
+    def BE_method(data, method, derivative=True):
+        if derivatives==True:
+           X, Y = np.diff(data.BE), np.diff(GW) # need to also divide by the time step length
+        else:
+           X, Y = data.BE, data.GW
+        if method.lower()=='average of ratios':
+            result = Analysis.BE_average_of_ratios(data)
+        elif method.lower()=='median of ratios':
+            result = Analysis.BE_median_of_ratios(data)
+        elif method.lower()=='linear regression':
+            result = Analysis.BE_linear_regression(data)
+        elif method.lower()=='clark':
+            result = Analysis.BE_Clark(data)
+        elif method.lower()=='rahi':
+            result = Analysis.BE_Rahi(data)
+        elif method.lower()=='quilty and roeloffs':
+            result = Analysis.BE_Quilty_and_Roeloffs(data)
+    
+    @staticmethod
     def _validate(obj):
         if not isinstance(obj,Site):
             raise AttributeError("Must be a 'Site' object!")                       
