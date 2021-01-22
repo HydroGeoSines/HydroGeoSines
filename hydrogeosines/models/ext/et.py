@@ -24,7 +24,8 @@ class ET(object):
         #add attributes specific to Load here
         #self.attribute = variable            
            
-    def add_ET(self, et_comp='pot', et_cat=7):     
+    def add_ET(self, et_comp='pot', et_cat=8, waves=None):
+        # check if PyGTide is available
         try:
             # print(sys.path)
             sys.path.append(os.path.abspath(os.path.join('pygtide')))
@@ -37,18 +38,16 @@ class ET(object):
                 et_comp_i = 0
             else:
                 raise Exception("Error: Keyword 'et_comp' most be 'pot' (potential) or 'g' (gravity)!")
-    
-            et_unit = {-1: 'm**2/s**2', 0: 'nm/s**2', 1: 'mas', 2: 'mm', 3: 'mm',
-                       4: 'nstr', 5: 'nstr', 6: 'nstr', 7: 'nstr', 8: 'nstr', 9: 'mm'}
+            et_unit = {-1: 'm**2/s**2', 0: 'nm/s**2', 1: 'mas', 2: 'mm', 3: 'mm', 4: 'nstr', 5: 'nstr', 6: 'nstr', 7: 'nstr', 8: 'nstr', 9: 'mm'}
             if (self.geoloc == None):
                 raise Exception('Error: Geo-location (WGS84 longitude, latitude and height) must be set!')
             
             # !!!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
             # change the current directory for PyGTide to work properly
             os.chdir('pygtide')
+            # !!!!!!!!!!!!!!!!!
             # create a PyGTide object
             pt = pygtide()
-
             # convert to UTC
             dt_utc = self.data.hgs.dt.unique_utc
             # define the start date in UTC
@@ -61,27 +60,32 @@ class ET(object):
             samplerate = int(np.median(np.diff(dt_utc_s)))
             # set the recommended wave groups
             # as implemented in the wrapper
-            pt.set_wavegroup()
-            #pt.reset_wavegroup()
+            if waves is None:
+                pt.set_wavegroup()
+            else:
+                # pt.set_wavegroup(wavedata = np.array([[0.8, 2.2, 1., 0.]]))
+                pt.set_wavegroup(wavedata = waves)
             pt.predict(self.geoloc[1], self.geoloc[0], self.geoloc[2], start, duration, samplerate, tidalcompo=et_comp_i, tidalpoten=et_cat)
             # retrieve the results as dataframe
             data = pt.results()
-            # print(data.iloc[-150:-100, 0:3])
+            # print(data.iloc[:30, 0:3])
             # convert time to floating point for matching
             td = (data['UTC'] - pd.to_datetime('1899-12-30', utc=True)).dt
             et_utc_tf = td.days + td.seconds/86400
-            #% interpolate the Earth tide data (cubic spline)
-            et_interp = interp1d(et_utc_tf, data['Signal [(m/s)**2]'].values, kind='cubic')
+            # !!! to allow irregular time stamps, interpolate the Earth tide data (cubic spline)
+            et_interp = interp1d(et_utc_tf, data.iloc[:, 1].values, kind='cubic')
             et = et_interp(dt_utc_tf)
             
             #######################################################
             # MERGE EARTH TIDES WITH WITH LONG TABLE
             et_data = pd.DataFrame({'datetime': dt_utc, 'value': et})
             et_data['category'] = 'ET'
-            et_data['location'] = ''
+            et_data['location'] = 'ET'
             et_data['unit'] = et_unit[et_comp_i]
-            # kill existing values
+            # print(et_data.iloc[:30, 0:3])
+            # kill existing ET values
             self.data.drop(self.data[self.data.category == 'ET'].index, inplace=True)
+            # add new ET values
             self.data = self.data.append(et_data)
             # sort data in a standard way -> easier to read
             self.data.sort_values(by=["location", "category"], inplace=True)
@@ -93,7 +97,8 @@ class ET(object):
             # !!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
             # change working directory back to normal ...
             os.chdir('..')
+            # !!!!!!!!!!!!!!!!!
         except ImportError:
-            raise ValueError('Error: The PyGTide module was not found!')
+            raise Exception('Error: The PyGTide module was not found!')
         pass
         

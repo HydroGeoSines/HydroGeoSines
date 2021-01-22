@@ -2,7 +2,7 @@ import hydrogeosines as hgs
 
 #%%  Testing MVC principal
 ## MODEL
-acworth_site = hgs.Site('acworth', geoloc=[141.762065, -31.065781, 160])	
+acworth_site = hgs.Site('acworth', geoloc=[141.762065, -31.065781, 160])
 print(acworth_site.data)
 
 #%%
@@ -16,15 +16,14 @@ acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category=
 ## Model
 acworth_site = hgs.Site('acworth', geoloc=[141.762065, -31.065781, 160])
 # read
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', 
-                        input_category=["GW","BP","GW"], 
-                        utc_offset=10, unit=["Cm","mm","M"], header = ["Site_A","Site_B","Site_C"],
-                        how="add", check_dublicates=True)
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv',
+                        input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"],
+                        header = ["Site_A","Site_B","Site_C"], how="add", check_dublicates=True)
 
 # data
 data = acworth_site.data
 # hgs methods
-data.hgs.resample(freq = 5)
+data.hgs.resample(freq=5)
 # datetime methods
 data.hgs.dt.to_num
 
@@ -37,7 +36,6 @@ acworth_site.add_ET()
 data = acworth_site.data
 
 #%% Processing
+print("HALS ...")
 process_acworth = hgs.Processing(acworth_site)
 hals_results  = process_acworth.hals()
-
-

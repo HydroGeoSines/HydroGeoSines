@@ -49,8 +49,8 @@ class Time(object):
     def to_num(self):
         delta = (self._obj.dt.tz_localize(None) - self.epoch).dt
         num = delta.days + (delta.seconds / (60*60*24))
-        return num.values 
-
+        return num.values
+    
     @property    
     def to_utc(self):
         return pd.Series(self._obj).dt.tz_convert('UTC')
@@ -58,7 +58,7 @@ class Time(object):
     @property
     def to_zero(self):
         t = pd.to_numeric(self._obj)
-        t = t - t[0]
+        t = t - t.iloc[0]
         t = t / 10**9 # from ns to seconds
         t = t / (60*60*24) # to days
         return t.values
