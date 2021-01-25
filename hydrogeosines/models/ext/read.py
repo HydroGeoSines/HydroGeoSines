@@ -23,11 +23,11 @@ class Read(object):
     def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", header=None, check_dublicates=False):        
         
         #check for non valid categories 
-        Tools.check_affiliation(input_category,self.VALID_CATEGORY)
+        Tools.check_affiliation(input_category, self.VALID_CATEGORY)
         
         #check for non valid pressure units (GW,BP)
         if any(cat in input_category for cat in ("GW","BP")):
-            Tools.check_affiliation([u.lower() for u in np.array(unit).flatten()],self.const['_pucf'].keys())
+            Tools.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_pucf'].keys())
         
         #check for non valid accelaration units (ET)
         if any(cat in input_category for cat in ("ET")):
@@ -35,7 +35,11 @@ class Read(object):
             pass                       
             
         # load the csv file into variable
-        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header=0, names=header)
+        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header=0)
+        # ignore column numbers beyond input length
+        ncols = len(input_category)
+        data = data.iloc[:, 0:ncols]
+        print(data)
         data.index.rename(name="datetime",inplace=True) # streamline datetime name
             
         # make sure the first column is a correctly identified datetime    
@@ -47,7 +51,7 @@ class Read(object):
         
         # format table with multiindex and melt
         locations = data.columns
-        header = Tools.zip_formatter(locations,input_category,unit)
+        header = Tools.zip_formatter(locations, input_category, unit)
         data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])                
         data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower) 
 
@@ -58,7 +62,6 @@ class Read(object):
                 
         # add utc_offset to site instead of data, to keep number of columns at a minimum
         self.utc_offset.update(dict(Tools.zip_formatter(locations, utc_offset)))
-        
 
         # how to use the data       
         if how == "add":
@@ -78,5 +81,3 @@ class Read(object):
         if check_dublicates == True:                       
             self.data = self.data.hgs.check_dublicates
         
-
- 
