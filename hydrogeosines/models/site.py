@@ -6,6 +6,7 @@ from scipy.optimize import leastsq
 
 # import additional functionalities
 from .ext.read import Read
+from .ext.et import ET
 
 # import extended pandas DataFrame
 from ..ext import pandas_hgs
@@ -15,13 +16,13 @@ from .const import const
 
 #%% define a class for the investigated site
 
-class Site(Read):
+class Site(Read, ET):
     """Optional class documentation string, can be accessed via Site.__doc__"""       
     # define all class attributes here 
     VALID_CATEGORY  = {"ET", "BP", "GW"}
-    const           = const    
+    const           = const
     
-    def __init__(self, name, geoloc=None, data=None,*args, **kwargs):
+    def __init__(self, name, geoloc=None, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
         # The site name
@@ -29,7 +30,7 @@ class Site(Read):
         # The Geo-Location
         self.geoloc = geoloc
         # Create a Dataframe from the extended Dataframe class "Data" 
-        self.data   = data  
+        self.data   = data
         # UTC offset
         self.utc_offset = {} # move to instance?
     
@@ -53,24 +54,22 @@ class Site(Read):
     @property
     def data(self):
         return self.__data
-       
+    
     @data.setter
     def data(self,data):
         if data is None:
-            self.__data = pd.DataFrame({"datetime":pd.Series([], dtype="datetime64[ns]"),
-                                    "location":pd.Series([], dtype='object'),
-                                    "category":pd.Series([], dtype='object'),
-                                    "unit":pd.Series([], dtype='object'),
-                                    "value":pd.Series([], dtype='float')}) 
-            
-        elif isinstance(data,pd.DataFrame):
+            self.__data = pd.DataFrame({"datetime": pd.Series([], dtype="datetime64[ns]"),
+                             "location": pd.Series([], dtype='object'), "category": pd.Series([], dtype='object'),
+                             "unit": pd.Series([], dtype='object'), "value": pd.Series([], dtype='float')}) 
+        
+        elif isinstance(data, pd.DataFrame):
            # verify the required hgs columns exist and that they are properly formated
            # TODO: add unit test/ automatic conversion and datetime check -> best include in hgs._validate
            data.hgs._validate(data)
            self.__data = data           
         else:
            raise Exception("Error: Input 'data' must be a pd.DataFrame")
-                      
+        
     #%% Site specific functions
     # because constants are attributed to site
     @staticmethod

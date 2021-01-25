@@ -42,7 +42,7 @@ class HgsAccessor(object):
 
     @property
     def pivot(self):
-        return self._obj.pivot_table(index=self.dt._obj,columns=self.filters.obj_col, values="value")    
+        return self._obj.pivot_table(index=self.dt._obj, columns=self.filters.obj_col, values="value")    
     
     #@property
     #def make_regular(self):
@@ -111,7 +111,7 @@ class HgsAccessor(object):
         out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
-        return out     
+        return out  
 
     #%% hgs filters    
     """

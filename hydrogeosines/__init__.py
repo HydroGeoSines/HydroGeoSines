@@ -1,5 +1,5 @@
 from .models.site import Site
-from .handlers.processing import Processing 
+from .handlers.processing import Processing
 #from .visualization.visualize import Visualize 
 
 #if __name__ == "__main__":
