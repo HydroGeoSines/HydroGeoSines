@@ -38,14 +38,20 @@ class Time(object):
         # similar to check_dublicates function, adapted from Gabriel's dt_overlap method
         no_duplicates = self._obj.drop_duplicates(keep='first', inplace=False)
         return no_duplicates
+
+    @property
+    def unique_utc(self):
+        # similar to check_dublicates function, adapted from Gabriel's dt_overlap method
+        no_duplicates = self._obj.drop_duplicates(keep='first', inplace=False)
+        return pd.Series(no_duplicates).dt.tz_convert('UTC')
     
-    @property    
+    @property
     def to_num(self):
         delta = (self._obj.dt.tz_localize(None) - self.epoch).dt
         num = delta.days + (delta.seconds / (60*60*24))
         return num.values
     
-    @property    
+    @property
     def to_utc(self):
         return pd.Series(self._obj).dt.tz_convert('UTC')
     
