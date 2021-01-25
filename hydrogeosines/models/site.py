@@ -34,12 +34,6 @@ class Site(Read, ET):
         # UTC offset
         self.utc_offset = {} # move to instance?
 
-        # dynamically set a attribute that uses a function to access existing data categories
-        for attr in self.VALID_CATEGORY:
-            setattr(self,f'get_{attr.lower()}_data', self.make_attr(attr))
-
-        #for attr in self.VALID_CATEGORY:
-        #    self.__dict__[attr] = self.data[self.data['category'] == attr]
     ## setting the geoloc property
     @property
     def geoloc(self):
@@ -65,8 +59,10 @@ class Site(Read, ET):
     def data(self,data):
         if data is None:
             self.__data = pd.DataFrame({"datetime": pd.Series([], dtype="datetime64[ns]"),
-                             "location": pd.Series([], dtype='object'), "category": pd.Series([], dtype='object'),
-                             "unit": pd.Series([], dtype='object'), "value": pd.Series([], dtype='float')})
+                                        "category": pd.Series([], dtype='object'),
+                                        "location": pd.Series([], dtype='object'), 
+                                        "unit": pd.Series([], dtype='object'), 
+                                        "value": pd.Series([], dtype='float')})
 
         elif isinstance(data, pd.DataFrame):
            # verify the required hgs columns exist and that they are properly formated
@@ -75,12 +71,6 @@ class Site(Read, ET):
            self.__data = data
         else:
            raise Exception("Error: Input 'data' must be a pd.DataFrame")
-
-    #%% dynamic data type function for categories
-    def make_attr(self,category):
-        def inner():
-            return self.data[self.data['category'] == category]
-        return inner
 
     #%% Site specific functions
     # because constants are attributed to site

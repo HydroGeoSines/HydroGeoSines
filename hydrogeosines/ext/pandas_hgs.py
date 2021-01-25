@@ -27,7 +27,7 @@ class HgsAccessor(object):
         #TODO: verify that datetime localization exists (absolut, non-naive datetime)
         #TODO: varify that only valid data categories exist!
         # verify there is a column datetime, location, category, unit and value        
-        if not set(["datetime", "location", "category", "unit","value"]).issubset(obj.columns):
+        if not set(["datetime", "category","location","unit","value"]).issubset(obj.columns):
             raise AttributeError("Must have 'datetime',location','category','unit' and 'value'.")               
         
     ## setting datetime as a property and extending it by the Time methods

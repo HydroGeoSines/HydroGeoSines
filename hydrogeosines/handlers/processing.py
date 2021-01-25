@@ -31,9 +31,11 @@ class Processing(object):
             #print(id(Site)) # test id of class location to compare across package
     
     def BE_method(self, method, derivative=True):
-        # TODO check for BE data
-        X = self._obj.get_bp_data()
-        Y = self._obj.get_bw_data()
+        data = self._obj.data.hgs.pivot
+        if any(cat not in data.columns for cat in ("GW","BP")):
+            raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
+        X = self._obj.data.hgs.filters.get_bp_values()
+        Y = self._obj.data.hgs.filters.get_gw_values()
         
         if derivative==True:
            X, Y = np.diff(X), np.diff(Y) # need to also divide by the time step length

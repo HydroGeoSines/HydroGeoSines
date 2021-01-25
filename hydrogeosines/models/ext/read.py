@@ -20,7 +20,7 @@ class Read(object):
         #add attributes specific to Load here
         #self.attribute = variable            
            
-    def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", header=None, check_dublicates=False):        
+    def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", names=None, check_dublicates=False):        
         
         #check for non valid categories 
         Tools.check_affiliation(input_category, self.VALID_CATEGORY)
@@ -36,10 +36,11 @@ class Read(object):
             
         # load the csv file into variable
         data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header=0)
+       
         # ignore column numbers beyond input length
         ncols = len(input_category)
-        data = data.iloc[:, 0:ncols]
-        print(data)
+        data = data.iloc[:, :ncols]
+
         data.index.rename(name="datetime",inplace=True) # streamline datetime name
             
         # make sure the first column is a correctly identified datetime    
@@ -50,10 +51,13 @@ class Read(object):
         data.index = pd.to_datetime(data.index.tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)) 
         
         # format table with multiindex and melt
-        locations = data.columns
-        header = Tools.zip_formatter(locations, input_category, unit)
-        data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])                
-        data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower) 
+        if names != None:
+            locations = names
+        else:
+            locations = data.columns
+        header = Tools.zip_formatter(input_category, locations, unit)
+        data.columns = pd.MultiIndex.from_tuples(header, names=["category","location","unit"])                
+        data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["category","location","unit"], value_name="value").rename(columns=str.lower) 
 
         # reformat unit column to SI units
         #data["value"], data["unit"] = zip(*data.apply(self.pucf_converter,axis=1)) # looping

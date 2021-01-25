@@ -14,11 +14,11 @@ class HgsFilters(object):
         
         # dynamically set a attribute that uses a function to access existing data categories
         for attr in self._obj.category.unique():
-            setattr(self,f'get_{attr.lower()}_data', self.make_attr(attr))                   
+            setattr(self,f'get_{attr.lower()}_values', self.make_attr(attr))                   
      
     def make_attr(self,category):
         def inner():
-            return self._obj[self._obj['category'] == category]
+            return self._obj[self._obj['category'] == category].value.values
         return inner  
     
     #@staticmethod
