@@ -26,8 +26,7 @@ class HgsAccessor(object):
     def _validate(obj):
         #TODO: verify that datetime localization exists (absolut, non-naive datetime)
         #TODO: varify that only valid data categories exist!
-        # verify there is a column datetime, location, category, unit and value
-        
+        # verify there is a column datetime, location, category, unit and value        
         if not set(["datetime", "location", "category", "unit","value"]).issubset(obj.columns):
             raise AttributeError("Must have 'datetime',location','category','unit' and 'value'.")               
         
@@ -112,8 +111,8 @@ class HgsAccessor(object):
         out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
-        return out
-    
+        return out  
+
     #%% hgs filters    
     """
     #%% GW properties

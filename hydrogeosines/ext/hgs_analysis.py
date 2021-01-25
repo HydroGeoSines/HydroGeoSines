@@ -22,6 +22,108 @@ class Analysis(object):
     #    pass
     
     @staticmethod
+    def BE_average_of_ratios(X, Y):
+        '''  
+        Inputs:
+            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            
+        Outputs:
+            result      - scalar. Instantaneous barometric efficiency calculated as the mean ratio of measured values or temporal derivatives.
+        '''
+        result = np.mean(np.divide(Y, X, out=np.zeros_like(Y), where=X!=0))
+        return result
+    
+    @staticmethod
+    def BE_median_of_ratios(X, Y):
+        '''  
+        Inputs:
+            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        
+        Outputs:
+            result      - scalar. Instantaneous barometric efficiency calculated as the median ratio of measured values or temporal derivatives.
+        '''
+        result = np.median(np.divide(Y, X, out=np.zeros_like(Y), where=X!=0))
+        return result
+
+    @staticmethod
+    def BE_linear_regression(X, Y):
+        '''  
+        Inputs:
+            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        
+        Outputs:
+            result      - scalar. Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
+        '''
+        result = np.linregress(Y, X)[0]
+        return result
+
+    @staticmethod
+    def BE_Clark(X, Y):
+        '''  
+        Inputs:
+            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        
+        Outputs:
+            result      - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+        '''
+        sX, sY = [0], [0]
+        for x,y in zip(X, Y):
+            sX.append(sX[-1]+abs(x))
+            if x==0:
+                sY.append(sY[-1])
+            elif np.sign(y)==np.sign(x):
+                sY.append(sY[-1]+abs(y))
+            elif np.sign(y)!=np.sign(x):
+                sY.append(sY[-1]-abs(y))
+        result = np.abs(np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0))
+        return result
+
+    @staticmethod
+    def BE_Rahi(X, Y):
+        '''  
+        Inputs:
+            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        
+        Outputs:
+            result      - scalar. Instantaneous barometric efficiency calculated using the Rahi (2010) method using measured values or temporal derivatives.
+        '''
+        sX, sY = [0], [0]
+        for x,y in zip(X, Y):
+            if (np.sign(y)==np.sign(x)) & (abs(y)<abs(x)):
+                sY.append(sY[-1]+abs(y))
+                sX.append(sX[-1]+abs(x))
+            else:
+                sY.append(sY[-1])
+                sX.append(sX[-1])
+        result = np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0))
+        return result
+
+    @staticmethod
+    def BE_Quilty_and_Roeloffs(X, Y, freq, noverlap):
+        '''  
+        Inputs:
+            X           - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y           - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            freq        - float. The frequency of interest.
+            nperseg     - integer. The "number per segment".
+            noverlap    - integer. The amount of "overlap" used when calculating power and cross sepctral density outputs.
+        
+        Outputs:
+            result      - scalar. Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
+        '''
+        psd_f, psd_p = welch(X,  fs=Fs, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
+        csd_f, csd_p = csd(X, Y, fs=Fs, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
+        result = np.abs(np.real(csd_p))/psd_p
+        outfreq = csd_f[np.abs(csd_f-round(freq, 4)).argmin()]
+	result = result[csd_f==outfreq][0] 
+        return result
+        
+    @staticmethod
     def quantise(data, step):
         return step*np.floor((data/step)+1/2)
     

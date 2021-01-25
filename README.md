@@ -2,11 +2,13 @@
 
 ## Signal In The Noise Exploration Software (SINES) for Hydrogeological Datasets
 
-A collaborative effort by: 
-* Chris Turnadge - CSIRO (Australia)
+Developed by:
 * Gabriel C. Rau - Karlsruhe Institute of Technology (Germany) and UNSW Sydney (Australia)
-* Todd Rasmussen - University of Georgia (USA)
 * Daniel Schweizer - Karlsruhe Institute of Technology (Germany)
+* Chris Turnadge - CSIRO (Australia)
+* Todd Rasmussen - University of Georgia (USA)
+
+With collaborative contributions by:
 * Jose Bastias - Karlsruhe Institute of Technology (Germany)
 * Jonathan Kennel - University of Guelph (Canada)
 
