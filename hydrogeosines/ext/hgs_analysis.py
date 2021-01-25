@@ -100,7 +100,7 @@ class Analysis(object):
             else:
                 sY.append(sY[-1])
                 sX.append(sX[-1])
-        result = np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0))
+        result = np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0)
         return result
 
     @staticmethod
@@ -120,7 +120,7 @@ class Analysis(object):
         csd_f, csd_p = csd(X, Y, fs=Fs, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
         result = np.abs(np.real(csd_p))/psd_p
         outfreq = csd_f[np.abs(csd_f-round(freq, 4)).argmin()]
-	result = result[csd_f==outfreq][0] 
+        ult = result[csd_f==outfreq][0] 
         return result
         
     @staticmethod
