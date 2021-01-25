@@ -32,7 +32,13 @@ class Site(Read):
         self.data   = data  
         # UTC offset
         self.utc_offset = {} # move to instance?
+        
+        # dynamically set a attribute that uses a function to access existing data categories
+        for attr in self.VALID_CATEGORY:
+            setattr(self,f'get_{attr.lower()}_data', self.make_attr(attr))
     
+        #for attr in self.VALID_CATEGORY:
+        #    self.__dict__[attr] = self.data[self.data['category'] == attr]                    
     ## setting the geoloc property    
     @property
     def geoloc(self):
@@ -70,7 +76,13 @@ class Site(Read):
            self.__data = data           
         else:
            raise Exception("Error: Input 'data' must be a pd.DataFrame")
-                      
+    
+    #%% dynamic data type function for categories
+    def make_attr(self,category):
+        def inner():
+            return self.data[self.data['category'] == category]
+        return inner  
+                 
     #%% Site specific functions
     # because constants are attributed to site
     @staticmethod

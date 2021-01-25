@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from scipy.signal import detrend as detrend_func # for lin_window_ovrlp
+import scipy.signal as signal 
 
 from ..utils.tools import Tools
 
@@ -97,11 +98,11 @@ class Analysis(object):
             else:
                 sY.append(sY[-1])
                 sX.append(sX[-1])
-        result = np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0))
+        result = np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0)
         return result
 
     @staticmethod
-    def BE_Quilty_and_Roeloffs(X, Y, freq, noverlap):
+    def BE_Quilty_and_Roeloffs(X, Y, freq, nperseg, noverlap):
         '''  
         Inputs:
             X           - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
@@ -113,11 +114,11 @@ class Analysis(object):
         Outputs:
             result      - scalar. Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
         '''
-        psd_f, psd_p = welch(X,  fs=Fs, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
-        csd_f, csd_p = csd(X, Y, fs=Fs, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
+        psd_f, psd_p = signal.welch(X,  fs=freq, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False) #Hann window is default
+        csd_f, csd_p = signal.csd(X, Y, fs=freq, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
         result = np.abs(np.real(csd_p))/psd_p
         outfreq = csd_f[np.abs(csd_f-round(freq, 4)).argmin()]
-	result = result[csd_f==outfreq][0] 
+        result = result[csd_f==outfreq][0] 
         return result
         
     @staticmethod
