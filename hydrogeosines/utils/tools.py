@@ -50,3 +50,10 @@ class Tools(object):
         idx = (value > np.pi)
         np.add.at(value,idx,-2*np.pi)
         return value
+    
+    @staticmethod              
+    def complex_to_real(n_samples, z):
+        amp = 2/len(n_samples)*abs(z)
+        phs = np.angle(z)
+        return {"amp":amp, "phs":phs}
+            
