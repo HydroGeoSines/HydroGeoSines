@@ -272,7 +272,7 @@ class Analysis(object):
                 params.update({'erf': {'freq': fqs, 'comp': trf}})
             # return the method results
             return WLc, params
-
+        
         # this method uses Earth tide time series
         elif(et_method == 'ts'):
             print("DEBUG: PERFORM TS")
@@ -391,3 +391,4 @@ class Analysis(object):
             return WLc, params
         else:
             raise Exception("Error: Please only use available Earth tide methods!")
+    

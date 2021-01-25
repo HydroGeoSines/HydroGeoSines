@@ -2,7 +2,6 @@ import hydrogeosines as hgs
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 #%%  Testing MVC principal
 acworth_site = hgs.Site('acworth', geoloc=[-116.471360, 36.408130, 688])
 acworth_site.import_csv('tests/data/death_valley/death_valley.csv',

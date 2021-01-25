@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 class ET(object):
     # define all class attributes here 
     #attr = attr
-        
+    
     def __init__(self, *args, **kwargs):        
         pass  
         #add attributes specific to Load here

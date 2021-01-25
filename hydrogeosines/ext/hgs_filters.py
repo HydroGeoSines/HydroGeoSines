@@ -20,6 +20,7 @@ class HgsFilters(object):
     def obj_col(self):
         # returns df object columns as list
         return list(self._obj.select_dtypes(include=['object']).columns)
+    
     #%% Open for testing    
     """    
     for attr in VALID_CATEGORY:
