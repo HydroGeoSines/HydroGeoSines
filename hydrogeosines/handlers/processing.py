@@ -31,9 +31,11 @@ class Processing(object):
             #print(id(Site)) # test id of class location to compare across package
     
     def BE_method(self, method, derivative=True):
+        
         data = self._obj.data.hgs.pivot
         if any(cat not in data.columns for cat in ("GW","BP")):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
+        # TODO: what happens, if there are multiple locations with GW and BP data? Do we run the method on each location seperately? Do we want them in one single output?      
         X = self._obj.data.hgs.filters.get_bp_values()
         Y = self._obj.data.hgs.filters.get_gw_values()
         
@@ -96,6 +98,7 @@ class Processing(object):
         # prepare results container
         results = pd.DataFrame(index=data.index)
         # prepare time, BP and ET
+        # TODO: Is the localize step in the import_csv not sufficient? BTW: the utc offset for each location is automatically stored in the site upon import
         delta = (data.index.tz_localize(None) - data.index.tz_localize(None)[0])
         tf = (delta.days + (delta.seconds / (60*60*24))).values
         BP = data['BP'].iloc[:, 0].values

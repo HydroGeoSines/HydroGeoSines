@@ -14,26 +14,35 @@ acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category=
 
 #%%
 ## Model
-acworth_site = hgs.Site('acworth', geo=[141.762065, -31.065781, 160])
+csiro_site = hgs.Site('csiro', geo=[141.762065, -31.065781, 160])
 # read
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', 
-                        input_category=["GW","BP","GW"], 
-                        utc_offset=10, unit=["Cm","mm","M"], names = ["Site_A","Site_A","Site_B"],
+csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_GW_short.csv', 
+                        input_category=["GW"]*3, 
+                        utc_offset=10, unit=["m"]*3, loc_names = ["Site_A","Site_B","Site_C"],
                         how="add", check_dublicates=True) 
 
+csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv', 
+                        input_category="BP", 
+                        utc_offset=10, unit="mbar", loc_names = "Baro",
+                        how="add", check_dublicates=True) 
 
-#data_GW = acworth_site.get_gw_data
+#data_GW = csiro.get_gw_data
 # data
-data = acworth_site.data
+data = csiro_site.data
 # hgs methods
-data.hgs.resample(freq = 5)
+data_resample = data.hgs.resample(freq = 5)
 # datetime methods
 data.hgs.dt.to_num
 
 #%% Processing
-process_acworth = hgs.Processing(acworth_site)
-hals_results  = process_acworth.hals()
-BE_results = 
+process_csiro = hgs.Processing(csiro)
+hals_results  = csiro.hals()
+
+#%% Data preparation
+
+
+
+
 #%%
 ## MODEL
 mountain_data   = hgs.Data().import_csv() 
