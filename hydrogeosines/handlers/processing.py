@@ -38,10 +38,14 @@ class Processing(object):
             result = Analysis.BE_linear_regression(data)
         elif method.lower()=='clark':
             result = Analysis.BE_Clark(data)
+        elif method.lower()=='davis_and_rasmussen':
+            result = Analysis.BE_Davis_and_Rasmussen(data)
         elif method.lower()=='rahi':
             result = Analysis.BE_Rahi(data)
-        elif method.lower()=='quilty and roeloffs':
-            result = Analysis.BE_Quilty_and_Roeloffs(data)
+        elif method.lower()=='rojstczer':
+            result = Analysis.BE_Rojstaczer(data)
+        else:
+            print('BE method does not exist!')
     
     @staticmethod
     def _validate(obj):
