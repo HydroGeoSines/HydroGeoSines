@@ -30,7 +30,7 @@ class Analysis(object):
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
             
         Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated as the mean ratio of measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated as the mean ratio of measured values or temporal derivatives.
         '''
         result = np.mean(np.divide(Y, X, out=np.zeros_like(Y), where=X!=0))
         return result
@@ -44,7 +44,7 @@ class Analysis(object):
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
         
         Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated as the median ratio of measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated as the median ratio of measured values or temporal derivatives.
         '''
         result = np.median(np.divide(Y, X, out=np.zeros_like(Y), where=X!=0))
         return result
@@ -58,7 +58,7 @@ class Analysis(object):
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
         
         Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
         '''
         result = np.linregress(Y, X)[0]
         return result
@@ -72,7 +72,7 @@ class Analysis(object):
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
         
         Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
         '''
         sX, sY = [0], [0]
         for x,y in zip(X, Y):
@@ -95,7 +95,7 @@ class Analysis(object):
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
         
         Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
         '''
         ''' 
         *** < Yet to be coded > ***
@@ -120,7 +120,7 @@ class Analysis(object):
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
         
         Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated using the Rahi (2010) method using measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated using the Rahi (2010) method using measured values or temporal derivatives.
         '''
         sX, sY = [0], [0]
         for x,y in zip(X, Y):
@@ -145,7 +145,7 @@ class Analysis(object):
             noverlap    - integer. The amount of "overlap" used when calculating power and cross sepctral density outputs.
         
         Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
         '''
         psd_f, psd_p = welch(X,  fs=Fs, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
         csd_f, csd_p = csd(X, Y, fs=Fs, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
