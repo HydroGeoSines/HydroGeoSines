@@ -6,7 +6,7 @@ import numpy as np
 acworth_site = hgs.Site('acworth', geoloc=[-116.471360, 36.408130, 688])
 acworth_site.import_csv('tests/data/death_valley/death_valley.csv',
                         input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","m"],
-                        header=["BLM-1","Baro","ET"], how="add", check_dublicates=True)
+                        names=["BLM-1","Baro","ET"], how="add", check_dublicates=True)
 
 data = acworth_site.data
 raw = data.pivot(index='datetime', columns=['category', 'location'], values='value')
