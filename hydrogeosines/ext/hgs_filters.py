@@ -47,7 +47,7 @@ class HgsFilters(object):
     
     @property
     def drop_nan(self):              
-        return self._obj.dropna(axis=0,how="any",subset=["value"]).reset_index(drop=True)
+        return self._obj.dropna(axis=0,how="any",subset=["value"])
                
     def drop_loc(self,locs):
         locs = np.array(locs).flatten()

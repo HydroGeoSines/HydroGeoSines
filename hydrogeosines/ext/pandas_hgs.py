@@ -53,9 +53,11 @@ class HgsAccessor(object):
     
     @property
     def spl_freq_groupby(self):
-        # returns median sample frequency grouped by object-dtype columns, in seconds
+        # returns most ofen found sampling frequency grouped by object-dtype columns, in seconds
         df = self._obj[self._obj.value.notnull()]
-        return df.groupby(self.filters.obj_col)["datetime"].apply(lambda x: (x.diff(periods=1).dt.seconds).median())
+        df = df.groupby(self.filters.obj_col)["datetime"].agg(lambda x: (x.diff(periods=1).dt.seconds).mode())
+        #df = df.index.droplevel(3) # remove the zero index entry
+        return df
        
     @property
     def check_dublicates(self):
@@ -85,7 +87,7 @@ class HgsAccessor(object):
         else:
             return row["value"], "m" 
     
-    #TODO: add upsampling method with interpolation based on ffill() and/or pad()
+    #TODO: add upsampling method with interpolation based on time() ffill() and/or pad()
     def upsample(self,freq):
         pass        
  
@@ -102,10 +104,10 @@ class HgsAccessor(object):
         # resample by median for each location and category individually
         out = []
         for i in range(len(freq_groupby)):
-            a = self._obj.loc[:,self.filters.obj_col] == freq_groupby.reset_index().loc[i,self.filters.obj_col]
-            a = a.values
-            a = (a == a[:, [0]]).all(axis=1)                   
-            temp = self._obj.iloc[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime").mean()
+            # create mask for valid index
+            a = self._obj.loc[:,self.filters.obj_col].isin(freq_groupby.index[i]).all(axis=1)  
+            # resample                
+            temp = self._obj[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime").mean()
             temp.reset_index(inplace=True)
             out.append(temp) 
         out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 

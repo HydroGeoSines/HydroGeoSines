@@ -60,11 +60,8 @@ class Read(object):
         header = Tools.zip_formatter(locations, input_category, unit)
         data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])                
         data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower) 
-        print(data.head)
+
         # reformat unit column to SI units
-        #data["value"], data["unit"] = zip(*data.apply(self.pucf_converter,axis=1)) # looping
-        #data["value"], data["unit"] = self.pucf_converter_vec(data) # vectorizing
-        #print(data)
         data["value"], data["unit"] = data.hgs.pucf_converter_vec(self.const["_pucf"]) # vectorizing
                 
         # add utc_offset to site instead of data, to keep number of columns at a minimum

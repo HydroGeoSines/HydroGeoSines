@@ -27,10 +27,7 @@ csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv',
                         how="add", check_dublicates=True) 
 
 #data_GW = csiro.get_gw_data
-# data
-data = csiro_site.data
-# hgs methods
-data_resample = data.hgs.resample(freq = 5)
+#data_resample = data.hgs.resample(freq = 5)
 # datetime methods
 data.hgs.dt.to_num
 
@@ -39,10 +36,213 @@ process_csiro = hgs.Processing(csiro)
 hals_results  = csiro.hals()
 
 #%% Data preparation
+data = csiro_site.data
+test = data.iloc[379000:].reset_index(drop = True)
+test2 = data.iloc[258000:260000].reset_index(drop = True)
+test = test.append(test2, ignore_index= True)
+# large gaps
+test.loc[100:200,"value"] = np.nan
+test.loc[1000:1250,"value"] = np.nan
+test.loc[3900:4150,"value"] = np.nan
+
+# small gaps
+test.loc[50:60,"value"] = np.nan
+test.loc[250:270,"value"] = np.nan
+test.loc[350:380,"value"] = np.nan
+test.loc[750:800,"value"] = np.nan
+test.loc[3050:3080,"value"] = np.nan
+test.loc[3550:3600,"value"] = np.nan
+
+#%% Most common frequency (MCF)
+mcf = test.copy()
+mcf = mcf.hgs.filters.drop_nan # only needed for test data due to the ignore_index in append
+spl_freqs = mcf.hgs.spl_freq_groupby
+mcf = mcf.hgs.resample_by_group(spl_freqs)
+#%% gap interpolation
+limit = 60*60 #1h interpolation limit
+mcf.set_index("datetime",inplace=True)
+inter = mcf.interpolate(method="time",limit = int(limit/spl_freqs.values), limit_area="inside") # not working, as gaps that are larger than the limit, area also partially filled
+#%% gap identifier
+gap = mcf.value.copy()
+df_cumsum = gap.isnull().astype(int).groupby(gap.notnull().astype(bool).cumsum()).cumsum()
+df_sum = gap.isnull().astype(int).groupby(gap.notnull().astype(bool).cumsum()).sum()
+mask = gap.isnull()
+#%%
+mcf = test.copy()
+out = []
+for i in range(len(spl_freqs)):
+    print(i)
+    # check for index labels in df
+    a = mcf.loc[:,mcf.hgs.filters.obj_col].isin(spl_freqs.index[i]).all(axis=1)
+    temp = mcf[a].groupby(mcf.hgs.filters.obj_col).resample(str(int(spl_freqs[i]))+"S", on="datetime").mean()
+    temp.reset_index(inplace=True)
+    out.append(temp) 
+out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
+# reorganize index and column structure to match original hgs dataframe
+out = out.reset_index()[mcf.columns]
+    #mcf_new = mcf[a]
+    #a = (a == a[:, [0]]).all(axis=1) 
+#mask = df.groupby(["location","category","unit"]).apply(lambda x: gap_mask(x,maxgap))
+ 
+#%%
+def upsample(df, method = "time"):
+   df = df.set_index("datetime")
+   df = df.interpolate(method=method).reset_index()
+   return df
+   
+def make_regular(df, inter_max: int = 3600, block_min: int = 30, method = "backfill"):
+    # find most common frequency (mcf)
+    spl_freqs = df.hgs.spl_freq_groupby
+    # resample to mcf
+    mcfs = df.hgs.resample_by_group(spl_freqs)
+    ## identify gaps
+    # interpolate gaps smaller than maxgap
+    grouped = mcfs.groupby(df.hgs.filters.obj_col)  
+    out = [] 
+    for name, group in grouped:
+        print(name)                
+        #print(group)
+        # get mcf for group
+        mcf_group = spl_freqs.xs(name)
+        maxgap = inter_max/mcf_group
+        # create mask for gaps
+        s = group["value"]
+        mask = gap_mask(s,maxgap)
+        # choose interpolation (runs on datetime index)
+        inter = upsample(group[mask],"backfill")
+        # identify large gaps
+        diff = inter.datetime.diff()
+        block_size = mcf_group*block_min
+        mask = diff.dt.total_seconds() >= 3600
+        # split into sub_locations
+        
+        # resample and check for remaining nan (should be none)
+        #inter = inter.hgs.resample(mcf_group) 
+        out.append(inter)
+
+    out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
+    # reorganize index and column structure to match original hgs dataframe
+    out = out.reset_index()[df.columns]    
+    return out
+out = make_regular(test,inter_max = 3600)    
+
+#%%  
+import string
+alpha = list(string.ascii_lowercase)
+
+df = out2[1].copy()
+  
+def location_splitter(df, blocksize, inter_max):
+    diff = df.datetime.diff()
+    # find gaps larger than inter_max
+    mask = diff.dt.total_seconds() >= inter_max
+    idx = diff[mask].index # get start index of data block
+    # split index into blocks
+    blocks = np.split(df.index, idx, axis=0)
+    # apply minimum blocksize
+    blocks = [block for block in blocks if len(block) > blocksize]
+    # list of new data frames
+    list_df = [df.iloc[i] for i in blocks]
+    # concat df back with new column for "slot"
+    out = []
+    for i in range(len(list_df)):
+        print(i+1)
+        new_df = list_df[i].copy()
+        new_df["slot"] = str(i+1)
+        out.append(new_df)
+        
+    return out , mask, blocks, idx
 
 
+a,b,c,d = location_splitter(df,30,3600)
+#%%    
+def gap_mask(s, maxgap):
+    """
+    Mask NaN gaps larger than a maxium gap size
+
+    Parameters
+    ----------
+    s : pandas Series
+        DESCRIPTION.
+    maxgap : int
+        DESCRIPTION.
+
+    Returns
+    -------
+    numpy array
+        Boolean mask of size s for all NaN gaps larger than maxgap
+
+    """
+    idx = s.isnull().astype(int).groupby(s.notnull().astype(bool).cumsum()).sum()
+    sizes = idx[idx > 0] # size of gaps
+    start = sizes.index + (sizes.cumsum() - sizes) # get start index
+    stop  = start + sizes # get stop index
+    gaps = [np.arange(a,b) for a,b in zip(start,stop)] # get indices of each individual gap
+    
+    ## create a mask for the gap sizes
+    mask = np.zeros_like(s)
+    for gap in gaps:
+        mask[gap] = len(gap)    
+
+    return (mask < maxgap) | s.notnull().to_numpy()
+
+mask = mcf.copy()
+
+x = mcf["value"]
+mask["value"] = gap_mask(x, 12)
+
+#def interpolate_time(df):
+    
+inter = mcf[mask["value"]].interpolate(method="backfill")  
+inter = inter.reset_index()#[self._obj.columns]
+inter = inter.hgs.resample_by_group(spl_freqs)  
+
+#%%
+length = df_sum[df_sum > 0] # length of gaps
+start = length.index + (length.cumsum() - length) # identify location of gaps
+#c = df2.index + (df2.cumsum() - df2)
+g_td = ((gap.iloc[b+a-1].index - gap.iloc[b].index))
 
 
+#%%
+def bfill_nan(arr):
+    """ Backward-fill NaNs """
+    mask = np.isnan(arr)
+    idx = np.where(~mask, np.arange(mask.shape[0]), mask.shape[0]-1)
+    idx = np.minimum.accumulate(idx[::-1], axis=0)[::-1]
+    out = arr[idx]
+    return out
+
+
+def calc_mask(arr, maxgap):
+    """ Mask NaN gaps longer than `maxgap` """
+    isnan = np.isnan(arr)
+    cumsum = np.cumsum(isnan).astype('float')
+    diff = np.zeros_like(arr)
+    diff[~isnan] = np.diff(cumsum[~isnan], prepend=0)
+    diff[isnan] = np.nan
+    diff = bfill_nan(diff)
+    return (diff < maxgap) | ~isnan
+
+
+mask = mcf.copy()
+
+x = mcf["value"].values
+mask["value"] = calc_mask(x, 12)
+inter2 = mcf[mask["value"]].interpolate(method="time",limit = int(limit/spl_freqs.values), limit_area="inside")  
+inter2 = inter.reset_index()#[self._obj.columns]
+inter2 = inter.hgs.resample_by_group(spl_freqs)  
+#%% hgs methods
+
+
+#no_nan2 = data.dropna(how="any")
+diff = data[data.location == "Baro"].datetime.diff()
+most_common = diff.value_counts().idxmax()
+#test = diff.apply(lambda x: x.apply(pd.value_counts).idxmax())
+spl_freqs = data.hgs.spl_freq_groupby
+resampled = data.hgs.resample_by_group(spl_freqs)
+diff2 = resampled[resampled.location == "Site_C"].datetime.diff()
+print(diff2.value_counts())
 #%%
 ## MODEL
 mountain_data   = hgs.Data().import_csv() 
