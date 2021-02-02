@@ -1,6 +1,6 @@
 <img src="https://github.com/HydroGeoSines/HydroGeoSines/blob/master/logo/HGS_v0.svg" width="400" />
 
-## Signal In The Noise Exploration Software (SINES) for Hydrogeological Datasets
+## HydroGeoSines: Signals In the Noise Exploration Software (SINES) for Hydro-Geological datasets
 
 Developed by:
 * Gabriel C. Rau - Karlsruhe Institute of Technology (Germany) and UNSW Sydney (Australia)
