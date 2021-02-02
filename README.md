@@ -1,4 +1,4 @@
-<img src="https://github.com/hydrogeoscience/HydroGeoSines/blob/master/HGS_v0.jpg" width="400" />
+<img src="https://github.com/HydroGeoSines/HydroGeoSines/blob/master/logo/HGS_v0.svg" width="400" />
 
 ## Signal In The Noise Exploration Software (SINES) for Hydrogeological Datasets
 
