@@ -79,7 +79,7 @@ class Processing(object):
         #return {"comp":comp, "freq":freqs, "var":var}
         return var#.update(values[1]["freq"])
 
-    def correct_GW(self, location=None, lag_h=24, et_method=None, fqs=None):
+    def correct_GW(self, gw_locs=None, bp_loc:str=None, et_loc:str=None, lag_h=24, et_method=None, fqs=None):
         print("A complicated procedure ...")
         # first aggregate all the datasets into one
         data = self._obj.data.pivot(index='datetime', columns=['category', 'location'], values='value')
@@ -89,29 +89,54 @@ class Processing(object):
             raise Exception('Error: ET time series is required but not found in the dataset!')
         # apply tests to see if data is regular and complete
         # first, drop any rows with missing values
-        data.dropna(how='any', inplace=True)
-        tdiff = np.diff(data.index)
-        idx = (tdiff != tdiff[0])
-        if np.any(idx):
-            raise Exception('Error: Dataset must be regularly sampled!')
-        # DATASET IS ALL GOOD NOW
-        # prepare results container
-        results = pd.DataFrame(index=data.index)
+        if bp_loc is None:
+            bp_loc = data['BP'].columns[0]
+        if bp_loc not in data['BP'].columns:
+            raise Exception("Error: BP location '{}' is not available!".format(bp_loc))
+        BP = data['BP'][bp_loc].values
+        tmp = np.isnan(BP)
+        tdiff = np.diff(data.index[~tmp])
+        if np.any(tdiff != tdiff[0]):
+            raise Exception("Error: Category BP must be regularly sampled!")
         # prepare time, BP and ET
-        # TODO: Is the localize step in the import_csv not sufficient? BTW: the utc offset for each location is automatically stored in the site upon import
+        # TODO: Is the localize step in the import_csv not sufficient? 
+        ## BTW: the utc offset for each location is automatically stored in the site upon import
         delta = (data.index.tz_localize(None) - data.index.tz_localize(None)[0])
         tf = (delta.days + (delta.seconds / (60*60*24))).values
-        BP = data['BP'].iloc[:, 0].values
         if et_method is None:
             ET = None
+        elif et_method == 'hals':
+            ET = None
+        elif et_method == 'ts':
+            if et_loc is None:
+                et_loc = data['ET'].columns[0]
+            if et_loc not in data['ET'].columns:
+                raise Exception("Error: ET location '{}' is not available!".format(et_loc))
+            # first, drop any rows with missing values
+            ET = data['ET'][et_loc].values
+            tmp = np.isnan(ET)
+            tdiff = np.diff(data.index[~tmp])
+            if np.any(tdiff != tdiff[0]):
+                raise Exception('Error: Category ET must be regularly sampled!')
         else:
-            ET = data['ET'].iloc[:, 0].values
+            raise Exception("Error: Specified 'et_method' is not available!")
+        # prepare results container
+        results = pd.DataFrame(index=data.index)
         # loop through GW category
-        gw_locs = data['GW'].columns.values
+        if gw_locs is None:
+            gw_locs = data['GW'].columns
         params = {}
         for loc in gw_locs:
+            if loc not in data['GW'].columns:
+                raise Exception("Error: GW location '{}' is not available!".format(loc))
+                
             print(loc)
+            # first, drop any rows with missing values
             GW = data['GW'][loc].values
+            tmp = np.isnan(GW)
+            tdiff = np.diff(data.index[~tmp])
+            if np.any(tdiff != tdiff[0]):
+                raise Exception("Error: Location '{}' must be regularly sampled!".format(loc))
             # regress_deconv(self, tf, GW, BP, ET=None, lag_h=24, et=False, et_method='hals', fqs=None):
             values, params[loc] = Analysis.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
             results[loc] = values
