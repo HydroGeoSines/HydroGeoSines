@@ -371,7 +371,10 @@ class Analysis(object):
             # consider ET if desired ...
             if et:
                 k = np.arange(nm+1, NP+nm+1)
+                # this is the result for the derivative WL/dt
                 trf = np.array([a+(1j*b) for a,b in zip(c[k], c[NP+k])])
+                # this is the correction for the frequency content in the WL
+                # !!!!
                 params.update({'erf': {'freq': fqs, 'comp': trf}})
             # return the method results
             return WLc, params
