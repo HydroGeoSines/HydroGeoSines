@@ -23,7 +23,7 @@ class ET(object):
         pass  
         #add attributes specific to Load here
         #self.attribute = variable            
-           
+    
     def add_ET(self, et_comp='pot', et_cat=8, waves=None):
         # check if PyGTide is available
         try:
