@@ -26,14 +26,16 @@ csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv',
                         utc_offset=10, unit="mbar", loc_names = "Baro",
                         how="add", check_dublicates=True) 
 
+# TODO: 
 #data_GW = csiro.get_gw_data
 #data_resample = data.hgs.resample(freq = 5)
 # datetime methods
 data.hgs.dt.to_num
 
 #%% Processing
-process_csiro = hgs.Processing(csiro)
-hals_results  = csiro.hals()
+process_csiro = hgs.Processing(Site = csiro_site)
+hals_results  = process_csiro.hals()
+be_results  = process_csiro.BE()
 
 #%% Data preparation
 data = csiro_site.data
@@ -56,6 +58,7 @@ test.loc[3550:3600,"value"] = np.nan
 #%% Most common frequency (MCF)
 mcf = test.copy()
 mcf = mcf.hgs.filters.drop_nan # only needed for test data due to the ignore_index in append
+#TODO: replace non_valid entries? Dublicates already handled at import
 spl_freqs = mcf.hgs.spl_freq_groupby
 mcf = mcf.hgs.resample_by_group(spl_freqs)
 #%% gap interpolation
@@ -89,7 +92,8 @@ def upsample(df, method = "time"):
    df = df.set_index("datetime")
    df = df.interpolate(method=method).reset_index()
    return df
-   
+
+#TODO: get amount of total interpolated data points (percent) -> raise exception
 def make_regular(df, inter_max: int = 3600, block_min: int = 30, method = "backfill"):
     # find most common frequency (mcf)
     spl_freqs = df.hgs.spl_freq_groupby
@@ -109,11 +113,13 @@ def make_regular(df, inter_max: int = 3600, block_min: int = 30, method = "backf
         s = group["value"]
         mask = gap_mask(s,maxgap)
         # choose interpolation (runs on datetime index)
-        inter = upsample(group[mask],"backfill")
-        # identify large gaps
-        diff = inter.datetime.diff()
+        inter = upsample(group[mask],method=method)
+        ## identify large gaps, split df and reassamble
+        # get minimum block_size (n_entries)
         block_size = mcf_group*block_min
-        mask = diff.dt.total_seconds() >= 3600
+        # location splitter
+        inter = location_splitter(inter,block_size, inter_max)
+
         # split into sub_locations
         
         # resample and check for remaining nan (should be none)
@@ -124,6 +130,7 @@ def make_regular(df, inter_max: int = 3600, block_min: int = 30, method = "backf
     # reorganize index and column structure to match original hgs dataframe
     out = out.reset_index()[df.columns]    
     return out
+#TODO: if first entry is np.nan, this is not backfilled with "time" method
 out = make_regular(test,inter_max = 3600)    
 
 #%%  
@@ -148,7 +155,7 @@ def location_splitter(df, blocksize, inter_max):
     for i in range(len(list_df)):
         print(i+1)
         new_df = list_df[i].copy()
-        new_df["slot"] = str(i+1)
+        new_df["part"] = str(i+1)
         out.append(new_df)
         
     return out , mask, blocks, idx
