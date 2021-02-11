@@ -23,7 +23,7 @@ class ET(object):
         pass  
         #add attributes specific to Load here
         #self.attribute = variable            
-           
+    
     def add_ET(self, et_comp='pot', et_cat=8, waves=None):
         # check if PyGTide is available
         try:
@@ -68,6 +68,9 @@ class ET(object):
             pt.predict(self.geoloc[1], self.geoloc[0], self.geoloc[2], start, duration, samplerate, tidalcompo=et_comp_i, tidalpoten=et_cat)
             # retrieve the results as dataframe
             data = pt.results()
+            # !!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
+            # change working directory back to normal ...
+            os.chdir('..')
             # print(data.iloc[:30, 0:3])
             # convert time to floating point for matching
             td = (data['UTC'] - pd.to_datetime('1899-12-30', utc=True)).dt
@@ -94,9 +97,6 @@ class ET(object):
             # self.data = self.data.hgs.check_dublicates
             print("Earth tide time series were calculated and added ...")
             
-            # !!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
-            # change working directory back to normal ...
-            os.chdir('..')
             # !!!!!!!!!!!!!!!!!
         except ImportError:
             raise Exception('Error: The PyGTide module was not found!')

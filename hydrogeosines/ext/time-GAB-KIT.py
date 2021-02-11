@@ -41,8 +41,8 @@ class Time(object):
     @property
     def unique_utc(self):
         # similar to check_dublicates function, adapted from Gabriel's dt_overlap method
-        no_duplicates = self._obj.drop_duplicates(keep='first', inplace=False)
-        return pd.Series(no_duplicates).dt.tz_convert('UTC')
+        tmp = pd.unique(self._obj)
+        return tmp.drop_duplicates(keep='first', inplace=False)
     
     @property
     def to_num(self):
