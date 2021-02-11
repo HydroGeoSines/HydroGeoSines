@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #%%  Testing MVC principal
-acworth_site = hgs.Site('acworth', geoloc=[-116.471360, 36.408130, 688])
+acworth_site = hgs.Site('death valley', geoloc=[-116.471360, 36.408130, 688])
 acworth_site.import_csv('tests/data/death_valley/death_valley.csv',
                         input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","m"],
-                        header=["BLM-1","Baro","ET"], how="add", check_dublicates=True)
+                        how="add", check_dublicates=True)
 
 data = acworth_site.data
 raw = data.pivot(index='datetime', columns=['category', 'location'], values='value')
@@ -19,7 +19,8 @@ heads = data.pivot(index='datetime', columns=['category', 'location'], values='v
 #%% Processing
 print("Correct heads ...")
 process_acworth = hgs.Processing(acworth_site)
-corrected, params = process_acworth.correct_GW(et_method='ts', lag_h=8)
+
+corrected, params = process_acworth.correct_GW(et_method='hals', lag_h=8)
 
 #%% plot corrected heads
 plt.figure()
