@@ -49,14 +49,19 @@ class Processing(object):
         elif method.lower()=='linear regression':
             result = Analysis.BE_linear_regression(X,Y)
         elif method.lower()=='clark':
-            result = Analysis.BE_Clark(X,Y)
+            result = Analysis.BE_Clark(data)
+        elif method.lower()=='davis_and_rasmussen':
+            result = Analysis.BE_Davis_and_Rasmussen(data)
         elif method.lower()=='rahi':
-            result = Analysis.BE_Rahi(X,Y)
+            result = Analysis.BE_Rahi(data)
+        elif method.lower()=='rojstczer':
+            result = Analysis.BE_Rojstaczer(data)
+        else:
+            print('BE method does not exist!')
         # TODO: This methods also takes freq + noverlap as parameters. Probably better to move it to another place (different overarching processing method)   
         #elif method.lower()=='quilty and roeloffs':
         #    result = Analysis.BE_Quilty_and_Roeloffs(X,Y, freq, nperseg, noverlap)
-        return result    
-    
+        return result       
 
     def hals(self, cat="GW"):
         #check for non valid categories 
