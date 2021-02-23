@@ -54,9 +54,9 @@ class Analysis(object):
 
     @staticmethod
     def BE_linear_regression(X, Y):
-        '''  
+        '''
         Calculate instantaneous barometric efficiency using linear regression, a time domain solution.
-      
+
         Inputs:
             X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
@@ -69,7 +69,7 @@ class Analysis(object):
 
     @staticmethod
     def BE_Clark(X, Y):
-        '''  
+        '''
         Calculate instantaneous barometric efficiency using the Clark (1967) method, a time domain solution.
 
         Inputs:
@@ -93,32 +93,42 @@ class Analysis(object):
 
     @staticmethod
     def BE_Davis_and_Rasmussen(X, Y):
-        '''  
+        '''
         Calculate instantaneous barometric efficiency using the Davis and Rasmussen (1993) method, a time domain solution.
         Inputs:
             X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
             Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-        
+
         Outputs:
-            result - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+            result - scalar. Instantaneous barometric efficiency calculated using the Davis and Rasmussen (1993) method using measured values or temporal derivatives.
         '''
-        ''' 
-        *** < Yet to be coded > ***
-        sX, sY = [0], [0]
-        for x,y in zip(X, Y):
-            sX.append(sX[-1]+abs(x))
-            if x==0:
-                sY.append(sY[-1])
-            elif np.sign(y)==np.sign(x):
-                sY.append(sY[-1]+abs(y))
-            elif np.sign(y)!=np.sign(x):
-                sY.append(sY[-1]-abs(y))
-        result = np.abs(np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0))
-        return result'''
+        cSnum    = np.zeros(1)
+        cSden    = np.zeros(1)
+        cSabs_dB = np.zeros(1)
+        cSclk_dW = np.zeros(1)
+        dB       = -np.diff(X)
+        n        =  len(dB)
+        j        =  len(dB[dB>0.])-len(dB[dB<0.])
+        Sraw_dB  =  np.sum(dB)
+        Sabs_dB  =  np.sum(np.abs(dB))
+        dW       =  np.diff(Y)
+        Sraw_dW  =  np.sum(dW)
+        Sclk_dW  = np.zeros(1)
+        for m in range(len(dW)):
+            if np.sign(dW[m])==np.sign(dB[m]):
+                Sclk_dW += np.abs(dW[m])
+            elif np.sign(dW[m])!=np.sign(dB[m]):
+                Sclk_dW -= np.abs(dW[m])
+        cSnum    += (float(j)/float(n))*Sraw_dW
+        cSden    += (float(j)/float(n))*Sraw_dB
+        cSabs_dB += Sabs_dB
+        cSclk_dW += Sclk_dW
+        result = ((cSclk_dW/cSabs_dB-cSnum/cSabs_dB)/(1.-cSden/cSabs_dB))
+        return result
 
     @staticmethod
     def BE_Rahi(X, Y):
-        '''  
+        '''
         Calculate instantaneous barometric efficiency using the Clark (1967) method, a time domain solution.
 
         Inputs:
@@ -141,11 +151,11 @@ class Analysis(object):
 
     @staticmethod
     def BE_Rojstaczer(X, Y, freq=1.932212, nperseg=len(X), noverlap=len(X)/2.):
-        '''  
+        '''
         Calculate instantaneous barometric efficiency using the Rojstaczer (1988) method, a frequency domain solution.
         '''
         pass
-      
+
     @staticmethod
     def BE_Quilty_and_Roeloffs(X, Y, freq, nperseg, noverlap):
         '''
