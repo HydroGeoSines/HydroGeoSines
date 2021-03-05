@@ -33,9 +33,17 @@ class Analysis(object):
 
         Outputs:
             result - scalar. Instantaneous barometric efficiency calculated as the mean ratio of measured values or temporal derivatives.
+        Notes:
+            ** Need to come up with a better way to avoid division by zero issues and similar
         '''
-        result = np.mean(np.divide(Y, X, out=np.zeros_like(Y), where=X!=0))
-        return result
+        #with np.errstate(divide='ignore', invalid='ignore'):
+        #    result = np.mean(np.divide(Y, X)[np.isfinite(np.divide(Y, X))])
+        X,Y = np.round(X, 12), np.round(Y, 12)
+        result = []
+        for x,y in zip(X,Y):
+            if x!=0.:
+                result.append(y/x)
+        return np.mean(result)
 
     @staticmethod
     def BE_median_of_ratios(X, Y):
@@ -49,7 +57,8 @@ class Analysis(object):
         Outputs:
             result - scalar. Instantaneous barometric efficiency calculated as the median ratio of measured values or temporal derivatives.
         '''
-        result = np.median(np.divide(Y, X, out=np.zeros_like(Y), where=X!=0))
+        with np.errstate(divide='ignore', invalid='ignore'):
+            result = np.median(np.divide(Y, X)[np.isfinite(np.divide(Y, X))])
         return result
 
     @staticmethod
@@ -78,17 +87,19 @@ class Analysis(object):
 
         Outputs:
             result - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+        Notes:
+            ** Need to check that Clark's rules are implemented the right way around
         '''
-        sX, sY = [0], [0]
+        sX, sY = [0.], [0.]
         for x,y in zip(X, Y):
             sX.append(sX[-1]+abs(x))
             if x==0:
                 sY.append(sY[-1])
-            elif np.sign(y)==np.sign(x):
+            elif np.sign(x)==np.sign(y):
                 sY.append(sY[-1]+abs(y))
-            elif np.sign(y)!=np.sign(x):
+            elif np.sign(x)!=np.sign(y):
                 sY.append(sY[-1]-abs(y))
-        result = np.abs(np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0))
+        result = linregress(sX, sY)[0]
         return result
 
     @staticmethod
@@ -101,6 +112,8 @@ class Analysis(object):
 
         Outputs:
             result - scalar. Instantaneous barometric efficiency calculated using the Davis and Rasmussen (1993) method using measured values or temporal derivatives.
+        Notes:
+            ** Work in progress - just need to marry the D&R algorithm with the automated segmenting algorithm
         '''
         cSnum    = np.zeros(1)
         cSden    = np.zeros(1)
@@ -137,43 +150,38 @@ class Analysis(object):
 
         Outputs:
             result - scalar. Instantaneous barometric efficiency calculated using the Rahi (2010) method using measured values or temporal derivatives.
+        Notes:
+            ** Need to check that Rahi's rules are implemented the right way around
         '''
-        sX, sY = [0], [0]
+        sX, sY = [0.], [0.]
         for x,y in zip(X, Y):
-            if (np.sign(y)==np.sign(x)) & (abs(y)<abs(x)):
-                sY.append(sY[-1]+abs(y))
+            if (np.sign(x)!=np.sign(y)) & (abs(y)<abs(x)):
                 sX.append(sX[-1]+abs(x))
+                sY.append(sY[-1]+abs(y))
             else:
-                sY.append(sY[-1])
                 sX.append(sX[-1])
-        result = np.divide(sY[-1], sX[-1], out=np.zeros_like(Y), where=X!=0)
+                sY.append(sY[-1])
+        result = linregress(sX, sY)[0]
         return result
 
     @staticmethod
-    def BE_Rojstaczer(X, Y, freq=1.932212, nperseg=len(X), noverlap=len(X)/2.):
-        '''
-        Calculate instantaneous barometric efficiency using the Rojstaczer (1988) method, a frequency domain solution.
-        '''
-        pass
-
-    @staticmethod
-    def BE_Quilty_and_Roeloffs(X, Y, freq, nperseg, noverlap):
+    def BE_Rojstaczer(X, Y, freq, nperseg, noverlap):
         '''
         Inputs:
-            X           - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y           - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            freq        - float. The frequency of interest.
-            nperseg     - integer. The "number per segment".
-            noverlap    - integer. The amount of "overlap" used when calculating power and cross sepctral density outputs.
+            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            freq - float. The frequency of interest.
+            nperseg - integer. The number of data points per segment.
+            noverlap - integer. The amount of overlap between data points used when calculating power and cross spectral density outputs.
 
         Outputs:
-            result - scalar. Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
+            result      - scalar. Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
+        Notes:
+            ** Need to check that Rojstaczer's (or Q&R's) implementation was averaged over all frequencies
         '''
-        psd_f, psd_p = signal.welch(X,  fs=freq, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False) #Hann window is default
-        csd_f, csd_p = signal.csd(X, Y, fs=freq, nperseg=nperseg, noverlap=noverlap, scaling='density', detrend=False)
-        result = np.abs(np.real(csd_p))/psd_p
-        outfreq = csd_f[np.abs(csd_f-round(freq, 4)).argmin()]
-        result = result[csd_f==outfreq][0]
+        csd_f, csd_p = csd(X, Y, fs=fs, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
+        psd_f, psd_p = csd(X, X, fs=fs, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
+        result = np.mean(np.abs(csd_p)/psd_p)
         return result
 
     @staticmethod
