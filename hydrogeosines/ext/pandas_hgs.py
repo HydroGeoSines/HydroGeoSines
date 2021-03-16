@@ -28,7 +28,7 @@ class HgsAccessor(object):
         #TODO: varify that only valid data categories exist!
         # verify there is a column datetime, location, category, unit and value        
         if not set(["datetime","category","location","unit","value"]).issubset(obj.columns):
-            raise AttributeError("Must have 'datetime',location','category','unit' and 'value'.")               
+            raise AttributeError("Must have 'datetime','location','category','unit' and 'value'.")               
         
     ## setting datetime as a property and extending it by the Time methods
     @property
@@ -100,7 +100,7 @@ class HgsAccessor(object):
         return out
                     
     def resample_by_group(self,freq_groupby):
-        #TODO: write validation logic for freq_groupby. It must be same length as len(cat*loc*unit)
+        #TODO: write validation logic for freq_groupby. It must be same length as number of groups, e.g. len(cat*loc*unit)
         # resample by median for each location and category individually
         out = []
         for i in range(len(freq_groupby)):
@@ -115,13 +115,9 @@ class HgsAccessor(object):
         out = out.reset_index()[self._obj.columns]
         return out  
 
-    #%% hgs filters    
+    #%% hgs functions and filters that need to be adjusted to the package architecture    
     """
     #%% GW properties
-    @property
-    def gw_locs(self):
-        return self.data[self.data['category'] == 'GW']['location'].unique()
-            
     @property
     def gw_dt(self):
         return self.data[self.data['category'] == 'GW']['datetime'].drop_duplicates().reset_index(drop=True)
@@ -138,24 +134,6 @@ class HgsAccessor(object):
     #def gw_spd(self):
     #    return 86400/Time.spl_period(self.gw_dt, unit='s')
     
-    #%% BP properties
-    @property
-    def bp_locs(self):
-        return self.data[self.data['category'] == 'BP']['location'].unique()
-
-    @property
-    def bp_data(self):
-        return self.data[self.data['category'] == 'BP'].pivot(index='datetime', columns='location', values='value')
-    
-    #%% ET properties
-    @property
-    def et_locs(self):
-        return self.data[self.data['category'] == 'ET']['location'].unique()
-    
-    @property
-    def et_data(self):
-        return self.data[self.data['category'] == 'ET'].pivot(index='datetime', columns='location', values='value')
-
     @property
     def is_aligned(self):
         tmp = self.data.groupby(by="datetime").count()

@@ -140,14 +140,7 @@ class Analysis(object):
         return result
 
     @staticmethod
-    def BE_Rojstaczer(X, Y, freq=1.932212, nperseg=len(X), noverlap=len(X)/2.):
-        '''  
-        Calculate instantaneous barometric efficiency using the Rojstaczer (1988) method, a frequency domain solution.
-        '''
-        pass
-      
-    @staticmethod
-    def BE_Quilty_and_Roeloffs(X, Y, freq, nperseg, noverlap):
+    def BE_Rojstaczer(X, Y, freq, nperseg, noverlap):
         '''
         Inputs:
             X           - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.

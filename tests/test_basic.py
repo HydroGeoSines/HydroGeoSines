@@ -30,22 +30,24 @@ csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv',
 #data_GW = csiro.get_gw_data
 #data_resample = data.hgs.resample(freq = 5)
 # datetime methods
-data.hgs.dt.to_num
+#data.hgs.dt.to_num
 
 #%% Processing
-process_csiro = hgs.Processing(Site = csiro_site)
+process_csiro = hgs.Processing(csiro_site)
 hals_results  = process_csiro.hals()
-be_results  = process_csiro.BE()
+#be_results  = process_csiro.BE()
 
 #%% Data preparation
-data = csiro_site.data
+data = csiro_site.data.copy()
 test = data.iloc[379000:].reset_index(drop = True)
-test2 = data.iloc[258000:260000].reset_index(drop = True)
+test2 = data.iloc[258000:262000].reset_index(drop = True)
 test = test.append(test2, ignore_index= True)
 # large gaps
 test.loc[100:200,"value"] = np.nan
 test.loc[1000:1250,"value"] = np.nan
 test.loc[3900:4150,"value"] = np.nan
+test.loc[4500:4750,"value"] = np.nan
+
 
 # small gaps
 test.loc[50:60,"value"] = np.nan
@@ -55,6 +57,16 @@ test.loc[750:800,"value"] = np.nan
 test.loc[3050:3080,"value"] = np.nan
 test.loc[3550:3600,"value"] = np.nan
 
+# Test set 2 for BP data
+# index start 20289
+test_BP = data.loc[data["category"]=="BP",:].copy()
+test_BP.loc[20300:20310,"value"] = np.nan
+test_BP.loc[20400:20410,"value"] = np.nan
+test_BP.loc[20500:20550,"value"] = np.nan
+test_BP.loc[20875:20900,"value"] = np.nan
+
+# Test 3 no gaps
+test3 = data.iloc[380000:-4].reset_index(drop = True)
 #%% Most common frequency (MCF)
 mcf = test.copy()
 mcf = mcf.hgs.filters.drop_nan # only needed for test data due to the ignore_index in append
@@ -86,60 +98,195 @@ out = out.reset_index()[mcf.columns]
     #mcf_new = mcf[a]
     #a = (a == a[:, [0]]).all(axis=1) 
 #mask = df.groupby(["location","category","unit"]).apply(lambda x: gap_mask(x,maxgap))
+
+#%% Define Function for non-valid entries
+def non_valid():
+    pass
  
-#%%
+#%% Upsample method
 def upsample(df, method = "time"):
    df = df.set_index("datetime")
    df = df.interpolate(method=method).reset_index()
    return df
 
-#TODO: get amount of total interpolated data points (percent) -> raise exception
-def make_regular(df, inter_max: int = 3600, block_min: int = 30, method = "backfill"):
-    # find most common frequency (mcf)
-    spl_freqs = df.hgs.spl_freq_groupby
-    # resample to mcf
-    mcfs = df.hgs.resample_by_group(spl_freqs)
-    ## identify gaps
-    # interpolate gaps smaller than maxgap
-    grouped = mcfs.groupby(df.hgs.filters.obj_col)  
-    out = [] 
-    for name, group in grouped:
-        print(name)                
-        #print(group)
-        # get mcf for group
-        mcf_group = spl_freqs.xs(name)
-        maxgap = inter_max/mcf_group
-        # create mask for gaps
-        s = group["value"]
-        mask = gap_mask(s,maxgap)
-        # choose interpolation (runs on datetime index)
-        inter = upsample(group[mask],method=method)
-        ## identify large gaps, split df and reassamble
-        # get minimum block_size (n_entries)
-        block_size = mcf_group*block_min
-        # location splitter
-        inter = location_splitter(inter,block_size, inter_max)
+#%% make regular method
+def make_regular(df, inter_max: int = 3600, block_min: int = 20, method: str = "backfill", category = "GW", spl_freq: int = None, inter_max_total: int= 10):
+    """
+    
 
-        # split into sub_locations
-        
-        # resample and check for remaining nan (should be none)
-        #inter = inter.hgs.resample(mcf_group) 
-        out.append(inter)
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Site data.
+    inter_max : int, optional
+        Maximum of interpolated time interval in seconds. The default is 3600.
+    block_min : int, optional
+        Minimum record duration in days. The default is 20.
+    method : str, optional
+        Interpolation method of Pandas to be used. The default is "backfill".
+    category : str, array or list, optional
+        Site category. The default is "GW".
 
-    out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
-    # reorganize index and column structure to match original hgs dataframe
-    out = out.reset_index()[df.columns]    
-    return out
+    Returns
+    -------
+    out : pd.DataFrame
+        DESCRIPTION.
+
+    """
+    # only use specified data category which is GW by default
+    pos = df["category"].isin(np.array(category).flatten())
+    df_reg = df.loc[pos,:].copy()
+    # keep rest of data to reassemble original dataset
+    df = df.drop(df_reg.index)
+    # use custom sampling frequency
+    if spl_freq is not None:
+        # use predefined sampling frequency
+        mcfs = df_reg.hgs.resample(spl_freq)
+    else:    
+        # find most common frequency (mcf)
+        spl_freq = df_reg.hgs.spl_freq_groupby
+        # resample to mcf
+        mcfs = df_reg.hgs.resample_by_group(spl_freq)
+    
+    ## check for NaN in value Column
+    if mcfs.hgs.filters.is_nan:        
+        ## identify small and large gaps
+        # group by identifier columns of site data
+        regular = mcfs.groupby(df.hgs.filters.obj_col).apply(lambda x: gap_routine(x, mcf=spl_freq, inter_max = inter_max, block_min = block_min, 
+                                  method = method, inter_max_total= inter_max_total))          
+        # reassamble DataFrame          
+        regular = pd.concat([regular,df],ignore_index=True)  
+    
+    else:
+        print("No Gaps")
+        regular = pd.concat([mcfs,df],ignore_index=True)
+    return regular
+    
 #TODO: if first entry is np.nan, this is not backfilled with "time" method
-out = make_regular(test,inter_max = 3600)    
+#out = make_regular(test,inter_max = 3600,block_min=0.2, method="backfill")  
+#out2 = make_regular(test3,inter_max = 3600,block_min=0.2) # no gaps 
+beta = make_regular(data,inter_max = 3600,block_min=30,category="GW",spl_freq=1200)    
 
+#def f(group):
+#    regular = gap_routine(group, mcf=mcf_group, inter_max = inter_max, block_min = block_min, 
+#                                  method = method, inter_max_total= inter_max_total) 
+#    return group    
+#print df.groupby('country').apply(f)
+
+#%% align method
+mcf_bp = test_BP.copy()
+#TODO: replace non_valid entries? Dublicates already handled at import
+spl_freqs_bp = mcf_bp.hgs.spl_freq_groupby
+mcf_bp = mcf_bp.hgs.resample_by_group(spl_freqs_bp)
+
+# merge does not work, because columns are attached
+df_merge = pd.merge(out,mcf_bp,how="left", on = "datetime") 
+
+filter_bp = mcf_bp.datetime.isin(out.datetime)
+bp_data = mcf_bp.loc[filter_bp,:]
+# check for np.nan
+if bp_data.hgs.filters.is_nan:
+    pass
+    
+#mcf_bp.datetime.isin(["2001-03-28 07:50:00+00:00"])
+
+def BP_align(df):
+    bp_data= df.hgs.filters.get_bp_data  
+    gw_data= df.hgs.filters.get_gw_data
+    #TODO: Check for non-valid values, create function for this
+    
+    # resample to most common frequency
+    spl_freqs = bp_data.hgs.spl_freq_groupby
+    mcfs = bp_data.hgs.resample_by_group(spl_freqs)
+    
+    # use GW datetimes as filter for required BP data
+    filter_gw = mcfs.datetime.isin(gw_data.datetime)
+    bp_data = mcf_bp.loc[filter_gw,:]
+    
+    # check for np.nan
+    if bp_data.hgs.filters.is_nan:
+        ## identify small gaps
+        # group by identifier columns of site data
+        grouped = mcfs.groupby(df.hgs.filters.obj_col)  
+        out = [] 
+        for name, group in grouped:           
+            print(name)
+            mcf_group = spl_freqs.xs(name)
+            regular = gap_routine(group, mcf=mcf_group, inter_max = inter_max, inter_max_total= inter_max_total, method = method, split_location=False)    
+            # append new dataframes
+            out.append(regular)
+        
+        # reassamble DataFrame    
+        out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True)        
+        out = pd.concat([out,df],ignore_index=True) 
+        pass
+    else:
+        return bp_data
+
+#%% Gap filler
+
+def gap_routine(group, mcf:int = 300, inter_max:int = 3600, block_min: int = 20, method: str = "backfill", inter_max_total: int= 10, split_location=True):
+            print(group.name)
+            # get mcf for group
+            if isinstance(mcf,int):
+                mcf_group = mcf
+            elif isinstance(mcf,pd.Series):    
+                mcf_group = mcf.xs(group.name)
+            else:
+                raise Exception("Error: Wrong format for mcf in gap_routine!")
+            maxgap = inter_max/mcf_group
+            # create mask for gaps
+            s = group["value"]
+            mask, counter = gap_mask(s,maxgap)
+            # use count of masked values to check ratio
+            #TODO: raise exception
+            if counter/len(s)*100 <= inter_max_total:
+                print("{:.2f} % of the '{}' data was interpolated due to gaps < {}s!".format((counter/len(s)*100),group["location"].unique()[0],inter_max))
+            else:
+                raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!")
+            ## interpolate gaps smaller than maxgap
+            # choose interpolation (runs on datetime index)
+            group = upsample(group[mask],method=method)
+            if split_location:
+                ## identify large gaps, split group and reassamble
+                # get minimum block_size (n_entries)
+                block_size = int(block_min/(mcf_group/(60*60*24)))
+                # location splitter for "part" column
+                group = location_splitter(group,block_size, inter_max)  
+            else: 
+                pass
+            # check for remaining nan (should be none)
+            if group.hgs.filters.is_nan:
+                print("Caution! Methods was not able to remove all NaN!")
+            else:
+                pass
+            return group     
 #%%  
 import string
 alpha = list(string.ascii_lowercase)
 
-df = out2[1].copy()
+df = out[1].copy()
+df = df.iloc[250:,:].reset_index()
   
-def location_splitter(df, blocksize, inter_max):
+def location_splitter(df, block_size:int = 30, inter_max:int = 3600):
+    """
+    
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+    block_size : int, optional
+        DESCRIPTION. The default is 30.
+    inter_max : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     diff = df.datetime.diff()
     # find gaps larger than inter_max
     mask = diff.dt.total_seconds() >= inter_max
@@ -147,23 +294,26 @@ def location_splitter(df, blocksize, inter_max):
     # split index into blocks
     blocks = np.split(df.index, idx, axis=0)
     # apply minimum blocksize
-    blocks = [block for block in blocks if len(block) > blocksize]
-    # list of new data frames
-    list_df = [df.iloc[i] for i in blocks]
-    # concat df back with new column for "slot"
-    out = []
-    for i in range(len(list_df)):
-        print(i+1)
-        new_df = list_df[i].copy()
-        new_df["part"] = str(i+1)
-        out.append(new_df)
-        
-    return out , mask, blocks, idx
+    blocks = [block for block in blocks if len(block) > block_size]
+    if len(blocks) == 0:
+        print("Not enough data for '{}' to ensure minimum data block size!".format(df.location.unique()[0]))
+        return None
+    else:    
+        # list of new data frames
+        list_df = [df.iloc[i,:] for i in blocks]
+        # add new column for location "parts"
+        for i, val in enumerate(list_df):
+            # use character string format
+            val.insert(3,"part",str(i+1))       
+        # concat df back with new column for "part"         
+        if len(list_df) == 1:
+            return list_df[0]
+        else:
+            return pd.concat(list_df,ignore_index=True,axis=0) 
 
-
-a,b,c,d = location_splitter(df,30,3600)
-#%%    
-def gap_mask(s, maxgap):
+a  = location_splitter(df,300,3600)
+#%% gap mask    
+def gap_mask(s, maxgap:int):
     """
     Mask NaN gaps larger than a maxium gap size
 
@@ -172,13 +322,14 @@ def gap_mask(s, maxgap):
     s : pandas Series
         DESCRIPTION.
     maxgap : int
-        DESCRIPTION.
+        Maximum number of consecutive interpolated entries.
 
     Returns
     -------
-    numpy array
-        Boolean mask of size s for all NaN gaps larger than maxgap
-
+    mask: numpy array
+        Boolean mask of size s, which is False for all NaN gaps larger than maxgap
+    counter: int
+        Number of interpolated values    
     """
     idx = s.isnull().astype(int).groupby(s.notnull().astype(bool).cumsum()).sum()
     sizes = idx[idx > 0] # size of gaps
@@ -191,12 +342,12 @@ def gap_mask(s, maxgap):
     for gap in gaps:
         mask[gap] = len(gap)    
 
-    return (mask < maxgap) | s.notnull().to_numpy()
+    return (mask < maxgap) | s.notnull().to_numpy(), np.count_nonzero(np.logical_and(mask > 0, mask < maxgap))
 
 mask = mcf.copy()
 
 x = mcf["value"]
-mask["value"] = gap_mask(x, 12)
+mask["value"], counter = gap_mask(x, 12)
 
 #def interpolate_time(df):
     
