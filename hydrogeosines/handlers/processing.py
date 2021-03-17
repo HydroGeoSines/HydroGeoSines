@@ -30,6 +30,12 @@ class Processing(object):
             raise AttributeError("Must be a 'Site' object!")                       
             #print(id(Site)) # test id of class location to compare across package
     
+    
+    ## allow subsetting of Site
+    #TODO: implement method to slice site "by_location", e.g hgs.Processing(Site("Freiburg")).by_location("Site_A").BE_method()
+    def by_location(self,location = str):
+        pass
+        
     def BE_method(self, method, derivative=True):
         
         data = self._obj.data.hgs.pivot

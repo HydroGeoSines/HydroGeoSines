@@ -55,7 +55,7 @@ class HgsAccessor(object):
     def spl_freq_groupby(self):
         # returns most ofen found sampling frequency grouped by object-dtype columns, in seconds
         df = self._obj[self._obj.value.notnull()]
-        df = df.groupby(self.filters.obj_col)["datetime"].agg(lambda x: (x.diff(periods=1).dt.seconds).mode())
+        df = df.groupby(self.filters.obj_col, dropna=False)["datetime"].agg(lambda x: (x.diff(periods=1).dt.seconds).mode())
         #df = df.index.droplevel(3) # remove the zero index entry
         return df
        
@@ -88,8 +88,10 @@ class HgsAccessor(object):
             return row["value"], "m" 
     
     #TODO: add upsampling method with interpolation based on time() ffill() and/or pad()
-    def upsample(self,freq):
-        pass        
+    def upsample(self, method = "time"):
+        out = self._obj.set_index("datetime")
+        out = self._obj.interpolate(method=method).reset_index()
+        return out      
  
     def resample(self, freq):
         # resamples by group and by a given frequency in "seconds".
@@ -114,7 +116,52 @@ class HgsAccessor(object):
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
         return out  
-
+    
+    def location_splitter(self, part_size:int = 30, dt_threshold:int = 3600):
+        """
+        Split dataframe into multiple parts using a maximum timedelta threshold. 
+    
+        Parameters
+        ----------
+        df : pd.DataFrame
+            HGS DataFrame with "location" column.
+        part_size : int, optional
+            Minimum number of entries for location data subset. The default is 30.
+        dt_threshold : int, optional
+            Maximum timedelta threshold. The default is 3600.
+    
+        Returns
+        -------
+        df : pd.DataFrame
+            Original dataframe with an additional column for location "parts".
+    
+        """
+        diff = self._obj.datetime.diff()
+        # find gaps larger than td_threshold
+        mask = diff.dt.total_seconds() >= dt_threshold
+        idx = diff[mask].index # get start index of data block
+        # split index into blocks
+        blocks = np.split(self._obj.index, idx, axis=0)
+        # apply minimum blocksize
+        blocks = [block for block in blocks if len(block) > part_size]
+        if len(blocks) == 0:
+            print("Not enough data for '{}' to ensure minimum part size!".format(self._obj.location.unique()[0]))
+            return pd.DataFrame(columns=self._obj.columns)
+        else:    
+            # list of new data frames
+            list_df = [self._obj.iloc[i,:] for i in blocks]
+            # add new column for location "parts"
+            for i, val in enumerate(list_df):
+                if "part" not in val.columns: 
+                    # use character string format
+                    val.insert(3,"part",str(i+1))    
+                else:
+                    val.loc[val["part"] != np.nan,"part"] = str(i+1)
+            # concat df back with new column for "part"         
+            if len(list_df) == 1:
+                return list_df[0]
+            else:
+                return pd.concat(list_df,ignore_index=True,axis=0)
     #%% hgs functions and filters that need to be adjusted to the package architecture    
     """
     #%% GW properties
@@ -207,8 +254,3 @@ class HgsAccessor(object):
     
     #%% slicing
     # inheritance? https://stackoverflow.com/questions/25511436/python-is-is-possible-to-have-a-class-method-that-acts-on-a-slice-of-the-class
-    
-    def __getitem__(self, index):
-        print(index)
-        return self[index]
-

@@ -21,7 +21,7 @@ class HgsFilters(object):
     # access function 
     def make_attr(self,category):
         def inner():
-            return self._obj[self._obj['category'] == category]
+            return self._obj[self._obj['category'] == category].copy()
         return inner  
     
     @property
@@ -40,4 +40,9 @@ class HgsFilters(object):
     def drop_loc(self,locs):
         locs = np.array(locs).flatten()
         idx = self._obj.location.isin(locs)   
-        return self._obj[~idx].reset_index()         
+        return self._obj[~idx].reset_index(drop = True)  
+
+    def drop_cat(self,categories):
+        categories = np.array(categories).flatten()
+        idx = self._obj.category.isin(categories)   
+        return self._obj[~idx].reset_index(drop = True) 
