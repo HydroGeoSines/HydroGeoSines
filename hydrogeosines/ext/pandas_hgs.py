@@ -15,6 +15,8 @@ import numpy as np
 from .time import Time
 from .hgs_filters import HgsFilters
 
+from ..utils.tools import Tools
+
 @pd.api.extensions.register_dataframe_accessor("hgs")
 class HgsAccessor(object):
     def __init__(self, pandas_obj):
@@ -90,7 +92,7 @@ class HgsAccessor(object):
     #TODO: add upsampling method with interpolation based on time() ffill() and/or pad()
     def upsample(self, method = "time"):
         out = self._obj.set_index("datetime")
-        out = self._obj.interpolate(method=method).reset_index()
+        out = self._obj.interpolate(method=method).reset_index(drop=True)
         return out      
  
     def resample(self, freq):
@@ -162,6 +164,193 @@ class HgsAccessor(object):
                 return list_df[0]
             else:
                 return pd.concat(list_df,ignore_index=True,axis=0)
+    
+    def gap_routine(group, mcf:int = 300, inter_max:int = 3600, part_min: int = 20, method: str = "backfill", inter_max_total: int= 10, split_location=True):
+        """
+        A method that can be passed into a groupby apply function in order to upsample all data null value gaps that are smaller then a threshold timedelta.
+        And split locations into smaller parts for subsets separated by null value gaps larger then a threshold timedelta. Parts need to fullfill a minimum size requirement. 
+    
+        Parameters
+        ----------
+        group : pd.DataFrame
+            HGS DataFrame with "location" column.
+        mcf : int, optional
+            Most common frequency. The default is 300.
+        inter_max : int, optional
+            Maximum timedelta in seconds to be interpolated. The default is 3600.
+        part_min : int, optional
+            Minimum size of location part as timedelta in days. The default is 20.
+        method : str, optional
+            Interpolation method for upsampling to inter_max. The default is "backfill".
+        inter_max_total : int, optional
+            Maximum percentage threshold of values to be interpolated. The default is 10.
+        split_location : TYPE, optional
+            Activate location splitting for large gaps. The default is True.
+    
+        Raises
+        ------
+        Exception
+            DESCRIPTION.
+        exception
+            DESCRIPTION.
+    
+        Returns
+        -------
+        group : pd.Dataframe
+            HGS DataFrame with all gaps due to null values being removed.
+    
+        """
+        print(group.name)
+        # get mcf for group
+        if isinstance(mcf,int):
+            mcf_group = mcf
+        elif isinstance(mcf,pd.Series):    
+            mcf_group = mcf.xs(group.name)
+        else:
+            raise Exception("Error: Wrong format for mcf in gap_routine!")
+        maxgap = inter_max/mcf_group
+        # create mask for gaps
+        s = group["value"]
+        mask, counter = Tools.gap_mask(s,maxgap)
+        # use count of masked values to check ratio
+        if counter/len(s)*100 <= inter_max_total:
+            print("{:.2f} % of the '{}' data was interpolated due to gaps < {}s!".format((counter/len(s)*100),
+                                                                                         group["location"].unique()[0],inter_max))
+        else:
+            raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!", inter_max_total)
+        ## interpolate gaps smaller than maxgap
+        # choose interpolation (runs on datetime index)
+        #group = HgsAccessor.upsample(group[mask],method=method)
+        group = group[mask].hgs.upsample(method=method)
+        if split_location:
+            ## identify large gaps, split group and reassamble
+            # get minimum part_size (n_entries)
+            part_size = int(part_min/(mcf_group/(60*60*24)))
+            # location splitter for "part" column
+            group = group.hgs.location_splitter(part_size=part_size, dt_threshold=inter_max)  
+        else: 
+            pass
+        # check for remaining nan (should be none)
+        if group.hgs.filters.is_nan:
+            print("Caution! Methods was not able to remove all NaN!")
+        else:
+            pass
+        return group     
+    
+    def make_regular(self, inter_max: int = 3600, part_min: int = 20, method: str = "backfill", category = "GW", spl_freq: int = None, inter_max_total: int= 10):
+        """
+        Get a dataframe with a regular sampling by group and no NaN.
+
+        Parameters
+        ----------
+        inter_max : int, optional
+            Maximum of interpolated time interval in seconds. The default is 3600.
+        part_min : int, optional
+            Minimum record duration in days. The default is 20.
+        method : str, optional
+            Interpolation method of Pandas to be used. The default is "backfill".
+        category : str, array or list, optional
+            Category of Site object. The default is "GW".
+        spl_freq : int, optional
+            preset sampling frequency for all groups. The default is None.
+        inter_max_total : int, optional
+            Maximum percentage threshold of values to be interpolated. The default is 10.
+
+        Returns
+        -------
+        regular : TYPE
+            DESCRIPTION.
+
+        """
+        # only use specified data category which is GW by default
+        pos = self._obj["category"].isin(np.array(category).flatten())
+        df_reg = self._obj.loc[pos,:].copy()
+        # keep rest of data to reassemble original dataset
+        df = self._obj.drop(df_reg.index).copy()
+        # use custom sampling frequency
+        if spl_freq is not None:
+            # use predefined sampling frequency
+            mcfs = df_reg.hgs.resample(spl_freq)
+        else:    
+            # find most common frequency (mcf)
+            spl_freq = df_reg.hgs.spl_freq_groupby
+            # resample to mcf
+            mcfs = df_reg.hgs.resample_by_group(spl_freq)
+        
+        ## check for NaN in value Column
+        if mcfs.hgs.filters.is_nan:        
+            ## identify small and large gaps
+            # group by identifier columns of site data
+            regular = mcfs.groupby(mcfs.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freq, 
+                                                                 inter_max = inter_max, part_min = part_min, 
+                                                                 method = method, inter_max_total= inter_max_total).reset_index(drop=True)      
+            # reassamble DataFrame          
+            regular = pd.concat([regular,df],ignore_index=True)  
+        
+        else:
+            print("No Gaps")
+            regular = pd.concat([mcfs,df],ignore_index=True)
+        return regular
+    
+    def BP_align(self, inter_max:int = 3600, method: str ="backfill", inter_max_total:int = 10):
+        """
+        Align barometric pressure with groundwater head data.
+
+        Parameters
+        ----------
+        inter_max : int, optional
+            Maximum of interpolated time interval in seconds. The default is 3600.
+        method : str, optional
+            Interpolation method of Pandas to be used. The default is "backfill".
+        inter_max_total : int, optional
+            Maximum percentage threshold of values to be interpolated. The default is 10.
+
+        Returns
+        -------
+        out : TYPE
+            DESCRIPTION.
+
+        """
+        bp_data= self.filters.get_bp_data  
+        gw_data= self.filters.get_gw_data
+        df = self._obj[~self._obj["category"].isin(["GW","BP"])]
+        # asign part label to bp_data
+        if "part" in bp_data.columns: 
+            bp_data["part"] = bp_data["part"].fillna("0")
+        # category drop function is available in hgs filters
+        #TODO: Check for non-valid values, create function for this
+        
+        # resample to most common frequency
+        spl_freqs = bp_data.hgs.spl_freq_groupby
+        bp_data = bp_data.hgs.resample_by_group(spl_freqs)
+        
+        # use GW datetimes as filter for required BP data
+        filter_gw = bp_data.datetime.isin(gw_data.datetime)
+        bp_data = bp_data.loc[filter_gw,:]
+        # check for np.nan
+        while bp_data.hgs.filters.is_nan:
+            ## identify small gaps
+            # group by identifier columns of site data
+            bp_data = bp_data.groupby(bp_data.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freqs, inter_max = inter_max, 
+                                      method = method, inter_max_total= inter_max_total, split_location=False).reset_index(drop=True)   
+            # resample to get gaps that are larger then max_gap
+            bp_data = bp_data.hgs.resample(spl_freqs)
+            # return datetimes that can not be interpolated because gaps are too big
+            datetimes = bp_data.loc[np.isnan(bp_data["value"]),"datetime"]
+            
+            gw_data = gw_data[~gw_data.datetime.isin(datetimes)]
+                # resample to most common frequency
+            spl_freqs_gw = gw_data.hgs.spl_freq_groupby
+            gw_data = gw_data.hgs.resample_by_group(spl_freqs_gw)
+            gw_data = gw_data.groupby(gw_data.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freqs_gw, inter_max = inter_max, 
+                                      method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True) 
+            
+            filter_gw = bp_data.datetime.isin(gw_data.datetime)
+            bp_data = bp_data.loc[filter_gw,:]
+        #gw_data = gw_data.hgs.resample_by_group(spl_freqs_gw) 
+        out = pd.concat([gw_data, bp_data, df],axis=0,ignore_index=True)
+        return out
+
     #%% hgs functions and filters that need to be adjusted to the package architecture    
     """
     #%% GW properties

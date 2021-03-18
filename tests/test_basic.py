@@ -79,6 +79,19 @@ data2.loc[151000:155000,"value"] = np.nan
 data2.loc[300000:302000,"value"] = np.nan
 # add dummy category
 data2.loc[302000:303000,"category"] = "ET"
+
+#%% Testing methods in hgs pandas
+#new = data.groupby(data.hgs.filters.obj_col).apply(gap_routine,inter_max_total=90).reset_index(drop=True)
+out2 = data2.hgs.make_regular(spl_freq=1200) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
+out2 = out2.hgs.BP_align() # inter_max = 3600, method = "backfill", inter_max_total = 10
+out3 = out2.hgs.pivot
+
+# check if any BP entry is null and if for any row all the GW entries are null
+if (out3["BP"].isnull().any().bool() == False) and (out3["GW"].isnull().all().any() == False):
+    print("Now every GW entry has exactly one matching BP entry")
+else:
+    print("Ups, something went wrong in the data aligning process!")    
+    
 #%% Most common frequency (MCF)
 mcf = test.copy()
 mcf = mcf.hgs.filters.drop_nan # only needed for test data due to the ignore_index in append
@@ -164,8 +177,8 @@ def make_regular(df, inter_max: int = 3600, part_min: int = 20, method: str = "b
     if mcfs.hgs.filters.is_nan:        
         ## identify small and large gaps
         # group by identifier columns of site data
-        regular = mcfs.groupby(df.hgs.filters.obj_col).apply(lambda x: gap_routine(x, mcf=spl_freq, inter_max = inter_max, part_min = part_min, 
-                                  method = method, inter_max_total= inter_max_total)).reset_index(drop=True)        
+        regular = mcfs.groupby(df.hgs.filters.obj_col).apply(gap_routine, mcf=spl_freq, inter_max = inter_max, part_min = part_min, 
+                                  method = method, inter_max_total= inter_max_total).reset_index(drop=True)        
         # reassamble DataFrame          
         regular = pd.concat([regular,df],ignore_index=True)  
     
@@ -178,7 +191,7 @@ def make_regular(df, inter_max: int = 3600, part_min: int = 20, method: str = "b
 out = make_regular(test,inter_max = 3600,part_min=0.2, method="backfill")  
 #out2 = make_regular(test3,inter_max = 3600,part_min=0.2) # no gaps 
 #beta = make_regular(data,inter_max = 3600,part_min=30,category="GW",spl_freq=1200)    
-beta2 = make_regular(data2,inter_max = 3600,part_min=10,category="GW",spl_freq=1200)  
+beta2 = make_regular(data2,inter_max = 3600,part_min=20,category="GW",spl_freq=1200)  
 
 #%% align method
 mcf_bp = test_BP.copy()
@@ -191,11 +204,17 @@ df_merge = pd.merge(out,mcf_bp,how="left", on = "datetime")
 
 filter_bp = mcf_bp.datetime.isin(out.datetime)
 bp_data = mcf_bp.loc[filter_bp,:]
-
-    
 #mcf_bp.datetime.isin(["2001-03-28 07:50:00+00:00"])
 #%%
-def BP_align(df,inter_max:int = 3600, method: str ="backfill", inter_max_total:int = 10):
+
+def f(group,period=5):
+    group['pct']=group['value'].pct_change(periods=period)*100
+    return group    
+print(data.groupby('location').apply(f,period=2))    
+
+#%%
+def BP_align(df, inter_max:int = 3600, method: str ="backfill", inter_max_total:int = 10):
+    
     bp_data= df.hgs.filters.get_bp_data  
     gw_data= df.hgs.filters.get_gw_data
     df = df[~df["category"].isin(["GW","BP"])]
@@ -216,8 +235,8 @@ def BP_align(df,inter_max:int = 3600, method: str ="backfill", inter_max_total:i
     while bp_data.hgs.filters.is_nan:
         ## identify small gaps
         # group by identifier columns of site data
-        bp_data = bp_data.groupby(bp_data.hgs.filters.obj_col).apply(lambda x: gap_routine(x, mcf=spl_freqs, inter_max = inter_max, 
-                                  method = method, inter_max_total= inter_max_total, split_location=False)).reset_index(drop=True)   
+        bp_data = bp_data.groupby(bp_data.hgs.filters.obj_col).apply(gap_routine, mcf=spl_freqs, inter_max = inter_max, 
+                                  method = method, inter_max_total= inter_max_total, split_location=False).reset_index(drop=True)   
         # resample to get gaps that are larger then max_gap
         bp_data = bp_data.hgs.resample(spl_freqs)
         # return datetimes that can not be interpolated because gaps are too big
@@ -227,8 +246,8 @@ def BP_align(df,inter_max:int = 3600, method: str ="backfill", inter_max_total:i
             # resample to most common frequency
         spl_freqs_gw = gw_data.hgs.spl_freq_groupby
         gw_data = gw_data.hgs.resample_by_group(spl_freqs_gw)
-        gw_data = gw_data.groupby(gw_data.hgs.filters.obj_col).apply(lambda x: gap_routine(x, mcf=spl_freqs_gw, inter_max = inter_max, 
-                                  method = method, inter_max_total= inter_max_total, split_location=True)).reset_index(drop=True) 
+        gw_data = gw_data.groupby(gw_data.hgs.filters.obj_col).apply(gap_routine, mcf=spl_freqs_gw, inter_max = inter_max, 
+                                  method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True) 
         
         filter_gw = bp_data.datetime.isin(gw_data.datetime)
         bp_data = bp_data.loc[filter_gw,:]
@@ -236,7 +255,7 @@ def BP_align(df,inter_max:int = 3600, method: str ="backfill", inter_max_total:i
     out = pd.concat([gw_data, bp_data, df],axis=0,ignore_index=True)
     return out
 
-align_data = pd.concat([beta2,test_BP],axis=0)
+#align_data = pd.concat([beta2,test_BP],axis=0)
 align_out  = BP_align(beta2, inter_max = 3600, method = "backfill", inter_max_total = 10)
 #%% Gap filler
 
@@ -246,20 +265,20 @@ def gap_routine(group, mcf:int = 300, inter_max:int = 3600, part_min: int = 20, 
 
     Parameters
     ----------
-    group : TYPE
-        DESCRIPTION.
+    group : pd.DataFrame
+        HGS DataFrame with "location" column.
     mcf : int, optional
-        DESCRIPTION. The default is 300.
+        Most common frequency. The default is 300.
     inter_max : int, optional
-        DESCRIPTION. The default is 3600.
+        Maximum timedelta in seconds to be interpolated. The default is 3600.
     part_min : int, optional
         Minimum size of location part as timedelta in days. The default is 20.
     method : str, optional
-        DESCRIPTION. The default is "backfill".
+        Interpolation method for upsampling to inter_max. The default is "backfill".
     inter_max_total : int, optional
-        DESCRIPTION. The default is 10.
+        Maximum percentage threshold of values to be interpolated. The default is 10.
     split_location : TYPE, optional
-        DESCRIPTION. The default is True.
+        Activate location splitting for large gaps. The default is True.
 
     Raises
     ------
@@ -270,8 +289,8 @@ def gap_routine(group, mcf:int = 300, inter_max:int = 3600, part_min: int = 20, 
 
     Returns
     -------
-    group : TYPE
-        DESCRIPTION.
+    group : pd.Dataframe
+        HGS DataFrame with all gaps due to null values being removed.
 
     """
     print(group.name)
@@ -395,7 +414,6 @@ def gap_mask(s:pd.Series, maxgap:int):
     return (mask < maxgap) | s.notnull().to_numpy(), np.count_nonzero(np.logical_and(mask > 0, mask < maxgap))
 
 mask = mcf.copy()
-
 x = mcf["value"]
 mask["value"], counter = gap_mask(x, 12)
 
@@ -403,7 +421,14 @@ mask["value"], counter = gap_mask(x, 12)
     
 inter = mcf[mask["value"]].interpolate(method="backfill")  
 inter = inter.reset_index()#[self._obj.columns]
-inter = inter.hgs.resample_by_group(spl_freqs)  
+inter = inter.hgs.resample_by_group(spl_freqs) 
+
+#%%
+mask = mcf.copy()
+x = mcf["value"]
+mask, counter = gap_mask(x,12)
+
+group = mcf[mask].hgs.upsample(method="backfill") 
 
 #%%
 length = df_sum[df_sum > 0] # length of gaps
