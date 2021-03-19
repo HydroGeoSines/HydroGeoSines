@@ -71,6 +71,15 @@ class HgsAccessor(object):
             print("No dublicates being found ...")
             return self._obj
     
+    @property
+    def check_BP_align(self):
+        df = self._obj.hgs.pivot
+        # check if any BP entry is null and if for any row all the GW entries are null
+        if (df["BP"].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
+            print("The groundwater (GW) and barometric pressure (BP) data is now aligned. There is now exactly one BP for every GW entry!")
+        else:
+            print("Your groundwater and barometric pressure data are not aligned. Please use the 'make_regular' and 'bp_align' methods!")    
+    
     def unit_converter_vec(self,unit_dict : dict):  
         # adjust values based on a unit conversion factor dictionary
         return self._obj.value*np.vectorize(unit_dict.__getitem__)(self._obj.unit.str.lower())
@@ -151,7 +160,7 @@ class HgsAccessor(object):
             return pd.DataFrame(columns=self._obj.columns)
         else:    
             # list of new data frames
-            list_df = [self._obj.iloc[i,:] for i in blocks]
+            list_df = [self._obj.iloc[i,:].copy() for i in blocks]
             # add new column for location "parts"
             for i, val in enumerate(list_df):
                 if "part" not in val.columns: 
@@ -200,27 +209,28 @@ class HgsAccessor(object):
             HGS DataFrame with all gaps due to null values being removed.
     
         """
-        print(group.name)
+        #print(group.name)
         # get mcf for group
         if isinstance(mcf,int):
             mcf_group = mcf
         elif isinstance(mcf,pd.Series):    
             mcf_group = mcf.xs(group.name)
         else:
-            raise Exception("Error: Wrong format for mcf in gap_routine!")
+            raise Exception("Error: Wrong format of mcf variable in gap_routine!")
         maxgap = inter_max/mcf_group
         # create mask for gaps
         s = group["value"]
         mask, counter = Tools.gap_mask(s,maxgap)
         # use count of masked values to check ratio
         if counter/len(s)*100 <= inter_max_total:
-            print("{:.2f} % of the '{}' data was interpolated due to gaps < {}s!".format((counter/len(s)*100),
-                                                                                         group["location"].unique()[0],inter_max))
+            if "part" in group.columns:
+                print("{:.2f} % of the '{}' data at '{}_{}' was interpolated due to gaps < {}s!".format((counter/len(s)*100), group.name[0], group.name[1], group.name[2],inter_max))
+            else:    
+                print("{:.2f} % of the '{}' data at '{}' was interpolated due to gaps < {}s!".format((counter/len(s)*100), group.name[0], group.name[1],inter_max))
         else:
             raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!", inter_max_total)
         ## interpolate gaps smaller than maxgap
         # choose interpolation (runs on datetime index)
-        #group = HgsAccessor.upsample(group[mask],method=method)
         group = group[mask].hgs.upsample(method=method)
         if split_location:
             ## identify large gaps, split group and reassamble
@@ -250,7 +260,7 @@ class HgsAccessor(object):
         method : str, optional
             Interpolation method of Pandas to be used. The default is "backfill".
         category : str, array or list, optional
-            Category of Site object. The default is "GW".
+            Valid category of Site object. The default is "GW".
         spl_freq : int, optional
             preset sampling frequency for all groups. The default is None.
         inter_max_total : int, optional
@@ -285,10 +295,11 @@ class HgsAccessor(object):
                                                                  inter_max = inter_max, part_min = part_min, 
                                                                  method = method, inter_max_total= inter_max_total).reset_index(drop=True)      
             # reassamble DataFrame          
-            regular = pd.concat([regular,df],ignore_index=True)  
+            regular = pd.concat([regular,df],ignore_index=True)
+            print("Data of the category '{}' is regularly sampled now!".format(category))
         
         else:
-            print("No Gaps")
+            print("There were no gaps in the data after resampling!")
             regular = pd.concat([mcfs,df],ignore_index=True)
         return regular
     
