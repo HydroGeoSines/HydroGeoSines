@@ -72,8 +72,8 @@ class Site(Read, ET):
         else:
            raise Exception("Error: Input 'data' must be a pd.DataFrame")
 
-    #%% Site specific functions
-    # because constants are attributed to site
+    #%% Site specific functions    
+    ## because constants are attributed to site
     @staticmethod
     def freq_select(cat):
         # returns a set of unique frequency values for a given input category

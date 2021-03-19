@@ -1,5 +1,6 @@
 #import pandas as pd
 import numpy as np 
+import pandas as pd
 
 class Tools(object):
     # define all class attributes here 
@@ -57,3 +58,35 @@ class Tools(object):
         phs = np.angle(z)
         return {"amp":amp, "phs":phs}
             
+    @staticmethod
+    def gap_mask(s:pd.Series, maxgap:int):
+        """
+        Mask NaN gaps that fall below a maxium gap size and also returns a counter.
+    
+        Parameters
+        ----------
+        s : pd.Series
+            A Series with null entries
+        maxgap : int
+            Maximum number of consecutive null entries that are marked as True.
+    
+        Returns
+        -------
+        mask: numpy array
+            Boolean mask of size s, which is False for all null(NaN) gaps larger then maxgap
+        counter: int
+            Number of null entries marked as True     
+    
+        """
+        idx = s.isnull().astype(int).groupby(s.notnull().astype(bool).cumsum()).sum()
+        sizes = idx[idx > 0] # size of gaps
+        start = sizes.index + (sizes.cumsum() - sizes) # get start index
+        stop  = start + sizes # get stop index
+        gaps = [np.arange(a,b) for a,b in zip(start,stop)] # get indices of each individual gap
+        
+        ## create a mask for the gap sizes
+        mask = np.zeros_like(s)
+        for gap in gaps:
+            mask[gap] = len(gap)    
+    
+        return (mask < maxgap) | s.notnull().to_numpy(), np.count_nonzero(np.logical_and(mask > 0, mask < maxgap))
