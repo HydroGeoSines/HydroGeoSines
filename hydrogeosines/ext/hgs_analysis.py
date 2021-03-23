@@ -166,7 +166,7 @@ class Analysis(object):
         condnum = np.max(singular) / np.min(singular)
         # print('Conditioning number: {:,.0f}'.format(condnum))
         if (condnum > 1e6):
-            warnings.warn('The solution is ill-conditioned!')
+            warnings.warn('The least-squares solution is ill-conditioned (condition number is {:.1f})!'.format(condnum))
         # 	print(Phi)
         y_hat = Phi@theta
         # the DC component

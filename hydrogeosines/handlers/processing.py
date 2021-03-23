@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt # this should probably not be added in here. Generally loaded in site through hgs
 import os, sys
+import warnings
 
 from ..ext.hgs_analysis import Analysis
 from ..models.site import Site
@@ -53,7 +54,7 @@ class Processing(object):
         #return {"comp":comp, "freq":freqs, "var":var}
         return var #.update(values[1]["freq"])
     
-    
+    #%% calculate BE using time-domain approaches
     def BE_method(self, method, derivative=True):
         data = self._obj.data.hgs.pivot
         if any(cat not in data.columns for cat in ("GW","BP")):
@@ -80,9 +81,18 @@ class Processing(object):
         #    result = Analysis.BE_Quilty_and_Roeloffs(X,Y, freq, nperseg, noverlap)
         return result
     
-    
-    def BE_calc(self, method='rau', gw_locs=None, bp_loc:str=None, et_loc:str=None, freq_method:str='hals'):
+    #%% calculate BE using frequency-domain approaches
+    def BE_freq(self, method='rau', gw_locs=None, bp_loc:str=None, et_loc:str=None, freq_method:str='hals'):
         print("Start BE_calc procedure ...")
+        if (freq_method.lower() == 'hals'):
+            min_duration = 20
+            min_splrate = 24
+        elif (freq_method.lower() == 'hals'):
+            min_duration = 60
+            min_splrate = 24
+        else:
+            raise Exception("Error: The frequency-domain method '{}' is not available!".format(freq_method))
+        
         # first aggregate all the datasets into one
         data = self._obj.data.pivot(index='datetime', columns=['category', 'location'], values='value')
         
@@ -96,20 +106,18 @@ class Processing(object):
             raise Exception("Error: BP location '{}' is not available!".format(bp_loc))
         # calculate datetime as floating point numbers ...
         BP = data['BP'][bp_loc].values
-        tmp = np.isnan(BP)
-        tdelta = (data.index[~tmp].tz_localize(None) - data.index[~tmp].tz_localize(None)[0])
-        bp_tf = (tdelta.days + (tdelta.seconds / (60*60*24))).values
-        if (bp_tf.max() - bp_tf.min() < 20):
-            raise Exception("Error: The BP duration for location {} must be at least 20 days for this analysis!".format(bp_loc))
-        if (len(bp_tf)/(bp_tf.max() - bp_tf.min()) < 24):
-            raise Exception("Error: The BP average sampling rate location {} must be at least 24 samples per hour for this analysis!".format(bp_loc))
-        freqs = Site.freq_select("BP")
-        bp_tf = bp_tf - bp_tf.min()
-        BP_detr = Analysis.lin_window_ovrlp(bp_tf, BP)
-        BP_mod, BP_hals  = Analysis.harmonic_lsqr(bp_tf, BP_detr, freqs)
-        print(BP_hals)
-        BP_m2_idx = Site.freq_idx("M2", "BP")
-        BP_m2_idx = Site.freq_idx("M2", "BP")
+        if (freq_method.lower() == 'hals'):
+            tmp = np.isnan(BP)
+            tdelta = (data.index[~tmp].tz_localize(None) - data.index[~tmp].tz_localize(None)[0])
+            bp_tf = (tdelta.days + (tdelta.seconds / (60*60*24)))
+            if (bp_tf.max() - bp_tf.min() < min_duration):
+                raise Exception("Error: The BP duration for location {} must be at least 20 days for this analysis!".format(bp_loc))
+            if (len(bp_tf)/(bp_tf.max() - bp_tf.min()) < min_splrate):
+                raise Exception("Error: The BP average sampling rate location {} must be at least 24 samples per hour for this analysis!".format(bp_loc))
+            freqs = Site.freq_select("BP")
+            bp_tf = bp_tf - bp_tf.min()
+            BP_detr = Analysis.lin_window_ovrlp(bp_tf, BP)
+            BP_mod, BP_hals  = Analysis.harmonic_lsqr(bp_tf, BP_detr, freqs)
         BP_s2_idx = Site.freq_idx("S2", "BP")
         BP_s2_idx = Site.freq_idx("S2", "BP")
                 
@@ -121,18 +129,18 @@ class Processing(object):
             raise Exception("Error: ET location '{}' is not available!".format(et_loc))
         # calculate datetime as floating point numbers ...
         ET = data['ET'][et_loc].values
-        tmp = np.isnan(ET)
-        tdelta = (data.index[~tmp].tz_localize(None) - data.index[~tmp].tz_localize(None)[0])
-        et_tf = (tdelta.days + (tdelta.seconds / (60*60*24))).values
-        if (et_tf.max() - et_tf.min() < 20):
-            raise Exception("Error: The ET duration for location '{}' must be at least 20 days for this analysis!".format(et_loc))
-        if (len(et_tf)/(et_tf.max() - et_tf.min()) < 24):
-            raise Exception("Error: The ET average sampling rate location {} must be at least 24 samples per hour for this analysis!".format(et_loc))
-        freqs = Site.freq_select("ET")
-        et_tf = et_tf - et_tf.min()
-        ET_detr = Analysis.lin_window_ovrlp(et_tf, ET)
-        ET_mod, ET_hals  = Analysis.harmonic_lsqr(et_tf, ET_detr, freqs)
-        print(ET_hals)
+        if (freq_method.lower() == 'hals'):
+            tmp = np.isnan(ET)
+            tdelta = (data.index[~tmp].tz_localize(None) - data.index[~tmp].tz_localize(None)[0])
+            et_tf = (tdelta.days + (tdelta.seconds / (60*60*24))).values
+            if (et_tf.max() - et_tf.min() < min_duration):
+                raise Exception("Error: The ET duration for location '{}' must be at least 20 days for this analysis!".format(et_loc))
+            if (len(et_tf)/(et_tf.max() - et_tf.min()) < min_splrate):
+                raise Exception("Error: The ET average sampling rate location {} must be at least 24 samples per hour for this analysis!".format(et_loc))
+            freqs = Site.freq_select("ET")
+            et_tf = et_tf - et_tf.min()
+            ET_detr = Analysis.lin_window_ovrlp(et_tf, ET)
+            ET_mod, ET_hals  = Analysis.harmonic_lsqr(et_tf, ET_detr, freqs)
         ET_m2_idx = Site.freq_idx("M2", "ET")
         ET_m2_idx = Site.freq_idx("M2", "ET")
         ET_s2_idx = Site.freq_idx("S2", "ET")
@@ -147,37 +155,35 @@ class Processing(object):
         GW_m2_idx = Site.freq_idx("M2", "GW")
         GW_s2_idx = Site.freq_idx("S2", "GW")
         GW_s2_idx = Site.freq_idx("S2", "GW")
-        print(GW_s2_idx)
         # loop through GW ...
         for loc in gw_locs:
             if loc not in data['GW'].columns:
                 raise Exception("Error: GW location '{}' is not available!".format(loc))
                 
-            print(loc)
             # check and loop through GW category
+            print("Working on location '{}' ...".format(loc))
             GW = data['GW'][loc].values
             tmp = np.isnan(GW)
             tdelta = (data.index[~tmp].tz_localize(None) - data.index[~tmp].tz_localize(None)[0])
             gw_tf = (tdelta.days + (tdelta.seconds / (60*60*24))).values
-            if (gw_tf.max() - gw_tf.min() < 20):
+            if (gw_tf.max() - gw_tf.min() < min_duration):
                 raise Exception("Error: The GW duration for location '{}' must be at least 20 days for this analysis!".format(et_loc))
-            if (len(gw_tf)/(gw_tf.max() - gw_tf.min()) < 24):
+            if (len(gw_tf)/(gw_tf.max() - gw_tf.min()) < min_splrate):
                 raise Exception("Error: The GW average sampling rate for location '{}' must be at least 24 samples per hour for this analysis!".format(et_loc))
             
-            # which frequency domain method to use here ...
-            if (freq_method == 'hals'):
+            #%% which frequency domain method to use here ...
+            if (freq_method.lower() == 'hals'):
                 # perform a HALS based frequency analysis ...
                 freqs = Site.freq_select("GW")
                 gw_tf = gw_tf - gw_tf.min()
                 GW_detr = Analysis.lin_window_ovrlp(gw_tf, GW)
                 GW_mod, GW_hals  = Analysis.harmonic_lsqr(gw_tf, GW_detr, freqs)
-                print(GW_hals)
-            elif (freq_method == 'fft'):
+            elif (freq_method.lower() == 'fft'):
                 pass
-            else:
-                raise Exception("Error: The frequency-domain method '{}' is not available!".format(freq_method))
+            # TODO needs to be implemented
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             
-            # which BE method to use here ...
+            #%% which BE method to use here ...
             if (method == 'rau'):
                 # Calculate BE values
                 # Equation 9, Rau et al. (2020), doi:10.5194/hess-24-6033-2020
@@ -185,7 +191,9 @@ class Processing(object):
                 GW_AT_s2 = GW_hals['comp'][GW_s2_idx] - GW_ET_s2
                 # a phase check ...
                 GW_ET_m2_dphi = np.angle(GW_hals['comp'][GW_m2_idx] / ET_hals['comp'][ET_m2_idx])
-                print(GW_ET_m2_dphi)
+                
+                if (np.abs(GW_ET_m2_dphi) > 5):
+                    warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
                 
                 BE = np.abs(GW_AT_s2 / BP_hals['comp'][BP_s2_idx])
                 be_results[loc] = {'BE': BE}
@@ -195,16 +203,15 @@ class Processing(object):
                 # Equation 4, Acworth et al. (2016), doi:10.1002/2016GL071328
                 BE = (np.abs(GW_hals['comp'][GW_s2_idx])  + np.abs(ET_hals['comp'][ET_s2_idx]) * np.cos(np.angle(BP_hals['comp'][BP_s2_idx]) - np.angle(ET_hals['comp'][ET_s2_idx])) * (np.abs(GW_hals['comp'][GW_m2_idx]) / np.abs(ET_hals['comp'][ET_m2_idx]))) / np.abs(BP_hals['comp'][BP_s2_idx])
                 be_results[loc] = {'BE': BE}
+                # provide a user warning ...
+                if (np.abs(GW_hals['comp'][GW_m2_idx]) > np.abs(GW_hals['comp'][GW_s2_idx])):
+                    warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
                 pass
             else:
                 raise Exception("Error: The method '{}' is not available!".format(method))
-                        
-            # regress_deconv(self, tf, GW, BP, ET=None, lag_h=24, et=False, et_method='hals', fqs=None):
-            
-            
         return be_results
 
-    
+    #%% Correct GW heads using BRF-based analysis
     def GW_correct(self, gw_locs=None, bp_loc:str=None, et_loc:str=None, lag_h=24, et_method=None, fqs=None):
         print("Start GW_correct procedure ...")
         # first aggregate all the datasets into one
@@ -257,8 +264,8 @@ class Processing(object):
             if loc not in data['GW'].columns:
                 raise Exception("Error: GW location '{}' is not available!".format(loc))
                 
-            print(loc)
             # check and loop through GW category
+            print("Working on location '{}' ...".format(loc))
             GW = data['GW'][loc].values
             tmp = np.isnan(GW)
             tdiff = np.diff(data.index[~tmp])

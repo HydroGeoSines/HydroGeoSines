@@ -17,8 +17,7 @@ data = acworth_site.data
 heads = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 
 #%% Processing
-print("Correct heads ...")
+print("Calculate BE ...")
 process_acworth = hgs.Processing(acworth_site)
 
-be_results = process_acworth.BE_calc(method='acworth')
-
+be_results = process_acworth.BE_freq(method='rau')
