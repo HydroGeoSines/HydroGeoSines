@@ -20,19 +20,5 @@ heads = data.pivot(index='datetime', columns=['category', 'location'], values='v
 print("Correct heads ...")
 process_acworth = hgs.Processing(acworth_site)
 
-corrected, params = process_acworth.GW_correct(et_method='ts', lag_h=12)
+be_results = process_acworth.BE_calc(method='acworth')
 
-#%% plot corrected heads
-plt.figure()
-plt.plot(heads.index.values, heads['GW']['BLM-1'])
-plt.plot(corrected.index.values, corrected['BLM-1'])
-
-#%%
-plt.figure()
-lag_t = params['BLM-1']['brf']['lag']
-crf = params['BLM-1']['brf']['crf']
-
-plt.plot(lag_t, crf)
-plt.ylim([0,1])
-
-print(heads)

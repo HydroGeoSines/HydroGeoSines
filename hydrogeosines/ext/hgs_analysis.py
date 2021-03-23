@@ -337,7 +337,7 @@ class Analysis(object):
             condnum = np.max(sgl) / np.min(sgl)
             # print('Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
-                warnings.warn('The solution is ill-conditioned!')
+                warnings.warn('The least-squares estimation is ill-conditioned (condition number is {:.0f})!'.format(condnum))
 
             # ----------------------------------------------
             nc = len(c)
@@ -446,7 +446,7 @@ class Analysis(object):
             condnum = np.max(sgl) / np.min(sgl)
             # print('Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
-                warnings.warn('The solution is ill-conditioned!')
+                warnings.warn('The least-squares estimation is ill-conditioned (condition number is {:.0f})!'.format(condnum))
 
             #%% determine the results
             nc = len(c)

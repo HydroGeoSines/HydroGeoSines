@@ -80,17 +80,28 @@ class Site(Read, ET):
         freqs = []
         if cat in ("ET","GW"):
             freqs.append(const['_etfqs'].values())
-        if cat in ("AT","GW"):
+        if cat in ("BP"):
             freqs.append(const['_atfqs'].values())
         #flatten list of lists and return unique values
         return np.array(list(dict.fromkeys([item for sublist in freqs for item in sublist])))
 
     @staticmethod
+    def freq_idx(darwin, cat):
+        # returns a set of unique frequency values for a given input category
+        if cat in ("ET","GW"):
+            if (darwin in const['_etfqs'].keys()):
+                return list(const['_etfqs'].keys()).index(darwin)
+        if cat in ("BP"):
+            if (darwin in const['_atfqs'].keys()):
+                return list(const['_atfqs'].keys()).index(darwin)
+
+    
+    @staticmethod
     def comp_select(cat):
         # returns a set of unique frequency values for a given input category
         if cat == "ET":
             comps = const["_etfqs"]
-        if cat == "AT":
+        if cat == "BP":
             comps = const["_atfqs"]
         if cat == "GW":
             comps = {**const["_etfqs"], **const["_atfqs"]}
