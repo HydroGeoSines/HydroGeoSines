@@ -136,5 +136,3 @@ print(pivot)
 
 # #%%
 # pivot = test.data.dt_pivot()
-"""
-#%%
