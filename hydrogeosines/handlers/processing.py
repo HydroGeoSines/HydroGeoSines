@@ -97,6 +97,7 @@ class Processing(object):
         #    result = Analysis.BE_Quilty_and_Roeloffs(X,Y, freq, nperseg, noverlap)
         return result
     	"""
+        
     def hals(self, cat="GW"):
         out = {}
         #check for non valid category
@@ -122,11 +123,11 @@ class Processing(object):
             out[name] = var
 
         return out
-
+    
     def fft(self, cat, loc, length=3, freqs=None):
         min_duration = 60
         min_splrate = 12
-        Tools.check_affiliation(cat, self._obj.VALID_CATEGORY)
+        utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
         if loc not in self._obj.data_pivot[cat].columns:
             raise Exception("Category '{}' and location '{}' set is not available!".format(cat, loc))
         if freqs is None:
@@ -150,32 +151,6 @@ class Processing(object):
             self._obj.results[cat] = {loc: {}}
         self._obj.results[cat][loc] = {'FFT': {'y_detrend':  values_detr}}
         self._obj.results[cat][loc]['FFT'].update(values_fft)
-        return
-
-    def hals(self, cat, loc, length=None, freqs=None):
-        min_duration = 20
-        min_splrate = 24
-        Tools.check_affiliation(cat, self._obj.VALID_CATEGORY)
-        if loc not in self._obj.data_pivot[cat].columns:
-            raise Exception("Category '{}' and location '{}' set is not available!".format(cat, loc))
-        if freqs is None:
-            freqs = Site.freq_select(cat)
-        if (length is None):
-            length = 3
-        values = self._obj.data_pivot[cat][loc].values
-        tmp = np.isnan(values)
-        tdelta = (self._obj.data_pivot.index[~tmp].tz_localize(None) - self._obj.data_pivot.index[~tmp].tz_localize(None)[0])
-        tf = (tdelta.days + (tdelta.seconds / (60*60*24)))
-        if (tf.max() - tf.min() < min_duration):
-            raise Exception("The record duration for category {} and location {} must be at least {:.0f} days for this analysis!".format(cat, loc, min_duration))
-        if (len(tf)/(tf.max() - tf.min()) < min_splrate):
-            raise Exception("The average sampling rate for category {} and location {} must be at least {:.0f} samples per hour for this analysis!".format(cat, loc, min_splrate))
-        values_detr = Analysis.lin_window_ovrlp(tf, values, length)
-        values_mod, values_hals  = Analysis.harmonic_lsqr(tf, values_detr, freqs)
-        if loc not in self._obj.results[cat]:
-            self._obj.results[cat] = {loc: {}}
-        self._obj.results[cat][loc] = {'HALS': {'y_detrend':  values_detr, 'y_model': values_mod}}
-        self._obj.results[cat][loc]['HALS'].update(values_hals)
         return
 
     #%% calculate BE using frequency-domain approaches

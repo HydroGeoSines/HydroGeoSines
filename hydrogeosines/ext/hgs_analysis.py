@@ -230,6 +230,17 @@ class Analysis(object):
             warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
         
         return BE
+
+    @staticmethod
+    def K_Ss_estimate(ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, bh_diam, scr_len, scr_diam, scr_depth):
+        # need borehole construction parameters
+        pass
+        return
+    
+    @staticmethod
+    def Porosity():
+        pass
+        return
     
     @staticmethod
     def quantise(data, step):
@@ -340,7 +351,7 @@ class Analysis(object):
             np.add.at(y_detr,i,detrend)
             # count number of detrends per sample (depends on overlap)
             np.add.at(counter,i,1)
-
+            
         # window gaps, marked by missing detrend are set to np.nan
         counter[counter==0] = np.nan
         # create final detrend array
@@ -348,7 +359,7 @@ class Analysis(object):
         if len(y_detrend[np.isnan(y_detrend)]) > 0:
             # replace nan-values assuming a mean of zero
             y_detrend[np.isnan(y_detrend)] = 0.0
-
+            
         return y_detrend
 
     @staticmethod
