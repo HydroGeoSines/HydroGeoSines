@@ -155,17 +155,19 @@ class Processing(object):
 
     #%% calculate BE using frequency-domain approaches
     def BE_freq(self, method='rau', gw_locs=None, bp_loc:str=None, et_loc:str=None, freq_method:str='hals', update=False):
-
+        
+        data = self._obj.data.pivot(index='datetime', columns=['category', 'location'], values='value')
+        
         #%% select BP and perform
-        if 'BP' not in self._obj.data_pivot.columns:
+        if 'BP' not in data.columns:
             raise Exception('Error: BP is required but not found in the dataset!')
         # if no locations are listed, use deafult values
         if bp_loc is None:
-            bp_loc = self._obj.data_pivot['BP'].columns[0]
+            bp_loc = data['BP'].columns[0]
         if et_loc is None:
-            et_loc = self._obj.data_pivot['ET'].columns[0]
+            et_loc = data['ET'].columns[0]
         if gw_locs is None:
-            gw_locs = self._obj.data_pivot['GW'].columns
+            gw_locs = data['GW'].columns
 
         #%%
         # define the required frequency values in cpd
@@ -180,7 +182,7 @@ class Processing(object):
                 self.hals('ET', et_loc)
 
             for gw_loc in gw_locs:
-                if gw_loc not in self._obj.data_pivot['GW'].columns:
+                if gw_loc not in data['GW'].columns:
                     raise Exception("Category 'GW' location '{}' is not available!".format(gw_loc))
                 if (not gw_loc in self._obj.results['GW']) or (not 'HALS' in self._obj.results['GW'][gw_loc]) or update:
                     self.hals('GW', gw_loc)
@@ -206,7 +208,7 @@ class Processing(object):
                 self.fft('ET', et_loc)
 
             for gw_loc in gw_locs:
-                if gw_loc not in self._obj.data_pivot['GW'].columns:
+                if gw_loc not in data['GW'].columns:
                     raise Exception("Category 'GW' location '{}' is not available!".format(gw_loc))
                 if (not gw_loc in self._obj.results['GW']) or (not 'FFT' in self._obj.results['GW'][gw_loc]) or update:
                     self.fft('GW', gw_loc)

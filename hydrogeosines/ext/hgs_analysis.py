@@ -250,8 +250,7 @@ class Analysis(object):
             warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
 
         return BE
-
-
+    
     @staticmethod
     def K_Ss_estimate(ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, case_rad, scr_len, scr_rad, scr_depth):
         # !!! need borehole construction parameters
