@@ -54,8 +54,12 @@ bp_locs = data.hgs.filters.get_bp_locs
 gw_locs = data.hgs.filters.get_gw_locs
 
 ## Processing
-#process_csiro = hgs.Processing(csiro_site)
-#hals_results  = process_csiro.hals()
+# create Instance of Processing with csiro_site
+process_csiro = hgs.Processing(csiro_site)
+# create Instance of Processing for specific locations of csiro_site
+locations = ["Site_A","Site_B"]
+process_csiro_SiteA_B = hgs.Processing(csiro_site).by_gwloc(locations)
+hals_results  = process_csiro.hals()
 #be_results  = process_csiro.BE()
 
 ## Make data regular and aligned 
@@ -79,7 +83,7 @@ mcf = mcf.hgs.resample_by_group(spl_freqs)
 #%% filter upsampling with gap_mask (included in make_regular)
 mask = mcf.copy()
 x = mcf["value"]
-mask, counter = hgs.Tools.gap_mask(x,12)
+mask, counter = hgs.utils.gap_mask(x,12)
 
 group = mcf[mask].hgs.upsample(method="backfill") 
 

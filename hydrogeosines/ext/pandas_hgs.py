@@ -15,7 +15,7 @@ import numpy as np
 from .time import Time
 from .hgs_filters import HgsFilters
 
-from ..utils.tools import Tools
+from .. import utils
 
 @pd.api.extensions.register_dataframe_accessor("hgs")
 class HgsAccessor(object):
@@ -217,10 +217,11 @@ class HgsAccessor(object):
             mcf_group = mcf.xs(group.name)
         else:
             raise Exception("Error: Wrong format of mcf variable in gap_routine!")
+        # maximum number of gaps    
         maxgap = inter_max/mcf_group
         # create mask for gaps
         s = group["value"]
-        mask, counter = Tools.gap_mask(s,maxgap)
+        mask, counter = utils.gap_mask(s,maxgap)
         # use count of masked values to check ratio
         if counter/len(s)*100 <= inter_max_total:
             if "part" in group.columns:
@@ -259,7 +260,7 @@ class HgsAccessor(object):
             Minimum record duration in days. The default is 20.
         method : str, optional
             Interpolation method of Pandas to be used. The default is "backfill".
-        category : str, array or list, optional
+        category : {int, array_like}, optional
             Valid category of Site object. The default is "GW".
         spl_freq : int, optional
             preset sampling frequency for all groups. The default is None.
@@ -325,7 +326,7 @@ class HgsAccessor(object):
         bp_data= self.filters.get_bp_data  
         gw_data= self.filters.get_gw_data
         df = self._obj[~self._obj["category"].isin(["GW","BP"])]
-        # asign part label to bp_data
+        # asign part label to bp_data, because np.nan values are difficult to handle
         if "part" in bp_data.columns: 
             bp_data["part"] = bp_data["part"].fillna("0")
         # category drop function is available in hgs filters
