@@ -65,12 +65,19 @@ class Analysis(object):
     @staticmethod
     def BE_linear_regression(X, Y):
         '''
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        Calculate instantaneous barometric efficiency using linear regression, a time domain solution.
 
-        Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data, provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
+
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
         '''
         result = np.linregress(Y, X)[0]
         return result
@@ -78,12 +85,23 @@ class Analysis(object):
     @staticmethod
     def BE_Clark(X, Y):
         '''
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        Calculate instantaneous barometric efficiency using the Clark (1967) method, a time domain solution.
 
-        Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
+
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+
+        Notes
+        -----
+            ** Need to check that Clark's rules are implemented the right way around
         '''
         sX, sY = [0], [0]
         for x,y in zip(X, Y):
@@ -175,7 +193,7 @@ class Analysis(object):
         return result
 
     @staticmethod
-    def BE_Quilty_and_Roeloffs(X, Y, freq, nperseg, noverlap):
+    def BE_Rojstaczer(X, Y, freq, nperseg, noverlap):
         '''
 
 
@@ -213,12 +231,12 @@ class Analysis(object):
         GW_ET_s2 = (GW_m2 / ET_m2) * ET_s2
         GW_AT_s2 = GW_s2 - GW_ET_s2
         BE = (1/amp_ratio)*np.abs(GW_AT_s2 / BP_s2)
-        
+
         # a phase check ...
         GW_ET_m2_dphi = np.angle(GW_m2 / ET_m2)
         if ((amp_ratio == 1) and (np.abs(GW_ET_m2_dphi) > 5)):
             warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
-        
+
         return BE
 
     @staticmethod
@@ -226,11 +244,11 @@ class Analysis(object):
         # Calculate BE values
         # Equation 4, Acworth et al. (2016), doi:10.1002/2016GL071328
         BE = (np.abs(GW_s2)  + np.abs(ET_s2) * np.cos(np.angle(BP_s2) - np.angle(ET_s2)) * (np.abs(GW_m2) / np.abs(ET_m2))) / np.abs(BP_s2)
-        
+
         # provide a user warning ...
         if (np.abs(GW_m2) > np.abs(GW_s2)):
             warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
-        
+
         return BE
 
 
@@ -238,20 +256,20 @@ class Analysis(object):
     def K_Ss_estimate(ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, case_rad, scr_len, scr_rad, scr_depth):
         # !!! need borehole construction parameters
         # !!! need to make sure that ET data has strain units!!!
-        
+
         # M2 frequency
         f_m2 = const['_etfqs']['M2']
-        
+
         amp = np.abs(GW_m2 / ET_m2)
         # amp = GW_amp_M2 / ETstr_man #
         print("Amplitude response / areal strain sensitivity: {:.3f}".format(amp))
-        
+
         #ET phase difference
         phase = np.angle(GW_m2 / ET_m2)
         print("delta_ET-GW: {:.4f} [rad], {:.4f} [°]".format(phase, np.degrees(phase)))
-        
+
         results = {'GW-ET_Ar': amp, 'GW-ET_dphi': phase}
-        
+
         #%% use the Hsieh model
         if (phase < 0.01):
             global Ker, Kei, power, sqrt
@@ -259,7 +277,7 @@ class Analysis(object):
             Kei = np.frompyfunc(kei, 2, 1)
             power = np.frompyfunc(power, 2, 1)
             sqrt = np.frompyfunc(sqrt, 1, 1)
-            
+
             # the horizontal flow / negative phase model
             def et_hflow(K, S_s, r_w=0.1, r_c=0.1, b=2, f=f_m2):
                 global Ker, Kei, power, sqrt
@@ -287,7 +305,7 @@ class Analysis(object):
                     return Ar, dPhi
                 else:
                     return np.Inf, np.Inf
-            
+
             def fit_amp_phase(props, amp, phase, r_c, r_w, scr_len, freq):
                 #print(props)
                 K, S_s = props
@@ -297,18 +315,18 @@ class Analysis(object):
                 error = np.asarray([res_amp,res_phase])
             #    print(error)
                 return error
-            
+
             #%%
             print("-------------------------------------------------")
             print('Joint inversion of K and Ss:')
             # least squares fitting
             fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp, phase, case_rad, scr_rad, scr_len, f_m2), xtol=1e-30, ftol=1e-30, gtol=1e-16, method='lm')
             print(fit)
-            
+
             # change units to m and s
             K = fit.x[0]/24/3600
             Ss = fit.x[1]
-            
+
             print("-------------------------------------------------")
             if (fit.status > 0):
                 print("Hydraulic conductivity: {:.2e} m/s".format(K))
@@ -318,11 +336,11 @@ class Analysis(object):
                 print("Amplitude ratio: {:.3f} [-]".format(Ar))
                 print("Phase shift: {:.3f} [rad], {:.2f}°".format(dPhi, np.degrees(dPhi)))
                 print("-------------------------------------------------")
-                
+
                 results.update({'K': K, 'Ss': Ss, 'Model': 'Hsieh', 'redidual': 'XXXX', 'screen_radius': scr_rad, 'casing_radius': case_rad, 'screen_length': scr_len})
             else:
                 print('Failed!')
-        
+
         #%% use the Wang model
         else:
             # the vertical flow / positive phase model
@@ -331,14 +349,14 @@ class Analysis(object):
                 omega = 2*np.pi*(f/24/3600)
                 delta = np.sqrt(2*D_h/omega)
                 return (np.sqrt(1 - 2*np.exp(-z/delta) * np.cos(z/delta) + np.exp((-2*z)/delta)))
-            
+
             # Note: negative added in front of arctan
             def vflow_phase(K, S_s, z=20, f=f_m2):
                 D_h = K / S_s
                 omega = 2*np.pi*(f/24/3600)
                 delta = np.sqrt(2*D_h/omega)
                 return np.arctan((np.exp(-z/delta)*np.sin(z/delta))/(1-np.exp(-z/delta)*np.cos(z/delta)))
-            
+
             def residuals(props, amp, phase, depth, freq):
                 K, S_s = props
                 res_amp = amp*S_s - vflow_amp(K, S_s, depth, freq)
@@ -346,33 +364,33 @@ class Analysis(object):
                 error = np.asarray([res_amp, res_phase])
                 print(error)
                 return error
-            
+
             # least squares fitting wang
             fit =  least_squares(residuals, [0.01, 0.01], args=(amp, phase, scr_depth, f_m2), method='lm')
-            
+
             # change units to m and s
             K = fit.x[0]
             Ss = fit.x[1]
-            
+
             print(fit)
-            
+
             print("-------------------------------------------------")
             if (fit.status > 0):
-                print('Success:')   
+                print('Success:')
                 print("Hydraulic conductivity is: {:.3e} m/s".format(K))
                 print("Specific storage is: {:.3e} 1/m".format(Ss))
-                
+
                 results.update({'K': K, 'Ss': Ss, 'Model': 'Wang', 'redidual': 'XXXX', 'screen_depth': scr_depth})
             else:
                 print('Failed!')
-        
+
         return results
-    
+
     @staticmethod
     def Porosity():
         pass
         return
-    
+
     @staticmethod
     def quantise(data, step):
         ''' Quantization of a signal '''
@@ -482,7 +500,7 @@ class Analysis(object):
             np.add.at(y_detr,i,detrend)
             # count number of detrends per sample (depends on overlap)
             np.add.at(counter,i,1)
-            
+
         # window gaps, marked by missing detrend are set to np.nan
         counter[counter==0] = np.nan
         # create final detrend array
@@ -490,7 +508,7 @@ class Analysis(object):
         if len(y_detrend[np.isnan(y_detrend)]) > 0:
             # replace nan-values assuming a mean of zero
             y_detrend[np.isnan(y_detrend)] = 0.0
-            
+
         return y_detrend
 
     @staticmethod
