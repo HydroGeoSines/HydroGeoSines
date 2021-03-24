@@ -29,18 +29,16 @@ class HgsFilters(object):
     @property
     def obj_col(self):
         # returns df object columns as list
-        return list(self._obj.select_dtypes(include=['object']).columns)
+        return list(self._obj.select_dtypes(include=['object']).columns) 
     
-    #%% Open for testing    
-       
-
-    """
     @property
-    def gw_data(self):
-        # return self.data[self.data['category'] == 'GW'].pivot(index='datetime', columns='location', values='value')        
-        return self.__get_category('GW').pivot(index='datetime', columns='location', values='value')
-    """
-            
+    def loc_col(self):
+        # returns df object columns as list
+        col_list = self.obj_col
+        col_list.remove('category')
+        col_list.remove('unit')
+        return col_list
+           
     @property
     def is_nan(self):
         return self._obj['value'].isnull().values.any()
