@@ -57,6 +57,9 @@ def method_list(myClass, ID:str = None):
         method_list = [s for s in method_list if ID in s]
     return method_list
 
+def join_tuple_string(str_tuple) -> str:
+   return '_'.join(str_tuple)
+
 def gap_mask(s:pd.Series, maxgap:int):
     """
     Mask NaN gaps that fall below a maxium gap size and also returns a counter.

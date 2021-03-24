@@ -10,7 +10,7 @@ import numpy as np
 import datetime as dt # this should probably not be added in here. Generally loaded in site through hgs
 import os, sys
 
-from ..ext.hgs_analysis import Analysis
+from ..ext.hgs_analysis import Time_domain, Freq_domain
 from ..models.site import Site
 #from ...view import View
 
@@ -22,18 +22,26 @@ class Processing(object):
     
     def __init__(self, site_obj, et=False):
         self._validate(site_obj)
-        self._obj   = site_obj
-        self.data = site_obj.data.copy()
+        self._obj       = site_obj
+        self.data       = site_obj.data.copy()
+        self.results    = {}
     
     @staticmethod
     def _validate(obj):
+        # check if object is of class Site
         if not isinstance(obj,Site):
             raise AttributeError("Must be a 'Site' object!")                       
             #print(id(Site)) # test id of class location to compare across package
+        # check if both BP and GW exist    
+        if any(cat not in obj.data["category"].unique() for cat in ("GW","BP")):            
+            raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
     
-    ## allow subsetting of Site
-    #TODO: implement method to slice site "by_location", e.g hgs.Processing(Site("Freiburg")).by_location("Site_A").BE_method()
-
+    @staticmethod
+    def check_key(dict, key):
+        # use for global dict update
+        if dict.has_key(key):
+            pass
+        
     def by_gwloc(self, gw_loc):
         # get idx to subset GW locations
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
@@ -43,57 +51,51 @@ class Processing(object):
         return self
         
     def BE_method(self, method:str = "all", derivative=True):
-        method_list = utils.method_list(Analysis,ID="BE")
-        method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
-        #check for non valid method 
-        utils.check_affiliation(method, method_dict.values())
-
+        # output dict
         out = {}
-        # make GW data regular and align it with BP
-        data = self.data.hgs.make_regular()
-        data = self.data.hgs.BP_align()
-        # check integrity
-        #data.hgs.check_BP_align
-        data = data.hgs.pivot
-        return data
+        # get BE Time domain methods
+        method_list = utils.method_list(Time_domain, ID="BE")
+        method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
 
-        if any(cat not in data.columns for cat in ("GW","BP")):
-            raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
-        X = data.hgs.filters.get_bp_values()
-        Y = data.hgs.filters.get_gw_values()
-            
-        return X,Y
-        """
-        if derivative==True:
-           X, Y = np.diff(X), np.diff(Y) # need to also divide by the time step length
-          
-        # select method
-        if method.lower() == 'all':
-            for i in range(len(method_list)):
-                out[method_names[i]] = getattr(Analysis, method_list[i])(X,Y) 
-        else:
-            out[method] = getattr(Analysis, method_list[i])(X,Y) 
-        if method.lower()=='average_of_ratios':
-            out["average_of_ratios"] = Analysis.BE_average_of_ratios(X,Y)
-        elif method.lower()=='median_of_ratios':
-            result = Analysis.BE_median_of_ratios(X,Y)
-        elif method.lower()=='linear_regression':
-            result = Analysis.BE_linear_regression(X,Y)
-        elif method.lower()=='clark':
-            result = Analysis.BE_Clark(X,Y)
-        elif method.lower()=='davis_and_rasmussen':
-            result = Analysis.BE_Davis_and_Rasmussen(X,Y)
-        elif method.lower()=='rahi':
-            result = Analysis.BE_Rahi(X,Y)
-        elif method.lower()=='rojstczer':
-            result = Analysis.BE_Rojstaczer(X,Y)
-        else:
-            print('BE method does not exist!')
-        # TODO: This methods also takes freq + noverlap as parameters. Probably better to move it to another place (different overarching processing method)   
-        #elif method.lower()=='quilty and roeloffs':
-        #    result = Analysis.BE_Quilty_and_Roeloffs(X,Y, freq, nperseg, noverlap)
-        return result       
-    	"""
+        # make GW data regular and align it with BP
+        data = self.data
+        data = data.hgs.make_regular()
+        data = data.hgs.BP_align()
+        data.hgs.check_BP_align # check integrity
+
+        gw_data = data.hgs.filters.get_gw_data
+        bp_data = data.hgs.filters.get_bp_data
+        
+        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_col)
+        for gw_loc, GW in grouped:            
+            print(gw_loc)
+            name = utils.join_tuple_string(gw_loc)
+            filter_gw = bp_data.datetime.isin(GW.datetime)
+            BP = bp_data.loc[filter_gw,:].value.values
+            GW = GW.value.values
+                         
+            if derivative==True:
+               BP, GW = np.diff(BP), np.diff(GW) # need to also divide by the time step length
+                   
+            results = {}
+            # select method            
+            if method.lower() == 'all':
+                for key, val in method_dict.items():
+                    print(val)
+                    result = getattr(Time_domain, key)(BP,GW) 
+                    results.update({val: result})
+            else: 
+                #check for non valid method 
+                utils.check_affiliation(method, method_dict.values())
+                result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
+                results.update({method: result})
+            out[name] = results 
+            # use for global dict update
+            #if out.keys() not in self.results:
+            #    self.results = out
+            #elif                
+        return out       
+
     def hals(self, cat="GW"):
         out = {}
         #check for non valid category 
@@ -102,15 +104,15 @@ class Processing(object):
         comps = Site.comp_select(cat)
         freqs = [i["freq"] for i in comps.values()]
         data  = self.data[self.data.category == cat]  
-        grouped = data.groupby(by=data.hgs.filters.obj_col)
+        grouped = data.groupby(by=data.hgs.filters.loc_col)
         for name, group in grouped:
             #out[name] = comps
             print(name)
             group   = group.hgs.filters.drop_nan
             tf      = group.hgs.dt.to_zero
             values  = group.value.values  
-            values  = Analysis.lin_window_ovrlp(tf, values)
-            values  = Analysis.harmonic_lsqr(tf, values, freqs)            
+            values  = Freq_domain.lin_window_ovrlp(tf, values)
+            values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
             # calculate real Amplitude and Phase
             var = utils.complex_to_real(tf, values["complex"])
             # add results to dictionary
@@ -179,6 +181,6 @@ class Processing(object):
             if np.any(tdiff != tdiff[0]):
                 raise Exception("Error: Location '{}' must be regularly sampled!".format(loc))
             # regress_deconv(self, tf, GW, BP, ET=None, lag_h=24, et=False, et_method='hals', fqs=None):
-            values, params[loc] = Analysis.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
+            values, params[loc] = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
             results[loc] = values
         return results, params
