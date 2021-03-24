@@ -123,7 +123,7 @@ class Analysis(object):
         outfreq = csd_f[np.abs(csd_f-round(freq, 4)).argmin()]
         result = result[csd_f==outfreq][0]
         return result
-
+    
     @staticmethod
     def quantise(data, step):
         return step*np.floor((data/step)+1/2)
