@@ -7,6 +7,7 @@ Created on Wed Sep 23 16:13:00 2020
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Visualize(object):
     

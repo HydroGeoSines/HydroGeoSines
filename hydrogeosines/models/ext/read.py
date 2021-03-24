@@ -5,7 +5,7 @@ Created on Wed Sep 23 16:13:00 2020
 @author: Daniel
 """
 
-from ...utils.tools import Tools
+from ... import utils
 
 import pandas as pd
 import numpy as np
@@ -23,11 +23,11 @@ class Read(object):
     def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", loc_names=None, check_dublicates=False):        
         
         #check for non valid categories 
-        Tools.check_affiliation(input_category, self.VALID_CATEGORY)
+        utils.check_affiliation(input_category, self.VALID_CATEGORY)
         
         #check for non valid pressure units (GW,BP)
         if any(cat in input_category for cat in ("GW","BP")):
-            Tools.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_pucf'].keys())
+            utils.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_pucf'].keys())
         
         #check for non valid accelaration units (ET)
         if any(cat in input_category for cat in ("ET")):
@@ -57,7 +57,7 @@ class Read(object):
             locations = data.columns
             
         # format table with multiindex and melt            
-        header = Tools.zip_formatter(locations, input_category, unit)
+        header = utils.zip_formatter(locations, input_category, unit)
         data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])                
         data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower) 
         print(data.head)
@@ -68,7 +68,7 @@ class Read(object):
         data["value"], data["unit"] = data.hgs.pucf_converter_vec(self.const["_pucf"]) # vectorizing
                 
         # add utc_offset to site instead of data, to keep number of columns at a minimum
-        self.utc_offset.update(dict(Tools.zip_formatter(locations, utc_offset)))
+        self.utc_offset.update(dict(utils.zip_formatter(locations, utc_offset)))
 
         # how to use the data       
         if how == "add":

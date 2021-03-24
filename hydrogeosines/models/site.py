@@ -98,6 +98,7 @@ class Site(Read, ET):
     
     @staticmethod
     def comp_select(cat):
+        nested = {}
         # returns a set of unique frequency values for a given input category
         if cat == "ET":
             comps = const["_etfqs"]
@@ -105,4 +106,7 @@ class Site(Read, ET):
             comps = const["_atfqs"]
         if cat == "GW":
             comps = {**const["_etfqs"], **const["_atfqs"]}
-        return comps
+            
+        for key, value in comps.items():
+            nested.update({key:{"freq":value}})    
+        return nested

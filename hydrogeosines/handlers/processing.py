@@ -15,50 +15,113 @@ from ..ext.hgs_analysis import Analysis
 from ..models.site import Site
 #from ...view import View
 
-from ..utils.tools import Tools
+from .. import utils
 
 from ..models import const
 
 class Processing(object):
-    # define all class attributes here 
+    # define all class attributes here
     #attr = attr
-    
-    def __init__(self, site_obj, loc=None, et=False):
+
+    def __init__(self, site_obj, et=False):
         self._validate(site_obj)
-        self._obj  = site_obj
-        # !!!!!!!!!!!!!!!!!!!!!!!
-        # it is easier to work with this!
-        self._obj.data_pivot = self._obj.data.pivot(index='datetime', columns=['category', 'location'], values='value')
-        self._obj.data_pivot.sort_values(by='datetime', inplace=True)
-        # create empty results dictionary
-        self._obj.results  = {'BP': {}, 'GW': {}, 'ET': {}}
-    
+        self._obj   = site_obj
+        self.data = site_obj.data.copy()
+
     @staticmethod
     def _validate(obj):
         if not isinstance(obj, Site):
-            raise AttributeError("Must be a 'Site' object!")                       
+            raise AttributeError("Must be a 'Site' object!")
             #print(id(Site)) # test id of class location to compare across package
-            
-    def hals_legacy(self, cat="GW"):
-        #check for non valid categories 
-        Tools.check_affiliation(cat, self._obj.VALID_CATEGORY)
-        #ET = ET, GW = {ET, AT}, BP = AT        
-        freqs = Site.freq_select(cat)
 
-        #TODO: define a function for this type of category extraction
+    ## allow subsetting of Site
+    #TODO: implement method to slice site "by_location", e.g hgs.Processing(Site("Freiburg")).by_location("Site_A").BE_method()
+
+    def by_gwloc(self, gw_loc):
+        # get idx to subset GW locations
+        pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
+        pos_cat = self._obj.data["category"] == "GW"
+        # drop all GW locations, but the selected ones
+        self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
+        return self
+
+    def BE_method(self, method:str = "all", derivative=True):
+        method_list = utils.method_list(Analysis,ID="BE")
+        method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
+        #check for non valid method
+        utils.check_affiliation(method, method_dict.values())
+
+        out = {}
+        # make GW data regular and align it with BP
+        data = self.data.hgs.make_regular()
+        data = self.data.hgs.BP_align()
+        # check integrity
+        #data.hgs.check_BP_align
+        data = data.hgs.pivot
+        return data
+
+        if any(cat not in data.columns for cat in ("GW","BP")):
+            raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
+        X = data.hgs.filters.get_bp_values()
+        Y = data.hgs.filters.get_gw_values()
+
+        return X,Y
+        """
+        if derivative==True:
+           X, Y = np.diff(X), np.diff(Y) # need to also divide by the time step length
+
+        # select method
+        if method.lower() == 'all':
+            for i in range(len(method_list)):
+                out[method_names[i]] = getattr(Analysis, method_list[i])(X,Y)
+        else:
+            out[method] = getattr(Analysis, method_list[i])(X,Y)
+        if method.lower()=='average_of_ratios':
+            out["average_of_ratios"] = Analysis.BE_average_of_ratios(X,Y)
+        elif method.lower()=='median_of_ratios':
+            result = Analysis.BE_median_of_ratios(X,Y)
+        elif method.lower()=='linear_regression':
+            result = Analysis.BE_linear_regression(X,Y)
+        elif method.lower()=='clark':
+            result = Analysis.BE_Clark(X,Y)
+        elif method.lower()=='davis_and_rasmussen':
+            result = Analysis.BE_Davis_and_Rasmussen(X,Y)
+        elif method.lower()=='rahi':
+            result = Analysis.BE_Rahi(X,Y)
+        elif method.lower()=='rojstczer':
+            result = Analysis.BE_Rojstaczer(X,Y)
+        else:
+            print('BE method does not exist!')
+        # TODO: This methods also takes freq + noverlap as parameters. Probably better to move it to another place (different overarching processing method)
+        #elif method.lower()=='quilty and roeloffs':
+        #    result = Analysis.BE_Quilty_and_Roeloffs(X,Y, freq, nperseg, noverlap)
+        return result
+    	"""
+    def hals(self, cat="GW"):
+        out = {}
+        #check for non valid category
+        utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
+        #ET = ET, GW = {ET, AT}, BP = AT
         comps = Site.comp_select(cat)
-        data  = self._obj.data[self._obj.data.category == cat]       
-        tf      = data.hgs.dt.to_zero
-        values  = data.value.values  
-        values  = Analysis.lin_window_ovrlp(tf, values)
-        values  = Analysis.harmonic_lsqr(tf, values, freqs)
-        
-        # calculate Amplitude and Phase
-        var = Tools.complex_to_real(tf, values[1]["comp"])
-        var.update(comps)
+        freqs = [i["freq"] for i in comps.values()]
+        data  = self.data[self.data.category == cat]
+        grouped = data.groupby(by=data.hgs.filters.obj_col)
+        for name, group in grouped:
+            #out[name] = comps
+            print(name)
+            group   = group.hgs.filters.drop_nan
+            tf      = group.hgs.dt.to_zero
+            values  = group.value.values
+            values  = Analysis.lin_window_ovrlp(tf, values)
+            values  = Analysis.harmonic_lsqr(tf, values, freqs)
+            # calculate real Amplitude and Phase
+            var = utils.complex_to_real(tf, values["complex"])
+            # add results to dictionary
+            var["comps"] = list(comps.keys())
+            var.update(values)
+            out[name] = var
 
-        #return {"comp":comp, "freq":freqs, "var":var}
-        return var #.update(values[1]["freq"])
+        return out
 
     def fft(self, cat, loc, length=3, freqs=None):
         min_duration = 60
@@ -88,7 +151,7 @@ class Processing(object):
         self._obj.results[cat][loc] = {'FFT': {'y_detrend':  values_detr}}
         self._obj.results[cat][loc]['FFT'].update(values_fft)
         return
-    
+
     def hals(self, cat, loc, length=None, freqs=None):
         min_duration = 20
         min_splrate = 24
@@ -114,10 +177,10 @@ class Processing(object):
         self._obj.results[cat][loc] = {'HALS': {'y_detrend':  values_detr, 'y_model': values_mod}}
         self._obj.results[cat][loc]['HALS'].update(values_hals)
         return
-        
+
     #%% calculate BE using frequency-domain approaches
     def BE_freq(self, method='rau', gw_locs=None, bp_loc:str=None, et_loc:str=None, freq_method:str='hals', update=False):
-        
+
         #%% select BP and perform
         if 'BP' not in self._obj.data_pivot.columns:
             raise Exception('Error: BP is required but not found in the dataset!')
@@ -128,7 +191,7 @@ class Processing(object):
             et_loc = self._obj.data_pivot['ET'].columns[0]
         if gw_locs is None:
             gw_locs = self._obj.data_pivot['GW'].columns
-        
+
         #%%
         # define the required frequency values in cpd
         m2_freq = self._obj.const['_etfqs']['M2']
@@ -137,16 +200,16 @@ class Processing(object):
         if (freq_method == 'hals'):
             if (bp_loc not in self._obj.results['BP']) or ('HALS' not in self._obj.results['BP'][bp_loc]) or update:
                 self.hals('BP', bp_loc)
-            
+
             if (not et_loc in self._obj.results['ET']) or (not 'HALS' in self._obj.results['ET'][et_loc]) or update:
                 self.hals('ET', et_loc)
-                
+
             for gw_loc in gw_locs:
                 if gw_loc not in self._obj.data_pivot['GW'].columns:
                     raise Exception("Category 'GW' location '{}' is not available!".format(gw_loc))
                 if (not gw_loc in self._obj.results['GW']) or (not 'HALS' in self._obj.results['GW'][gw_loc]) or update:
                     self.hals('GW', gw_loc)
-                
+
             # find all the relevant dictionary keys and indices ...
             bp_s2_idx = list(self._obj.results['BP'][bp_loc]['HALS']['freqs']).index(s2_freq)
             bp_s2 = self._obj.results['BP'][bp_loc]['HALS']['comps'][bp_s2_idx]
@@ -159,20 +222,20 @@ class Processing(object):
             gw_s2_idx = list(self._obj.results['GW'][gw_loc]['HALS']['freqs']).index(s2_freq)
             gw_s2 = self._obj.results['GW'][gw_loc]['HALS']['comps'][gw_s2_idx]
             print(bp_s2_idx)
-            
+
         elif (freq_method == 'fft'):
             if (bp_loc not in self._obj.results['BP']) or ('FFT' not in self._obj.results['BP'][bp_loc]) or update:
                 self.fft('BP', bp_loc)
-            
+
             if (not et_loc in self._obj.results['ET']) or (not 'FFT' in self._obj.results['ET'][et_loc]) or update:
                 self.fft('ET', et_loc)
-                
+
             for gw_loc in gw_locs:
                 if gw_loc not in self._obj.data_pivot['GW'].columns:
                     raise Exception("Category 'GW' location '{}' is not available!".format(gw_loc))
                 if (not gw_loc in self._obj.results['GW']) or (not 'FFT' in self._obj.results['GW'][gw_loc]) or update:
                     self.fft('GW', gw_loc)
-                
+
             # find all the relevant dictionary keys and indices ...
             bp_s2_idx = Tools.find_nearest_idx(self._obj.results['BP'][bp_loc]['FFT']['freqs'], s2_freq)
             bp_s2 = self._obj.results['BP'][bp_loc]['FFT']['comps'][bp_s2_idx]
@@ -184,7 +247,7 @@ class Processing(object):
             gw_m2 = self._obj.results['GW'][gw_loc]['FFT']['comps'][gw_m2_idx]
             gw_s2_idx = Tools.find_nearest_idx(self._obj.results['GW'][gw_loc]['FFT']['freqs'], s2_freq)
             gw_s2 = self._obj.results['GW'][gw_loc]['FFT']['comps'][gw_s2_idx]
-        
+
         else:
             raise Exception("The frequency-domain method '{}' is not available!".format(freq_method))
 
@@ -196,13 +259,13 @@ class Processing(object):
             GW_AT_s2 = gw_s2 - GW_ET_s2
             # a phase check ...
             GW_ET_m2_dphi = np.angle(gw_m2 / et_m2)
-            
+
             if (np.abs(GW_ET_m2_dphi) > 5):
                 warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
-            
+
             BE = np.abs(GW_AT_s2 / bp_s2)
             be_results[gw_loc] = {'BE': BE}
-        
+
         #%%
         elif (method == 'acworth'):
             # Calculate BE values
@@ -212,10 +275,10 @@ class Processing(object):
             # provide a user warning ...
             if (np.abs(gw_m2) > np.abs(gw_s2)):
                 warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
-                
+
         else:
             raise Exception("The method '{}' is not available!".format(method))
-                
+
         return be_results
 
 
@@ -240,7 +303,7 @@ class Processing(object):
         if np.any(tdiff != tdiff[0]):
             raise Exception("Error: Category BP must be regularly sampled!")
         # prepare time, BP and ET
-        # TODO: Is the localize step in the import_csv not sufficient? 
+        # TODO: Is the localize step in the import_csv not sufficient?
         ## BTW: the utc offset for each location is automatically stored in the site upon import
         delta = (data.index.tz_localize(None) - data.index.tz_localize(None)[0])
         tf = (delta.days + (delta.seconds / (60*60*24))).values
@@ -271,7 +334,7 @@ class Processing(object):
         for loc in gw_locs:
             if loc not in data['GW'].columns:
                 raise Exception("Error: GW location '{}' is not available!".format(loc))
-                
+
             # check and loop through GW category
             print("Working on location '{}' ...".format(loc))
             GW = data['GW'][loc].values
@@ -288,10 +351,10 @@ class Processing(object):
         data = self._obj.data.hgs.pivot
         if any(cat not in data.columns for cat in ("GW","BP")):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
-        # TODO: what happens, if there are multiple locations with GW and BP data? Do we run the method on each location seperately? Do we want them in one single output?      
+        # TODO: what happens, if there are multiple locations with GW and BP data? Do we run the method on each location seperately? Do we want them in one single output?
         X = self._obj.data.hgs.filters.get_bp_values()
         Y = self._obj.data.hgs.filters.get_gw_values()
-        
+
         if derivative==True:
            X, Y = np.diff(X), np.diff(Y) # need to also divide by the time step length
 
@@ -305,7 +368,7 @@ class Processing(object):
             result = Analysis.BE_Clark(X,Y)
         elif method.lower()=='rahi':
             result = Analysis.BE_Rahi(X,Y)
-        # TODO: This methods also takes freq + noverlap as parameters. Probably better to move it to another place (different overarching processing method)   
+        # TODO: This methods also takes freq + noverlap as parameters. Probably better to move it to another place (different overarching processing method)
         #elif method.lower()=='quilty and roeloffs':
         #    result = Analysis.BE_Quilty_and_Roeloffs(X,Y, freq, nperseg, noverlap)
         return result
