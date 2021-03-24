@@ -5,10 +5,6 @@ Created on Thu Nov 19 08:55:47 2020
 @author: Daniel
 """
 
-#TODO! set valid category outside as global variable
-
-
-
 import pandas as pd 
 import numpy as np
 
@@ -45,14 +41,7 @@ class HgsAccessor(object):
     @property
     def pivot(self):
         return self._obj.pivot_table(index=self.dt._obj, columns=self.filters.obj_col, values="value")    
-    
-    #@property
-    #def make_regular(self):
-    #    tmp = self.pivot
-    #    period = self.dt.spl_freq(tmp.index.to_series())
-    #    tmp = tmp.resample('{:.0f}S'.format(period)).asfreq()
-    #    return tmp  
-    
+       
     @property
     def spl_freq_groupby(self):
         # returns most ofen found sampling frequency grouped by object-dtype columns, in seconds
@@ -363,7 +352,7 @@ class HgsAccessor(object):
         out = pd.concat([gw_data, bp_data, df],axis=0,ignore_index=True)
         return out
 
-    #%% hgs functions and filters that need to be adjusted to the package architecture    
+    #%% hgs functions and filters that might still be useful, but need to be adjusted to the package architecture    
     """
     #%% GW properties
     @property
@@ -390,12 +379,7 @@ class HgsAccessor(object):
             return True
         else:
             return False
-    
-    @property
-    def dt_pivot(self):
-        return self.data.pivot(index='datetime', columns=['location'], values='value')
-
-    
+       
     
     @property
     # https://traces.readthedocs.io/en/master/examples.html

@@ -27,7 +27,15 @@ class HgsFilters(object):
     @property
     def obj_col(self):
         # returns df object columns as list
-        return list(self._obj.select_dtypes(include=['object']).columns)    
+        return list(self._obj.select_dtypes(include=['object']).columns) 
+    
+    @property
+    def loc_col(self):
+        # returns df object columns as list
+        col_list = self.obj_col
+        col_list.remove('category')
+        col_list.remove('unit')
+        return col_list
            
     @property
     def is_nan(self):
