@@ -210,13 +210,13 @@ class Analysis(object):
         # Equation 9, Rau et al. (2020), doi:10.5194/hess-24-6033-2020
         GW_ET_s2 = (GW_m2 / ET_m2) * ET_s2
         GW_AT_s2 = GW_s2 - GW_ET_s2
+        BE = np.abs(GW_AT_s2 / BP_s2)
         
         # a phase check ...
         GW_ET_m2_dphi = np.angle(GW_m2 / ET_m2)
         if (np.abs(GW_ET_m2_dphi) > 5):
             warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
         
-        BE = np.abs(GW_AT_s2 / BP_s2)
         return BE
 
     @staticmethod
