@@ -9,12 +9,12 @@ import os,sys
 import pandas as pd
 import numpy as np
 import warnings
-from scipy.signal import detrend as detrend_func # for lin_window_ovrlp
-import scipy.signal as signal
 from scipy.optimize import curve_fit
 from scipy.linalg import svdvals
+from scipy.stats import linregress
+from scipy.signal import csd
 
-from ..utils.tools import Tools
+from .. import utils
 from ..models import const
 
 # static class
@@ -27,14 +27,22 @@ class Analysis(object):
         '''
         Calculate instantaneous barometric efficiency using the average of ratios method, a time domain solution.
 
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
-        Outputs:
-            result - scalar. Instantaneous barometric efficiency calculated as the mean ratio of measured values or temporal derivatives.
-        Notes:
+        Returns
+        -------
+        scalar
+            Instantaneous barometric efficiency calculated as the mean ratio of measured values or temporal derivatives.
+
+        Notes
+        -----
             ** Need to come up with a better way to avoid division by zero issues and similar
+            -> maybe this works: https://stackoverflow.com/questions/26248654/how-to-return-0-with-divide-by-zero
         '''
         #with np.errstate(divide='ignore', invalid='ignore'):
         #    result = np.mean(np.divide(Y, X)[np.isfinite(np.divide(Y, X))])
@@ -106,13 +114,21 @@ class Analysis(object):
     def BE_Davis_and_Rasmussen(X, Y):
         '''
         Calculate instantaneous barometric efficiency using the Davis and Rasmussen (1993) method, a time domain solution.
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
 
-        Outputs:
-            result - scalar. Instantaneous barometric efficiency calculated using the Davis and Rasmussen (1993) method using measured values or temporal derivatives.
-        Notes:
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
+
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Davis and Rasmussen (1993) method using measured values or temporal derivatives.
+        
+        Notes
+        -----
             ** Work in progress - just need to marry the D&R algorithm with the automated segmenting algorithm
         '''
         cSnum    = np.zeros(1)
@@ -144,14 +160,21 @@ class Analysis(object):
         '''
         Calculate instantaneous barometric efficiency using the Clark (1967) method, a time domain solution.
 
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
-        Outputs:
-            result - scalar. Instantaneous barometric efficiency calculated using the Rahi (2010) method using measured values or temporal derivatives.
-        Notes:
-            ** Need to check that Rahi's rules are implemented the right way around
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Rahi (2010) method using measured values or temporal derivatives.
+
+        Notes
+        -----
+            ** Need to check that Rahi's rules are implemented the right way around.
         '''
         sX, sY = [0.], [0.]
         for x,y in zip(X, Y):
@@ -167,25 +190,39 @@ class Analysis(object):
     @staticmethod
     def BE_Rojstaczer(X, Y, freq, nperseg, noverlap):
         '''
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            freq - float. The frequency of interest.
-            nperseg - integer. The number of data points per segment.
-            noverlap - integer. The amount of overlap between data points used when calculating power and cross spectral density outputs.
+        
 
-        Outputs:
-            result      - scalar. Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
-        Notes:
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
+        freq : float
+            The frequency of interest.
+        nperseg : int
+            The number of data points per segment.
+        noverlap : int
+            The amount of overlap between data points used when calculating power and cross spectral density outputs.
+
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
+
+        Notes
+        -----
             ** Need to check that Rojstaczer's (or Q&R's) implementation was averaged over all frequencies
         '''
-        csd_f, csd_p = csd(X, Y, fs=fs, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
-        psd_f, psd_p = csd(X, X, fs=fs, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
+        
+        csd_f, csd_p = csd(X, Y, fs=freq, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
+        psd_f, psd_p = csd(X, X, fs=freq, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
         result = np.mean(np.abs(csd_p)/psd_p)
         return result
 
     @staticmethod
     def quantise(data, step):
+        ''' Quantization of a signal '''
         return step*np.floor((data/step)+1/2)
 
     @staticmethod
@@ -204,8 +241,9 @@ class Analysis(object):
              freqs and tt that when multiplied by theta is a
              sum of sinusoids.
         '''
+        
         N = data.shape[0]
-        f = freqs*2*np.pi
+        f = np.array(freqs)*2*np.pi
         num_freqs = len(f)
         # make sure that time vectors are relative
         # avoiding additional numerical errors
@@ -228,72 +266,80 @@ class Analysis(object):
         if (condnum > 1e6):
             warnings.warn('The solution is ill-conditioned!')
         # 	print(Phi)
-        y_hat = Phi@theta
+        y_model = Phi@theta
         # the DC component
         dc_comp = theta[-1]
         # create complex coefficients
         hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
-        result = {'freq': freqs, 'comp': hals_comp, 'err_var': error_variance, 'cond_num': condnum, 'offset': dc_comp}
+        result = {'freq': freqs, 'complex': hals_comp, 'err_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
 
-        return y_hat, result
+        return result
 
     @staticmethod
     def lin_window_ovrlp(tf, data, length=3, stopper=3, n_ovrlp=3):
-        '''
-        Inputs:
-            tf      - time float. Should be an N x 1 numpy array.
-            data    - signal values. Should be an N x 1 numpy array.
-            length  - window size in days
-            stopper - minimum number of y-values in window for detrending
-            n_ovrlp - number of window overlaps
-
-        Features:
-            1.  windowed linear detrend with overlap functionality based on scipy.detrend function
-            2.  reg_times is extended by value of length in both directions to improve averaging
-                and window overlap at boundaries. High overlap values in combination with high
-                stopper values will cause reducion in window numbers at time array boundaries.
-            3.  detrend window gaps are replaced with zeros
-            4.  handling of gaps (np.nan) in signal (y) that cause error in scipy detrend function
-        '''
-        x           = tf
-        y           = data
+        """
+        Windowed linear detrend function with optional window overlap
+        
+        Parameters
+        ----------
+        time : N x 1 numpy array
+            Sample times.
+        y : N x 1 numpy array
+            Sample values.
+        length : int
+            Window size in days
+        stopper : int 
+            minimum number of samples within each window needed for detrending
+        n_ovrlp : int
+            number of window overlaps relative to the defined window length
+            
+        Returns
+            -------
+            y.detrend : array_like
+                estimated amplitudes of the sinusoids.
+        
+        Notes
+        -----
+        A windowed linear detrend function with optional window overlap for pre-processing of non-uniformly sampled data.
+        The reg_times array is extended by value of "length" in both directions to improve averaging and window overlap at boundaries. High overlap values in combination with high
+        The "stopper" values will cause reducion in window numbers at time array boundaries.   
+        """
+        
+        x = np.array(tf).flatten()
+        y = np.array(data).flatten()
         y_detr      = np.zeros(shape=(y.shape[0]))
         counter     = np.zeros(shape=(y.shape[0]))
-        num         = 0 # counter to check how many windows are sampled
-        interval    = length/(n_ovrlp+1) # step_size interval with overlap
-        # create regular sampled array along tf with step-size = interval
+        A = np.vstack([x, np.ones(len(x))]).T
+        #num = 0 # counter to check how many windows are sampled   
+        interval    = length/(n_ovrlp+1) # step_size interval with overlap 
+        # create regular sampled array along t with step-size = interval.         
         reg_times   = np.arange(x[0]-(x[1]-x[0])-length,x[-1]+length, interval)
-
-        for tt in reg_times:
-            idx = np.where((x > tt-(length/2)) & (x <= tt+(length/2)))[0]
-            # make sure no np.nan values exist in y[idx]
-            if np.isnan(y[idx]).any():
-                idx = idx[~np.isnan(y[idx])]
-            # only detrend with sufficient samples in time
-            if len(idx) >= stopper:
-                # use counter for number of detrends at each index
-                counter[idx] += 1
-                detrend = detrend_func(np.copy(y.flatten()[idx]),type="linear")
-                y_detr[idx]  += detrend
-                num += 1
-
-        ## window gaps are set to np.nan
+        # extract indices for each interval
+        idx         = [np.where((x > tt-(length/2)) & (x <= tt+(length/2)))[0] for tt in reg_times]  
+        # exclude samples without values (np.nan) from linear detrend
+        idx         = [i[~np.isnan(y[i])] for i in idx]
+        # only detrend intervals that meet the stopper criteria
+        idx         = [x for x in idx if len(x) >= stopper]
+        for i in idx:        
+            # find linear regression line for interval
+            coe = np.linalg.lstsq(A[i],y[i],rcond=None)[0]
+            # and subtract off data to detrend
+            detrend = y[i] - (coe[0]*x[i] + coe[1])
+            # add detrended values to detrend array
+            np.add.at(y_detr,i,detrend)
+            # count number of detrends per sample (depends on overlap)
+            np.add.at(counter,i,1)
+    
+        # window gaps, marked by missing detrend are set to np.nan
         counter[counter==0] = np.nan
-        y_detrend = y_detr/counter
+        # create final detrend array
+        y_detrend = y_detr/counter       
         if len(y_detrend[np.isnan(y_detrend)]) > 0:
             # replace nan-values assuming a mean of zero
-            gap_number = len(y_detrend[np.isnan(y_detrend)])
             y_detrend[np.isnan(y_detrend)] = 0.0
-            print("Number of values in y that could not be detrended is {} (including NaN)".format(gap_number))
-
-        ## Warning for reduced window overlap at margins of time array
-        if counter[0]  != n_ovrlp+1:
-            print("Warning: Detrend window overlaps at t[0] reduced to {}. Consider adjusting value of stopper or n_ovrlp.".format(counter[0]-1))
-        if counter[-1] != n_ovrlp+1:
-            print("Warning: Detrend window overlaps at t[-1] reduced to {}. Consider adjusting value of stopper or n_ovrlp.".format(counter[-1]-1))
-
+    
         return y_detrend
-
+        
     @staticmethod
     def fft_analys(tf,data,freqs,spd):
         fft_N = len(tf)
@@ -311,13 +357,13 @@ class Analysis(object):
         phi_fft = []
         A_fft  = []
         for f in freqs:
-            f_idx = Tools.find_nearest(fft_f,f)
+            f_idx = utils.find_nearest(fft_f,f)
             A_fft.append(fft_amps[f_idx])
             # PHASE CORRECTION FOR TIDAL COMPONENTS
             num_waves = (tf[-1] - tf[0] + 1/spd)*f
             phase_corr = (num_waves - np.round(num_waves))*np.pi
             phi_temp = fft_phs[f_idx] - phase_corr
-            phi_temp = Tools.pi_range(phi_temp)
+            phi_temp = utils.pi_range(phi_temp)
             phi_fft.append(phi_temp)
 
         return freqs, A_fft, phi_fft

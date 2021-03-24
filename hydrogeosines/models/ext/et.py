@@ -5,8 +5,6 @@ Created on Wed Sep 23 16:13:00 2020
 @author: Daniel
 """
 
-from ...utils.tools import Tools
-
 import pandas as pd
 import numpy as np
 import pytz
@@ -80,7 +78,7 @@ class ET(object):
             et = et_interp(dt_utc_tf)
             
             #######################################################
-            # MERGE EARTH TIDES WITH WITH LONG TABLE
+            # MERGE EARTH TIDES WITH LONG TABLE
             et_data = pd.DataFrame({'datetime': dt_utc, 'value': et})
             et_data['category'] = 'ET'
             et_data['location'] = 'ET'
@@ -91,7 +89,7 @@ class ET(object):
             # add new ET values
             self.data = self.data.append(et_data)
             # sort data in a standard way -> easier to read
-            self.data.sort_values(by=["location", "category"], inplace=True)
+            self.data.sort_values(by=["category","location"], inplace=True)
             # no dublicate indices
             self.data.reset_index(inplace=True, drop=True)
             # self.data = self.data.hgs.check_dublicates

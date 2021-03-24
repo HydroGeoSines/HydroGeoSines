@@ -14,15 +14,16 @@ from ..ext.hgs_analysis import Analysis
 from ..models.site import Site
 #from ...view import View
 
-from ..utils.tools import Tools
+from .. import utils
 
 class Processing(object):
     # define all class attributes here 
     #attr = attr
     
-    def __init__(self, site_obj, loc=None, et=False):
+    def __init__(self, site_obj, et=False):
         self._validate(site_obj)
         self._obj   = site_obj
+        self.data = site_obj.data.copy()
     
     @staticmethod
     def _validate(obj):
@@ -30,65 +31,94 @@ class Processing(object):
             raise AttributeError("Must be a 'Site' object!")                       
             #print(id(Site)) # test id of class location to compare across package
     
-    
     ## allow subsetting of Site
     #TODO: implement method to slice site "by_location", e.g hgs.Processing(Site("Freiburg")).by_location("Site_A").BE_method()
-    def by_location(self,location = str):
-        pass
+
+    def by_gwloc(self, gw_loc):
+        # get idx to subset GW locations
+        pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
+        pos_cat = self._obj.data["category"] == "GW"
+        # drop all GW locations, but the selected ones
+        self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
+        return self
         
-    def BE_method(self, method, derivative=True):
-        
-        data = self._obj.data.hgs.pivot
+    def BE_method(self, method:str = "all", derivative=True):
+        method_list = utils.method_list(Analysis,ID="BE")
+        method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
+        #check for non valid method 
+        utils.check_affiliation(method, method_dict.values())
+
+        out = {}
+        # make GW data regular and align it with BP
+        data = self.data.hgs.make_regular()
+        data = self.data.hgs.BP_align()
+        # check integrity
+        #data.hgs.check_BP_align
+        data = data.hgs.pivot
+        return data
+
         if any(cat not in data.columns for cat in ("GW","BP")):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
-        # TODO: what happens, if there are multiple locations with GW and BP data? Do we run the method on each location seperately? Do we want them in one single output?      
-        X = self._obj.data.hgs.filters.get_bp_values()
-        Y = self._obj.data.hgs.filters.get_gw_values()
-        
+        X = data.hgs.filters.get_bp_values()
+        Y = data.hgs.filters.get_gw_values()
+            
+        return X,Y
+        """
         if derivative==True:
            X, Y = np.diff(X), np.diff(Y) # need to also divide by the time step length
-
-        if method.lower()=='average of ratios':
-            result = Analysis.BE_average_of_ratios(X,Y)
-        elif method.lower()=='median of ratios':
+          
+        # select method
+        if method.lower() == 'all':
+            for i in range(len(method_list)):
+                out[method_names[i]] = getattr(Analysis, method_list[i])(X,Y) 
+        else:
+            out[method] = getattr(Analysis, method_list[i])(X,Y) 
+        if method.lower()=='average_of_ratios':
+            out["average_of_ratios"] = Analysis.BE_average_of_ratios(X,Y)
+        elif method.lower()=='median_of_ratios':
             result = Analysis.BE_median_of_ratios(X,Y)
-        elif method.lower()=='linear regression':
+        elif method.lower()=='linear_regression':
             result = Analysis.BE_linear_regression(X,Y)
         elif method.lower()=='clark':
-            result = Analysis.BE_Clark(data)
+            result = Analysis.BE_Clark(X,Y)
         elif method.lower()=='davis_and_rasmussen':
-            result = Analysis.BE_Davis_and_Rasmussen(data)
+            result = Analysis.BE_Davis_and_Rasmussen(X,Y)
         elif method.lower()=='rahi':
-            result = Analysis.BE_Rahi(data)
+            result = Analysis.BE_Rahi(X,Y)
         elif method.lower()=='rojstczer':
-            result = Analysis.BE_Rojstaczer(data)
+            result = Analysis.BE_Rojstaczer(X,Y)
         else:
             print('BE method does not exist!')
         # TODO: This methods also takes freq + noverlap as parameters. Probably better to move it to another place (different overarching processing method)   
         #elif method.lower()=='quilty and roeloffs':
         #    result = Analysis.BE_Quilty_and_Roeloffs(X,Y, freq, nperseg, noverlap)
         return result       
-
+    	"""
     def hals(self, cat="GW"):
-        #check for non valid categories 
-        Tools.check_affiliation(cat, self._obj.VALID_CATEGORY)
-        #ET = ET, GW = {ET, AT}, BP = AT        
-        freqs = Site.freq_select(cat)
-
-        #TODO: define a function for this type of category extraction
+        out = {}
+        #check for non valid category 
+        utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
+        #ET = ET, GW = {ET, AT}, BP = AT 
         comps = Site.comp_select(cat)
-        data  = self._obj.data[self._obj.data.category == cat]       
-        tf      = data.hgs.dt.to_zero
-        values  = data.value.values  
-        values  = Analysis.lin_window_ovrlp(tf, values)
-        values  = Analysis.harmonic_lsqr(tf, values, freqs)
-        
-        # calculate Amplitude and Phase
-        var = Tools.complex_to_real(tf, values[1]["comp"])
-        var.update(comps)
+        freqs = [i["freq"] for i in comps.values()]
+        data  = self.data[self.data.category == cat]  
+        grouped = data.groupby(by=data.hgs.filters.obj_col)
+        for name, group in grouped:
+            #out[name] = comps
+            print(name)
+            group   = group.hgs.filters.drop_nan
+            tf      = group.hgs.dt.to_zero
+            values  = group.value.values  
+            values  = Analysis.lin_window_ovrlp(tf, values)
+            values  = Analysis.harmonic_lsqr(tf, values, freqs)            
+            # calculate real Amplitude and Phase
+            var = utils.complex_to_real(tf, values["complex"])
+            # add results to dictionary
+            var["comps"] = list(comps.keys())
+            var.update(values)
+            out[name] = var
 
-        #return {"comp":comp, "freq":freqs, "var":var}
-        return var#.update(values[1]["freq"])
+        return out
 
     def correct_GW(self, gw_locs=None, bp_loc:str=None, et_loc:str=None, lag_h=24, et_method=None, fqs=None):
         print("A complicated procedure ...")
