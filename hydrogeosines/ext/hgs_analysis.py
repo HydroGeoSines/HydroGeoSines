@@ -74,12 +74,17 @@ class Analysis(object):
         '''
         Calculate instantaneous barometric efficiency using linear regression, a time domain solution.
 
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data, provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
-        Outputs:
-            result - scalar. Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
         '''
         result = np.linregress(Y, X)[0]
         return result
@@ -89,13 +94,20 @@ class Analysis(object):
         '''
         Calculate instantaneous barometric efficiency using the Clark (1967) method, a time domain solution.
 
-        Inputs:
-            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
-            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
-        Outputs:
-            result - scalar. Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
-        Notes:
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
+
+        Notes
+        -----
             ** Need to check that Clark's rules are implemented the right way around
         '''
         sX, sY = [0.], [0.]
@@ -189,8 +201,8 @@ class Analysis(object):
 
     @staticmethod
     def BE_Rojstaczer(X, Y, freq, nperseg, noverlap):
-        '''
-        
+        '''        
+
 
         Parameters
         ----------
