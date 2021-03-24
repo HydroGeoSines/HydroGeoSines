@@ -27,6 +27,8 @@ class Processing(object):
         self._validate(site_obj)
         self._obj   = site_obj
         self.data = site_obj.data.copy()
+        # GCR: I added this
+        self.results = {}
 
     @staticmethod
     def _validate(obj):
@@ -98,7 +100,40 @@ class Processing(object):
         return result
     	"""
         
-    def hals(self, cat="GW"):
+    def hals(self, cat="GW", detrend:int=3, update=False):
+        out = {}
+        if (detrend < 3):
+            warnings.warning('Detrending shorter than {} days is not recommended!'.format(detrend))
+        #check for non valid category
+        utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
+        #ET = ET, GW = {ET, AT}, BP = AT
+        comps = Site.comp_select(cat)
+        freqs = [i["freq"] for i in comps.values()]
+        data  = self.data[self.data.category == cat]
+        grouped = data.groupby(by=data.hgs.filters.obj_col)
+        for name, group in grouped:
+            #out[name] = comps
+            print(name)
+            if (not name in self.results):
+                self.results[name] = {}
+            if (not 'HALS' in self.results[name]) or (update):
+                print('UPDATE')
+                group   = group.hgs.filters.drop_nan
+                tf      = group.hgs.dt.to_zero
+                values  = group.value.values
+                if (detrend > 0):
+                    values  = Analysis.lin_window_ovrlp(tf, values, length=detrend)
+                values  = Analysis.harmonic_lsqr(tf, values, freqs)
+                # calculate real Amplitude and Phase
+                # var = utils.complex_to_real(tf, values["complex"])
+                # # add results to dictionary
+                # var["comps"] = list(comps.keys())
+                # var.update(values)
+                self.results[name].update({'HALS': values})
+                
+        return self.results[name]
+
+    def fft(self, cat="GW", detrend:int=3, update=False):
         out = {}
         #check for non valid category
         utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
@@ -110,21 +145,22 @@ class Processing(object):
         for name, group in grouped:
             #out[name] = comps
             print(name)
-            group   = group.hgs.filters.drop_nan
-            tf      = group.hgs.dt.to_zero
-            values  = group.value.values
-            values  = Analysis.lin_window_ovrlp(tf, values)
-            values  = Analysis.harmonic_lsqr(tf, values, freqs)
-            # calculate real Amplitude and Phase
-            var = utils.complex_to_real(tf, values["complex"])
-            # add results to dictionary
-            var["comps"] = list(comps.keys())
-            var.update(values)
-            out[name] = var
-
-        return out
+            if (not name in self.results):
+                self.results[name] = {}
+            if (not name in self.results) or (not 'FFT' in self.results[name]) or (update):
+                print('UPDATE')
+                group   = group.hgs.filters.drop_nan
+                tf      = group.hgs.dt.to_zero
+                values  = group.value.values
+                if (detrend > 0):
+                    values  = Analysis.lin_window_ovrlp(tf, values, length=detrend)
+                values  = Analysis.lin_window_ovrlp(tf, values, length=detrend)
+                values  = Analysis.fft_comp(tf, values)
+                self.results[name].update({'FFT': values})
+            
+        return self.results[name]
     
-    def fft(self, cat, loc, length=3, freqs=None):
+    def fft_(self, cat, loc, length=3, freqs=None):
         min_duration = 60
         min_splrate = 12
         utils.check_affiliation(cat, self._obj.VALID_CATEGORY)

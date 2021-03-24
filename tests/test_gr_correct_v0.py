@@ -12,7 +12,7 @@ data = acworth_site.data
 raw = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 
 #%%
-# acworth_site.add_ET(et_comp='g')
+# acworth_site.add_ET(et_comp='str')
 data = acworth_site.data
 heads = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 

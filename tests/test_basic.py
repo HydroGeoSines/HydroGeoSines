@@ -36,7 +36,7 @@ data.hgs.dt.to_num
 
 #%% Processing
 process_csiro = hgs.Processing(csiro)
-hals_results  = csiro.hals()
+hals_results  = process_csiro.hals()
 
 ## Processing
 # create Instance of Processing with csiro_site
