@@ -82,7 +82,7 @@ class Processing(object):
             values_detr = Analysis.lin_window_ovrlp(tf, values, length)
         else:
             values_detr = values
-        values_fft  = Analysis.fft_comp(tf, values_detr, freqs)
+        values_fft  = Analysis.fft_comp(tf, values_detr)
         if loc not in self._obj.results[cat]:
             self._obj.results[cat] = {loc: {}}
         self._obj.results[cat][loc] = {'FFT': {'y_detrend':  values_detr}}

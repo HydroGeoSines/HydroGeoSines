@@ -235,7 +235,7 @@ class Analysis(object):
         return y_detrend
 
     @staticmethod
-    def fft_comp(tf, data, freqs):
+    def fft_comp(tf, data):
         spd = 1/(tf[1] - tf[0])
         fft_N = len(tf)
         hanning = np.hanning(fft_N)
