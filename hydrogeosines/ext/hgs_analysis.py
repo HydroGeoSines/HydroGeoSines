@@ -173,7 +173,7 @@ class Analysis(object):
         dc_comp = theta[-1]
         # create complex coefficients
         hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
-        result = {'freq': freqs, 'comp': hals_comp, 'err_var': error_variance, 'cond_num': condnum, 'offset': dc_comp}
+        result = {'freqs': freqs, 'comps': hals_comp, 'err_var': error_variance, 'cond_num': condnum, 'offset': dc_comp}
 
         return y_hat, result
 
@@ -235,7 +235,23 @@ class Analysis(object):
         return y_detrend
 
     @staticmethod
-    def fft_analys(tf,data,freqs,spd):
+    def fft_comp(tf, data, freqs):
+        spd = 1/(tf[1] - tf[0])
+        fft_N = len(tf)
+        hanning = np.hanning(fft_N)
+        # perform FFT
+        fft_f = np.fft.fftfreq(int(fft_N), d=1/spd)[0:int(fft_N/2)]
+        # FFT windowed for amplitudes
+        fft_win   = np.fft.fft(hanning*data) # use signal with trend
+        fft = 2*(fft_win/(fft_N/2))[0:int(fft_N/2)]
+        # np.fft.fft default is a cosinus input. Thus for sinus the np.angle function returns a phase with a -np.pi shift.
+        #fft_phs = fft_phs  + np.pi/2  # + np.pi/2 for a sinus signal as input
+        #fft_phs = -(np.arctan(fft_win.real/fft_win.imag))
+        result = {'freqs': fft_f, 'comps': fft, 'dc_comp': np.abs(fft[0])}
+        return result
+    
+    @staticmethod
+    def fft_analys(tf, data, freqs, spd):
         fft_N = len(tf)
         hanning = np.hanning(fft_N)
         # perform FFT
@@ -251,7 +267,7 @@ class Analysis(object):
         phi_fft = []
         A_fft  = []
         for f in freqs:
-            f_idx = Tools.find_nearest(fft_f,f)
+            f_idx = Tools.find_nearest(fft_f, f)
             A_fft.append(fft_amps[f_idx])
             # PHASE CORRECTION FOR TIDAL COMPONENTS
             num_waves = (tf[-1] - tf[0] + 1/spd)*f

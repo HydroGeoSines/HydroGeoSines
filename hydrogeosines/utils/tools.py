@@ -11,7 +11,7 @@ class Tools(object):
         #self.attribute = variable             
     
     @staticmethod
-    def check_affiliation(values,valid):
+    def check_affiliation(values, valid):
             if not all(x in valid for x in np.array([values]).flatten()):
                 raise ValueError("%r contains values that are not part of %r." % (values,valid))                 
     
@@ -33,9 +33,9 @@ class Tools(object):
         return list(zip(arg1,*args_list)) 
     
     @staticmethod
-    def find_nearest_idx(array,value):
+    def find_nearest_idx(array, value):
         # find index nearest to value
-        idx = np.argmin(np.array(np.abs(array-value)))
+        idx = np.argmin(np.array(np.abs(array - value)))
         return idx.astype(int)
     
     @staticmethod                      
