@@ -227,22 +227,75 @@ class Analysis(object):
 
     @staticmethod
     def BE_Rau(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, amp_ratio:float=1):
-        # Equation 9, Rau et al. (2020), doi:10.5194/hess-24-6033-2020
+        """
+        
+
+        Parameters
+        ----------
+        BP_s2 : numpy complex
+            the complex result of the S2 component obtained from a frequency analysis for barometric pressure (BP; unit in m).
+        ET_m2 : numpy complex
+            the complex result of the M2 component obtained from a frequency analysis for Earth tide (ET) strains (unit in nstr!).
+        ET_s2 : numpy complex
+            the complex result of the S2 component obtained from a frequency analysis for Earth tide (ET) strains (unit in nstr!)..
+        GW_m2 : numpy complex
+            the complex result of the M2 component obtained from a frequency analysis for groundwater (GW; unit in m).
+        GW_s2 : numpy complex
+            the complex result of the S2 component obtained from a frequency analysis for groundwater (GW; unit in m)..
+        amp_ratio : float, optional
+            the amplitude damping factor for the M2 and S2 frequencies. The default is 1.
+
+        Returns
+        -------
+        BE : float
+            barometric efficiency of the subsurface.
+            
+        Notes
+        -------
+        This calculation uses Equation 9 in Rau et al. (2020), https://doi.org/10.5194/hess-24-6033-2020
+
+        """
+        
         GW_ET_s2 = (GW_m2 / ET_m2) * ET_s2
         GW_AT_s2 = GW_s2 - GW_ET_s2
         BE = (1/amp_ratio)*np.abs(GW_AT_s2 / BP_s2)
-
+        
         # a phase check ...
         GW_ET_m2_dphi = np.angle(GW_m2 / ET_m2)
         if ((amp_ratio == 1) and (np.abs(GW_ET_m2_dphi) > 5)):
             warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
-
+            
         return BE
 
     @staticmethod
     def BE_Acworth(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex):
+        """
+        
+
+        Parameters
+        ----------
+        BP_s2 : numpy complex
+            the complex result of the S2 component obtained from a frequency analysis for barometric pressure (BP; unit in m).
+        ET_m2 : numpy complex
+            the complex result of the M2 component obtained from a frequency analysis for Earth tide (ET) strains (unit in nstr!).
+        ET_s2 : numpy complex
+            the complex result of the S2 component obtained from a frequency analysis for Earth tide (ET) strains (unit in nstr!)..
+        GW_m2 : numpy complex
+            the complex result of the M2 component obtained from a frequency analysis for groundwater (GW; unit in m).
+        GW_s2 : numpy complex
+            the complex result of the S2 component obtained from a frequency analysis for groundwater (GW; unit in m)..
+
+        Returns
+        -------
+        BE : float
+            barometric efficiency of the subsurface.
+            
+        Notes
+        -------
+        This calculation uses Equation 4 in Acworth et al. (2016), https://doi.org/10.1002/2016GL071328
+
+        """
         # Calculate BE values
-        # Equation 4, Acworth et al. (2016), doi:10.1002/2016GL071328
         BE = (np.abs(GW_s2)  + np.abs(ET_s2) * np.cos(np.angle(BP_s2) - np.angle(ET_s2)) * (np.abs(GW_m2) / np.abs(ET_m2))) / np.abs(BP_s2)
 
         # provide a user warning ...
@@ -253,33 +306,33 @@ class Analysis(object):
     
     @staticmethod
     def K_Ss_estimate(ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, case_rad, scr_len, scr_rad, scr_depth):
-        # !!! need borehole construction parameters
-        # !!! need to make sure that ET data has strain units!!!
+        # !!! need borehole construction parameters !!!
+        # !!! need to make sure that ET data has strain units nstr !!!
 
         # M2 frequency
         f_m2 = const['_etfqs']['M2']
 
-        amp = np.abs(GW_m2 / ET_m2)
-        # amp = GW_amp_M2 / ETstr_man #
-        print("Amplitude response / areal strain sensitivity: {:.3f}".format(amp))
+        amp_ratio = np.abs(GW_m2 / ET_m2)
+        # amp_ratio = GW_amp_M2 / ETstr_man #
+        print("Amplitude response / areal strain sensitivity: {:.3f}".format(amp_ratio))
 
         #ET phase difference
-        phase = np.angle(GW_m2 / ET_m2)
-        print("delta_ET-GW: {:.4f} [rad], {:.4f} [°]".format(phase, np.degrees(phase)))
+        phase_shift = np.angle(GW_m2 / ET_m2)
+        print("delta_ET-GW: {:.4f} [rad], {:.4f} [°]".format(phase_shift, np.degrees(phase_shift)))
 
-        results = {'GW-ET_Ar': amp, 'GW-ET_dphi': phase}
+        results = {'GW-ET_Ar': amp_ratio, 'GW-ET_dphi': phase_shift}
 
         #%% use the Hsieh model
-        if (phase < 0.01):
-            global Ker, Kei, power, sqrt
+        if (phase_shift < 0.01):
+            global Ker, Kei, Power, Sqrt
             Ker = np.frompyfunc(ker, 2, 1)
             Kei = np.frompyfunc(kei, 2, 1)
-            power = np.frompyfunc(power, 2, 1)
-            sqrt = np.frompyfunc(sqrt, 1, 1)
+            Power = np.frompyfunc(power, 2, 1)
+            Sqrt = np.frompyfunc(sqrt, 1, 1)
 
-            # the horizontal flow / negative phase model
+            # the horizontal flow / negative phase_shift model
             def et_hflow(K, S_s, r_w=0.1, r_c=0.1, b=2, f=f_m2):
-                global Ker, Kei, power, sqrt
+                global Ker, Kei, Power, Sqrt
                 # create numpy function from mpmath
                 # https://stackoverflow.com/questions/51971328/how-to-evaluate-a-numpy-array-inside-an-mpmath-fuction
                 D_h = K / S_s
@@ -288,29 +341,29 @@ class Analysis(object):
                 # prevent errors from negative square roots
                 if (tmp >= 0):
                     T = K*b
-                    sqrt_of_2 = sqrt(2)
-                    alpha_w = r_w * sqrt(tmp)
+                    sqrt_of_2 = Sqrt(2)
+                    alpha_w = r_w * Sqrt(tmp)
                     ker_0_alpha_w = Ker(0, alpha_w)
                     ker_1_alpha_w = Ker(1, alpha_w)
                     kei_0_alpha_w = Kei(0, alpha_w)
                     kei_1_alpha_w = Kei(1, alpha_w)
-                    denom = power(ker_1_alpha_w, 2) + power(kei_1_alpha_w, 2)
+                    denom = Power(ker_1_alpha_w, 2) + Power(kei_1_alpha_w, 2)
                     Psi = - (ker_1_alpha_w - kei_1_alpha_w) / (sqrt_of_2 * alpha_w * denom)
                     Phi = - (ker_1_alpha_w + kei_1_alpha_w) / (sqrt_of_2 * alpha_w * denom)
-                    E = np.float64(1 - (((omega*power(r_c, 2))/(2*T)) * (Psi*ker_0_alpha_w + Phi*kei_0_alpha_w)))
-                    F = np.float64((((omega*power(r_c,2))/(2*T)) * (Phi*ker_0_alpha_w - Psi*kei_0_alpha_w)))
+                    E = np.float64(1 - (((omega*Power(r_c, 2))/(2*T)) * (Psi*ker_0_alpha_w + Phi*kei_0_alpha_w)))
+                    F = np.float64((((omega*Power(r_c,2))/(2*T)) * (Phi*ker_0_alpha_w - Psi*kei_0_alpha_w)))
                     Ar = (E**2 + F**2)**(-0.5)
                     dPhi = -np.arctan(F/E)
                     return Ar, dPhi
                 else:
                     return np.Inf, np.Inf
 
-            def fit_amp_phase(props, amp, phase, r_c, r_w, scr_len, freq):
+            def fit_amp_phase(props, amp_ratio, phase_shift, r_c, r_w, scr_len, freq):
                 #print(props)
                 K, S_s = props
                 Ar, dPhi = et_hflow(K, S_s, r_c, r_w, scr_len, freq)
-                res_amp = amp*S_s - Ar
-                res_phase = phase - dPhi
+                res_amp = amp_ratio*S_s - Ar
+                res_phase = phase_shift - dPhi
                 error = np.asarray([res_amp,res_phase])
             #    print(error)
                 return error
@@ -319,7 +372,7 @@ class Analysis(object):
             print("-------------------------------------------------")
             print('Joint inversion of K and Ss:')
             # least squares fitting
-            fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp, phase, case_rad, scr_rad, scr_len, f_m2), xtol=1e-30, ftol=1e-30, gtol=1e-16, method='lm')
+            fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_ratio, phase_shift, case_rad, scr_rad, scr_len, f_m2), xtol=1e-30, ftol=1e-30, gtol=1e-16, method='lm')
             print(fit)
 
             # change units to m and s
@@ -342,7 +395,7 @@ class Analysis(object):
 
         #%% use the Wang model
         else:
-            # the vertical flow / positive phase model
+            # the vertical flow / positive phase_shift model
             def vflow_amp(K, S_s, z=20, f=f_m2):
                 D_h = K / S_s
                 omega = 2*np.pi*(f/24/3600)
@@ -356,16 +409,16 @@ class Analysis(object):
                 delta = np.sqrt(2*D_h/omega)
                 return np.arctan((np.exp(-z/delta)*np.sin(z/delta))/(1-np.exp(-z/delta)*np.cos(z/delta)))
 
-            def residuals(props, amp, phase, depth, freq):
+            def residuals(props, amp_ratio, phase_shift, depth, freq):
                 K, S_s = props
-                res_amp = amp*S_s - vflow_amp(K, S_s, depth, freq)
-                res_phase = phase - vflow_phase(K, S_s, depth, freq)
+                res_amp = amp_ratio*S_s - vflow_amp(K, S_s, depth, freq)
+                res_phase = phase_shift - vflow_phase(K, S_s, depth, freq)
                 error = np.asarray([res_amp, res_phase])
                 print(error)
                 return error
 
             # least squares fitting wang
-            fit =  least_squares(residuals, [0.01, 0.01], args=(amp, phase, scr_depth, f_m2), method='lm')
+            fit =  least_squares(residuals, [0.01, 0.01], args=(amp_ratio, phase_shift, scr_depth, f_m2), method='lm')
 
             # change units to m and s
             K = fit.x[0]
@@ -380,6 +433,7 @@ class Analysis(object):
                 print("Specific storage is: {:.3e} 1/m".format(Ss))
 
                 results.update({'K': K, 'Ss': Ss, 'Model': 'Wang', 'redidual': 'XXXX', 'screen_depth': scr_depth})
+                
             else:
                 print('Failed!')
 
@@ -760,4 +814,4 @@ class Analysis(object):
 
             return WLc, params
         else:
-            raise Exception("Error: Please only use available Earth tide methods!")
+            raise Exception("Please only use available Earth tide methods!")
