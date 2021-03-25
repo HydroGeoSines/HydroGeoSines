@@ -1,7 +1,7 @@
 from .models.site import Site
 from .handlers.processing import Processing
 from . import utils
-from . import view 
+from . import view
 
 #if __name__ == "__main__":
 #	 model = Model.Model()
