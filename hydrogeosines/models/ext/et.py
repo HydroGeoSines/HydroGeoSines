@@ -7,8 +7,6 @@ Created on Wed Sep 23 16:13:00 2020
 
 import pandas as pd
 import numpy as np
-import pytz
-import datetime as dt
 import os,sys
 
 from scipy.interpolate import interp1d
@@ -34,8 +32,10 @@ class ET(object):
                 et_comp_i = -1
             elif(et_comp == 'g'):
                 et_comp_i = 0
+            elif(et_comp == 'str'):
+                et_comp_i = 6
             else:
-                raise Exception("Error: Keyword 'et_comp' most be 'pot' (potential) or 'g' (gravity)!")
+                raise Exception("Error: Keyword 'et_comp' most be 'pot' (potential), 'g' (gravity) or 'str' (aerial strain)!")
             et_unit = {-1: 'm**2/s**2', 0: 'nm/s**2', 1: 'mas', 2: 'mm', 3: 'mm', 4: 'nstr', 5: 'nstr', 6: 'nstr', 7: 'nstr', 8: 'nstr', 9: 'mm'}
             if (self.geoloc == None):
                 raise Exception('Error: Geo-location (WGS84 longitude, latitude and height) must be set!')
@@ -73,7 +73,7 @@ class ET(object):
             # convert time to floating point for matching
             td = (data['UTC'] - pd.to_datetime('1899-12-30', utc=True)).dt
             et_utc_tf = td.days + td.seconds/86400
-            # !!! to allow irregular time stamps, interpolate the Earth tide data (cubic spline)
+            # to allow irregular time stamps, interpolate the Earth tide data (cubic spline)
             et_interp = interp1d(et_utc_tf, data.iloc[:, 1].values, kind='cubic')
             et = et_interp(dt_utc_tf)
             
@@ -93,7 +93,7 @@ class ET(object):
             # no dublicate indices
             self.data.reset_index(inplace=True, drop=True)
             # self.data = self.data.hgs.check_dublicates
-            print("Earth tide time series were calculated and added ...")
+            print("Theoretical Earth tide time-series were calculated and added ...")
             
             # !!!!!!!!!!!!!!!!!
         except ImportError:

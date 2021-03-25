@@ -12,7 +12,7 @@ data = acworth_site.data
 raw = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 
 #%%
-# acworth_site.add_ET(et_comp='g')
+# acworth_site.add_ET(et_comp='str')
 data = acworth_site.data
 heads = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 
@@ -20,7 +20,7 @@ heads = data.pivot(index='datetime', columns=['category', 'location'], values='v
 print("Correct heads ...")
 process_acworth = hgs.Processing(acworth_site)
 
-corrected, params = process_acworth.correct_GW(et_method='hals', lag_h=8)
+corrected, params = process_acworth.GW_correct(et_method='ts', lag_h=12)
 
 #%% plot corrected heads
 plt.figure()

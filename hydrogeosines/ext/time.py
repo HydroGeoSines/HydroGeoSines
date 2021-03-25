@@ -13,17 +13,17 @@ class Time(object):
     epoch = pd.Timestamp(1970,1,1)
     #Epoch (defined as 1 January 1970 00:00:00 at GMT timezone +00:00 offset).
     #Epoch is anchored on the GMT timezone and therefore is an absolute point in time.
-
+    
     def __init__(self,datetime):
         ## add attribute specific to Time here
         self._validate(datetime)
         self._obj = datetime
-
+    
     @staticmethod
     def _validate(obj):
         if not is_datetime(obj):
             raise AttributeError("Must be a 'datetime64'")
-
+    
     @property
     def is_regular(self):
         tmp = np.diff(self.to_num)

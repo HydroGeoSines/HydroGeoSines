@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt # this should probably not be added in here. Generally loaded in site through hgs
 import os, sys
+import warnings
 
 from ..ext.hgs_analysis import Time_domain, Freq_domain
 from ..models.site import Site
@@ -16,10 +17,12 @@ from ..models.site import Site
 
 from .. import utils
 
+from ..models import const
+
 class Processing(object):
-    # define all class attributes here 
+    # define all class attributes here
     #attr = attr
-    
+
     def __init__(self, site_obj, et=False):
         self._validate(site_obj)
         self._obj       = site_obj
@@ -36,12 +39,6 @@ class Processing(object):
         if any(cat not in obj.data["category"].unique() for cat in ("GW","BP")):            
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
     
-    @staticmethod
-    def check_key(dict, key):
-        # use for global dict update
-        if dict.has_key(key):
-            pass
-        
     def by_gwloc(self, gw_loc):
         # get idx to subset GW locations
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
@@ -49,7 +46,7 @@ class Processing(object):
         # drop all GW locations, but the selected ones
         self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
         return self
-        
+
     def BE_method(self, method:str = "all", derivative=True):
         # output dict
         out = {}
@@ -96,13 +93,38 @@ class Processing(object):
             #elif                
         return out       
 
-    def hals(self, cat="GW"):
+    def hals(self, cat="GW", detrend:int=3, update=False):
         out = {}
-        #check for non valid category 
+        #check for non valid category
         utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
-        #ET = ET, GW = {ET, AT}, BP = AT 
+        #ET = ET, GW = {ET, AT}, BP = AT
         comps = Site.comp_select(cat)
         freqs = [i["freq"] for i in comps.values()]
+        data  = self.data[self.data.category == cat]
+        grouped = data.groupby(by=data.hgs.filters.obj_col)
+        for name, group in grouped:       
+            print(name)
+            if (not name in self.results):
+                self.results[name] = {}
+            if (not 'HALS' in self.results[name]) or (update):
+                print('UPDATE')
+                group   = group.hgs.filters.drop_nan
+                tf      = group.hgs.dt.to_zero
+                values  = group.value.values
+                if (detrend > 0):
+                    values  = Analysis.lin_window_ovrlp(tf, values, length=detrend)
+                values  = Analysis.harmonic_lsqr(tf, values, freqs)
+                # calculate real Amplitude and Phase
+                # var = utils.complex_to_real(tf, values["complex"])
+                # # add results to dictionary
+                # var["comps"] = list(comps.keys())
+                # var.update(values)
+                self.results[name].update({'HALS': values})
+                
+        return self.results[name]
+  
+
+    """
         data  = self.data[self.data.category == cat]  
         grouped = data.groupby(by=data.hgs.filters.loc_col)
         for name, group in grouped:
@@ -120,29 +142,192 @@ class Processing(object):
             var.update(values)
             out[name] = var
 
-        return out
+        return out   
+    """
+    def fft(self, cat="GW", detrend:int=3, update=False):
+        out = {}
+        #check for non valid category
+        utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
+        #ET = ET, GW = {ET, AT}, BP = AT
+        comps = Site.comp_select(cat)
+        freqs = [i["freq"] for i in comps.values()]
+        data  = self.data[self.data.category == cat]
+        grouped = data.groupby(by=data.hgs.filters.obj_col)
+        for name, group in grouped:
+            #out[name] = comps
+            print(name)
+            if (not name in self.results):
+                self.results[name] = {}
+            if (not name in self.results) or (not 'FFT' in self.results[name]) or (update):
+                print('UPDATE')
+                group   = group.hgs.filters.drop_nan
+                tf      = group.hgs.dt.to_zero
+                values  = group.value.values
+                if (detrend > 0):
+                    values  = Analysis.lin_window_ovrlp(tf, values, length=detrend)
+                values  = Analysis.lin_window_ovrlp(tf, values, length=detrend)
+                values  = Analysis.fft_comp(tf, values)
+                self.results[name].update({'FFT': values})
+            
+        return self.results[name]
+    
+    def fft_(self, cat, loc, length=3, freqs=None):
+        min_duration = 60
+        min_splrate = 12
+        utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
+        if loc not in self._obj.data_pivot[cat].columns:
+            raise Exception("Category '{}' and location '{}' set is not available!".format(cat, loc))
+        if freqs is None:
+            freqs = Site.freq_select(cat)
+        if (length is None):
+            length = 3
+        values = self._obj.data_pivot[cat][loc].values
+        tmp = np.isnan(values)
+        tdelta = (self._obj.data_pivot.index[~tmp].tz_localize(None) - self._obj.data_pivot.index[~tmp].tz_localize(None)[0])
+        tf = (tdelta.days + (tdelta.seconds / (60*60*24)))
+        if (tf.max() - tf.min() < min_duration):
+            raise Exception("The record duration for category {} and location {} must be at least {:.0f} days for this analysis!".format(cat, loc, min_duration))
+        if (len(tf)/(tf.max() - tf.min()) < min_splrate):
+            raise Exception("The average sampling rate for category {} and location {} must be at least {:.0f} samples per hour for this analysis!".format(cat, loc, min_splrate))
+        if (length > 0):
+            values_detr = Analysis.lin_window_ovrlp(tf, values, length)
+        else:
+            values_detr = values
+        values_fft  = Analysis.fft_comp(tf, values_detr)
+        if loc not in self._obj.results[cat]:
+            self._obj.results[cat] = {loc: {}}
+        self._obj.results[cat][loc] = {'FFT': {'y_detrend':  values_detr}}
+        self._obj.results[cat][loc]['FFT'].update(values_fft)
+        return
 
-    def correct_GW(self, gw_locs=None, bp_loc:str=None, et_loc:str=None, lag_h=24, et_method=None, fqs=None):
-        print("A complicated procedure ...")
+    #%% calculate BE using frequency-domain approaches
+    def BE_freq(self, method='rau', gw_locs=None, bp_loc:str=None, et_loc:str=None, freq_method:str='hals', update=False):
+        
+        data = self._obj.data.pivot(index='datetime', columns=['category', 'location'], values='value')
+        
+        #%% select BP and perform
+        if 'BP' not in data.columns:
+            raise Exception('Error: BP is required but not found in the dataset!')
+        # if no locations are listed, use deafult values
+        if bp_loc is None:
+            bp_loc = data['BP'].columns[0]
+        if et_loc is None:
+            et_loc = data['ET'].columns[0]
+        if gw_locs is None:
+            gw_locs = data['GW'].columns
+
+        #%%
+        # define the required frequency values in cpd
+        m2_freq = self._obj.const['_etfqs']['M2']
+        s2_freq = self._obj.const['_etfqs']['S2']
+        be_results = {}
+        if (freq_method == 'hals'):
+            if (bp_loc not in self._obj.results['BP']) or ('HALS' not in self._obj.results['BP'][bp_loc]) or update:
+                self.hals('BP', bp_loc)
+
+            if (not et_loc in self._obj.results['ET']) or (not 'HALS' in self._obj.results['ET'][et_loc]) or update:
+                self.hals('ET', et_loc)
+
+            for gw_loc in gw_locs:
+                if gw_loc not in data['GW'].columns:
+                    raise Exception("Category 'GW' location '{}' is not available!".format(gw_loc))
+                if (not gw_loc in self._obj.results['GW']) or (not 'HALS' in self._obj.results['GW'][gw_loc]) or update:
+                    self.hals('GW', gw_loc)
+
+            # find all the relevant dictionary keys and indices ...
+            bp_s2_idx = list(self._obj.results['BP'][bp_loc]['HALS']['freqs']).index(s2_freq)
+            bp_s2 = self._obj.results['BP'][bp_loc]['HALS']['comps'][bp_s2_idx]
+            et_m2_idx = list(self._obj.results['ET'][et_loc]['HALS']['freqs']).index(m2_freq)
+            et_m2 = self._obj.results['ET'][et_loc]['HALS']['comps'][et_m2_idx]
+            et_s2_idx = list(self._obj.results['ET'][et_loc]['HALS']['freqs']).index(s2_freq)
+            et_s2 = self._obj.results['ET'][et_loc]['HALS']['comps'][et_s2_idx]
+            gw_m2_idx = list(self._obj.results['GW'][gw_loc]['HALS']['freqs']).index(m2_freq)
+            gw_m2 = self._obj.results['GW'][gw_loc]['HALS']['comps'][gw_m2_idx]
+            gw_s2_idx = list(self._obj.results['GW'][gw_loc]['HALS']['freqs']).index(s2_freq)
+            gw_s2 = self._obj.results['GW'][gw_loc]['HALS']['comps'][gw_s2_idx]
+            print(bp_s2_idx)
+
+        elif (freq_method == 'fft'):
+            if (bp_loc not in self._obj.results['BP']) or ('FFT' not in self._obj.results['BP'][bp_loc]) or update:
+                self.fft('BP', bp_loc)
+
+            if (not et_loc in self._obj.results['ET']) or (not 'FFT' in self._obj.results['ET'][et_loc]) or update:
+                self.fft('ET', et_loc)
+
+            for gw_loc in gw_locs:
+                if gw_loc not in data['GW'].columns:
+                    raise Exception("Category 'GW' location '{}' is not available!".format(gw_loc))
+                if (not gw_loc in self._obj.results['GW']) or (not 'FFT' in self._obj.results['GW'][gw_loc]) or update:
+                    self.fft('GW', gw_loc)
+
+            # find all the relevant dictionary keys and indices ...
+            bp_s2_idx = Tools.find_nearest_idx(self._obj.results['BP'][bp_loc]['FFT']['freqs'], s2_freq)
+            bp_s2 = self._obj.results['BP'][bp_loc]['FFT']['comps'][bp_s2_idx]
+            et_m2_idx = Tools.find_nearest_idx(self._obj.results['ET'][et_loc]['FFT']['freqs'], m2_freq)
+            et_m2 = self._obj.results['ET'][et_loc]['FFT']['comps'][et_m2_idx]
+            et_s2_idx = Tools.find_nearest_idx(self._obj.results['ET'][et_loc]['FFT']['freqs'], s2_freq)
+            et_s2 = self._obj.results['ET'][et_loc]['FFT']['comps'][et_s2_idx]
+            gw_m2_idx = Tools.find_nearest_idx(self._obj.results['GW'][gw_loc]['FFT']['freqs'], m2_freq)
+            gw_m2 = self._obj.results['GW'][gw_loc]['FFT']['comps'][gw_m2_idx]
+            gw_s2_idx = Tools.find_nearest_idx(self._obj.results['GW'][gw_loc]['FFT']['freqs'], s2_freq)
+            gw_s2 = self._obj.results['GW'][gw_loc]['FFT']['comps'][gw_s2_idx]
+
+        else:
+            raise Exception("The frequency-domain method '{}' is not available!".format(freq_method))
+
+        #%% select the method
+        if (method == 'rau'):
+            # Calculate BE values
+            # Equation 9, Rau et al. (2020), doi:10.5194/hess-24-6033-2020
+            GW_ET_s2 = (gw_m2 / et_m2) * et_s2
+            GW_AT_s2 = gw_s2 - GW_ET_s2
+            # a phase check ...
+            GW_ET_m2_dphi = np.angle(gw_m2 / et_m2)
+
+            if (np.abs(GW_ET_m2_dphi) > 5):
+                warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
+
+            BE = np.abs(GW_AT_s2 / bp_s2)
+            be_results[gw_loc] = {'BE': BE}
+
+        #%%
+        elif (method == 'acworth'):
+            # Calculate BE values
+            # Equation 4, Acworth et al. (2016), doi:10.1002/2016GL071328
+            BE = (np.abs(gw_s2)  + np.abs(et_s2) * np.cos(np.angle(bp_s2) - np.angle(et_s2)) * (np.abs(gw_m2) / np.abs(et_m2))) / np.abs(bp_s2)
+            be_results[gw_loc] = {'BE': BE}
+            # provide a user warning ...
+            if (np.abs(gw_m2) > np.abs(gw_s2)):
+                warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
+
+        else:
+            raise Exception("The method '{}' is not available!".format(method))
+
+        return be_results
+
+    #%% Correct GW heads using BRF-based analysis
+    def GW_correct(self, gw_locs=None, bp_loc:str=None, et_loc:str=None, lag_h=24, et_method=None, fqs=None):
+        print("Start GW_correct procedure ...")
+
         # first aggregate all the datasets into one
         data = self._obj.data.pivot(index='datetime', columns=['category', 'location'], values='value')
         if 'BP' not in data.columns:
             raise Exception('Error: BP is required but not found in the dataset!')
         if ((et_method is not None) and ('ET' not in data.columns)):
             raise Exception('Error: ET time series is required but not found in the dataset!')
-        # apply tests to see if data is regular and complete
-        # first, drop any rows with missing values
+        # if no BP series is declared, use the first one ...
         if bp_loc is None:
             bp_loc = data['BP'].columns[0]
         if bp_loc not in data['BP'].columns:
             raise Exception("Error: BP location '{}' is not available!".format(bp_loc))
+        # apply tests to see if data is regularly sampled
         BP = data['BP'][bp_loc].values
         tmp = np.isnan(BP)
         tdiff = np.diff(data.index[~tmp])
         if np.any(tdiff != tdiff[0]):
             raise Exception("Error: Category BP must be regularly sampled!")
         # prepare time, BP and ET
-        # TODO: Is the localize step in the import_csv not sufficient? 
+        # TODO: Is the localize step in the import_csv not sufficient?
         ## BTW: the utc offset for each location is automatically stored in the site upon import
         delta = (data.index.tz_localize(None) - data.index.tz_localize(None)[0])
         tf = (delta.days + (delta.seconds / (60*60*24))).values
@@ -151,11 +336,12 @@ class Processing(object):
         elif et_method == 'hals':
             ET = None
         elif et_method == 'ts':
+            # if no BP series is declared, use the first one ...
             if et_loc is None:
                 et_loc = data['ET'].columns[0]
             if et_loc not in data['ET'].columns:
                 raise Exception("Error: ET location '{}' is not available!".format(et_loc))
-            # first, drop any rows with missing values
+            # apply tests to see if data is regularly sampled
             ET = data['ET'][et_loc].values
             tmp = np.isnan(ET)
             tdiff = np.diff(data.index[~tmp])
@@ -163,24 +349,24 @@ class Processing(object):
                 raise Exception('Error: Category ET must be regularly sampled!')
         else:
             raise Exception("Error: Specified 'et_method' is not available!")
-        # prepare results container
+        # prepare results container with the same index as data
         results = pd.DataFrame(index=data.index)
-        # loop through GW category
+        # check and loop through GW category
         if gw_locs is None:
             gw_locs = data['GW'].columns
         params = {}
         for loc in gw_locs:
             if loc not in data['GW'].columns:
                 raise Exception("Error: GW location '{}' is not available!".format(loc))
-                
-            print(loc)
-            # first, drop any rows with missing values
+
+            # check and loop through GW category
+            print("Working on location '{}' ...".format(loc))
             GW = data['GW'][loc].values
             tmp = np.isnan(GW)
             tdiff = np.diff(data.index[~tmp])
             if np.any(tdiff != tdiff[0]):
                 raise Exception("Error: Location '{}' must be regularly sampled!".format(loc))
             # regress_deconv(self, tf, GW, BP, ET=None, lag_h=24, et=False, et_method='hals', fqs=None):
-            values, params[loc] = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
-            results[loc] = values
+
+            results[loc], params[loc] = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
         return results, params

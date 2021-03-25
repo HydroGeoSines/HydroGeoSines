@@ -18,7 +18,7 @@ acworth_site = hgs.Site('acworth', geoloc=[141.762065, -31.065781, 160])
 # read
 acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', 
                         input_category=["GW","BP","GW"], 
-                        utc_offset=10, unit=["Cm","mm","M"], header = ["Site_A","Site_B","Site_C"],
+                        utc_offset=10, unit=["Cm","mm","M"], loc_names = ["Site_A","Site_B","Site_C"],
                         how="add", check_dublicates=True)
 
 # data

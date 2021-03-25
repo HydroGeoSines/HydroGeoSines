@@ -1,57 +1,42 @@
 import hydrogeosines as hgs
-import numpy as np
-import pandas as pd
 
-#%%  Acworth Data
-"""
+#%%  Testing MVC principal
 ## MODEL
-acworth_site = hgs.Site('acworth', geo=[141.762065, -31.065781, 160])	
+acworth_site = hgs.Site('acworth', geo=[141.762065, -31.065781, 160])
+print(acworth_site.data)
 
-# read data
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"], how="add", check_dublicates=True) 
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit=["Hpa"], how="add", check_dublicates=False) 
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit="Cm", how="add", check_dublicates=True) 
+#%%
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"], how="add", check_dublicates=True)
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit=["Hpa"], how="add", check_dublicates=False)
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit="Cm", how="add", check_dublicates=True)
 #acworth_site.import_csv('tests/data/fowlers_gap/acworth_et.csv', input_category='ET', utc_offset=10,  unit='nm/s^2', how="add", check_dublicates=True)
 #acworth_site.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'
-"""
-#%% Csiro Data
+
+#%%
 ## Model
 csiro_site = hgs.Site('csiro', geo=[141.762065, -31.065781, 160])
-# read data
-csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_GW_short.csv', 
-                        input_category=["GW"]*3, 
+# read
+csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_GW_short.csv',
+                        input_category=["GW"]*3,
                         utc_offset=10, unit=["m"]*3, loc_names = ["Site_A","Site_B","Site_C"],
-                        how="add", check_dublicates=True) 
+                        how="add", check_dublicates=True)
 
-csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv', 
-                        input_category="BP", 
+csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv',
+                        input_category="BP",
                         utc_offset=10, unit="mbar", loc_names = "Baro",
-                        how="add", check_dublicates=True) 
+                        how="add", check_dublicates=True)
 
-data = csiro_site.data.copy()
+#data_GW = csiro.get_gw_data
+# data
+data = csiro_site.data
+# hgs methods
+data_resample = data.hgs.resample(freq = 5)
+# datetime methods
+data.hgs.dt.to_num
 
-#%% Create Test Dataset
-# Full data test set with gaps
-data2 = csiro_site.data.copy()
-data2.loc[12000:12500,"value"] = np.nan # BP value gap
-data2.loc[30000:32000,"value"] = np.nan # GW value large_gap1
-data2.loc[151000:155000,"value"] = np.nan # GW value large_gap2
-data2.loc[300000:302000,"value"] = np.nan # GW value large_gap3
-data2.loc[30000:32000,"value"] = np.nan # GW value small_gap1
-# add dummy category
-data2.loc[302000:303000,"category"] = "ET" # add additional category for testing
-
-
-#%% Function exaamples
-## easy access to data and values by location
-bp_data = data.hgs.filters.get_bp_data  
-gw_data = data.hgs.filters.get_gw_data
-
-bp_values = data.hgs.filters.get_bp_values  
-gw_values = data.hgs.filters.get_gw_values
-
-bp_locs = data.hgs.filters.get_bp_locs  
-gw_locs = data.hgs.filters.get_gw_locs
+#%% Processing
+process_csiro = hgs.Processing(csiro)
+hals_results  = process_csiro.hals()
 
 ## Processing
 # create Instance of Processing with csiro_site
@@ -62,40 +47,25 @@ process_csiro_SiteA_B = hgs.Processing(csiro_site).by_gwloc(locations)
 hals_results  = process_csiro.hals()
 #be_results  = process_csiro.BE()
 
-## Make data regular and aligned 
-regular = data2.hgs.make_regular(spl_freq=1200) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
-regular = regular.hgs.BP_align() # inter_max = 3600, method = "backfill", inter_max_total = 10
-# check integrity
-regular.hgs.check_BP_align
 
-# pivot data to get multiindex by datetime. perfectly aligned now
-pivot = regular.hgs.pivot
 
-#%% demonstrate Most common frequency (MCF) (included in make_regular)
-mcf = data2.copy()
-mcf = mcf.hgs.filters.drop_nan # not necessary
-#TODO: replace non_valid entries? Dublicates already handled at import
-# Sample frequency for each group
-spl_freqs = mcf.hgs.spl_freq_groupby
-# Resampling for each group
-mcf = mcf.hgs.resample_by_group(spl_freqs)
 
 #%% filter upsampling with gap_mask (included in make_regular)
 mask = mcf.copy()
 x = mcf["value"]
 mask, counter = hgs.utils.gap_mask(x,12)
 
-group = mcf[mask].hgs.upsample(method="backfill") 
+group = mcf[mask].hgs.upsample(method="backfill")
 
 
 #%% Example and Ideas on MVC Paradigm
 """
 ## MODEL
-mountain_data   = hgs.Data().import_csv() 
+mountain_data   = hgs.Data().import_csv()
 mountain_site   = hgs.Site('MOUNTAIN', geoloc=[141.762065, -31.065781, 160])
 
 # add data
-mountain_site.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True)
+mountain_site.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True))
 
 ## CONTROLLER
 hals_wf         = hgs.Processing.hals()
@@ -114,18 +84,55 @@ gw_data = mountain_site.gw_data ## INSTEAD: mountain_site.get_gw_data() <- METHO
 #___
 
 filter_result = SiteFilter.by_location('loc')['datetime']
-is_reg = filter_result.is_regular # ()
+is_reg = filter_result.is_reguar # ()
 # generischer Ansatz: Site.by('location').where('loc')
 
 site1.set_path('fr.csv');
 site1.load_csv();
 site1.get_data();
 
-#MVC mäßig:
+MVC mäßig:
+
 site1 = Site('Freiburg');
 site1.load('freiburg.csv');
 
 data = SiteController(site1).by_location('fr').process()
 
 View().visualize(data);
+
+
+
+
+#%%
+print(acworth_site.data.dtypes) #datetime must be datetime64[ns] not object
+print(out.df_obj)
+
+#%% acworth_site pivot to dt table with 2 categories and multiindex
+pivot = acworth_site.data.dt_pivot()
+
+#%%
+dt = acworth_site.data.dt_zero()
+dt2 = out.dt_num(dt_base="2000-12-30")
+#%%
+test2 = acworth_site.data.dropna(axis=0,how="any",subset=["value"]).reset_index(drop=True)
+test3 = acworth_site.data.drop_nan()
 """
+#%%
+pivot = test.dt_pivot
+print(pivot)
+
+regular = test.make_regular()
+print(pivot)
+
+#%%
+# data = test.dt_regular
+
+#%%
+# test.remove(['Smith_5', 'FG822-1_2'])
+
+# #%%
+# tmp = test.data.dtf
+# print(tmp)
+
+# #%%
+# pivot = test.data.dt_pivot()

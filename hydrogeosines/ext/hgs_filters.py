@@ -1,11 +1,11 @@
 import numpy as np
+import pandas as pd
 
 class HgsFilters(object):
     """
     An extension that features hgs filters by category and location
     """
     VALID_CATEGORY  = {"ET", "BP", "GW"}
-    NON_VALID_VALUES = {""}
     
     def __init__(self,hgs_obj):        
         ## add attribute specific to Time here   
@@ -14,15 +14,17 @@ class HgsFilters(object):
         
         # dynamically set a attribute that uses a function to access existing data categories
         for attr in self._obj.category.unique():
-            setattr(self,f'get_{attr.lower()}_data', self.make_attr(attr)()) 
-            setattr(self,f'get_{attr.lower()}_values', self.make_attr(attr)().value.values) 
-            setattr(self,f'get_{attr.lower()}_locs', self.make_attr(attr)()["location"].unique()) 
-              
-    # access function 
+            setattr(self,f'get_{attr.lower()}_values', self.make_attr(attr))                   
+     
     def make_attr(self,category):
         def inner():
-            return self._obj[self._obj['category'] == category].copy()
+            return self._obj[self._obj['category'] == category].value.values
         return inner  
+    
+    #@staticmethod
+    #def _validate(obj):
+    #    if not is_datetime(obj):
+    #        raise AttributeError("Must be ...")
     
     @property
     def obj_col(self):
@@ -43,14 +45,9 @@ class HgsFilters(object):
     
     @property
     def drop_nan(self):              
-        return self._obj.dropna(axis=0,how="any",subset=["value"])
+        return self._obj.dropna(axis=0,how="any",subset=["value"]).reset_index(drop=True)
                
     def drop_loc(self,locs):
         locs = np.array(locs).flatten()
         idx = self._obj.location.isin(locs)   
-        return self._obj[~idx].reset_index(drop = True)  
-
-    def drop_cat(self,categories):
-        categories = np.array(categories).flatten()
-        idx = self._obj.category.isin(categories)   
-        return self._obj[~idx].reset_index(drop = True) 
+        return self._obj[~idx].reset_index()         
