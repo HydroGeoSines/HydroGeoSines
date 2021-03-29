@@ -20,11 +20,11 @@ from ..models import const
 
 #%% General methods ##########################################################
 def brf_total(Z):
-                #print(dir(Phi))
-                def brf(x, *c):
-                   # print(Phi)
-                    return Z@c
-                return brf
+    #print(dir(Phi))
+    def brf(x, *c):
+       # print(Phi)
+        return Z@c
+    return brf
             
 def quantise(data, step):
     ''' Quantization of a signal '''
