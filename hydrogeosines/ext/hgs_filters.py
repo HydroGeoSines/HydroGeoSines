@@ -30,13 +30,19 @@ class HgsFilters(object):
         return list(self._obj.select_dtypes(include=['object']).columns) 
     
     @property
-    def loc_col(self):
-        # returns df object columns as list
+    def loc_part(self):
+        # returns df location ID columns as list (not hardcoded)
         col_list = self.obj_col
         col_list.remove('category')
         col_list.remove('unit')
         return col_list
-           
+    
+    @property
+    def loc_names_unique(self):
+        names = list(zip(self._obj.location, self._obj.part))
+        names = list(set(names))
+        return dict(names)
+        
     @property
     def is_nan(self):
         return self._obj['value'].isnull().values.any()

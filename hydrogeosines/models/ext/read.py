@@ -55,12 +55,15 @@ class Read(object):
             locations = list(np.array([loc_names]).flatten())
         else:
             locations = data.columns
-            
+                
         # format table with multiindex and melt            
         header = utils.zip_formatter(locations, input_category, unit)
         data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])                
-        data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower) 
-
+        data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower)                 
+        
+        # add "part" column as a placeholder 
+        data["part"] = "all"
+        
         # reformat unit column to SI units
         data["value"], data["unit"] = data.hgs.pucf_converter_vec(self.const["_pucf"]) # vectorizing
                 
@@ -78,7 +81,7 @@ class Read(object):
         # make sure the datetime is formated correctly for later use
         self.data["datetime"] = pd.to_datetime(self.data["datetime"]) 
         # sort data in a standard way -> easier to read
-        self.data.sort_values(by=["category","location"], inplace = True)
+        self.data.sort_values(by=["category","location","part"], inplace = True)
         # no dublicate indices
         self.data.reset_index(inplace=True, drop=True)             
         # no dublicate entries        

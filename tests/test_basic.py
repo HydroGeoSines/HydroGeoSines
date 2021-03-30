@@ -1,19 +1,8 @@
 import hydrogeosines as hgs
 import numpy as np
 import pandas as pd
+from copy import deepcopy
 
-#%%  Acworth Data
-"""
-## MODEL
-acworth_site = hgs.Site('acworth', geo=[141.762065, -31.065781, 160])	
-
-# read data
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv', input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"], how="add", check_dublicates=True) 
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit=["Hpa"], how="add", check_dublicates=False) 
-acworth_site.import_csv('tests/data/fowlers_gap/acworth_bp.csv', input_category='BP', utc_offset=10,  unit="Cm", how="add", check_dublicates=True) 
-#acworth_site.import_csv('tests/data/fowlers_gap/acworth_et.csv', input_category='ET', utc_offset=10,  unit='nm/s^2', how="add", check_dublicates=True)
-#acworth_site.import_csv('test_data/fowlers_gap/acworth_short_gaps.csv', utc_offset=10, input_type=["BP", 'GW', 'GW', 'GW', 'ET'], unit=["m", 'm', 'm', 'm', 'nm/s^2'], method="add", check_dublicates=True) #, dt_fmt='%d/%m/%Y %H:%M'
-"""
 #%% Csiro Data
 ## Model
 csiro_site = hgs.Site('csiro', geo=[141.762065, -31.065781, 160])
@@ -28,7 +17,7 @@ csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv',
                         utc_offset=10, unit="mbar", loc_names = "Baro",
                         how="add", check_dublicates=True) 
 
-data = csiro_site.data.copy()
+data = csiro_site.data
 
 #%% Create Test Dataset
 # Full data test set with gaps
@@ -39,9 +28,16 @@ data2.loc[151000:155000,"value"] = np.nan # GW value large_gap2
 data2.loc[300000:302000,"value"] = np.nan # GW value large_gap3
 data2.loc[30000:32000,"value"] = np.nan # GW value small_gap1
 # add dummy category
-data2.loc[302000:303000,"category"] = "ET" # add additional category for testing
+#data2.loc[302000:303000,"category"] = "ET" # add additional category for testing
 
+# create a new site object with the "polluted" data
+csiro_site_part = deepcopy(csiro_site)
+csiro_site_part.data = data2
 
+# test hals on polluted data
+process_csiro_part = hgs.Processing(csiro_site_part)
+hals_results_2  = process_csiro_part.hals()
+be_results_2  = process_csiro_part.BE_time(method="all")
 #%% Function exaamples
 ## easy access to data and values by location
 bp_data = data.hgs.filters.get_bp_data  
@@ -66,6 +62,9 @@ hals_results  = process_csiro.hals()
 # test be method
 be_results  = process_csiro.BE_time(method="all")
 
+# test gw_correct
+gw_correct_results  = process_csiro.GW_correct(lag_h=24, et_method = None, fqs=None)
+
 print(process_csiro.results)
 ## Make data regular and aligned 
 regular = data2.hgs.make_regular(spl_freq=1200) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
@@ -76,6 +75,13 @@ regular.hgs.check_BP_align
 # pivot data to get multiindex by datetime. perfectly aligned now
 pivot = regular.hgs.pivot
 
+# test update functionality
+dummy  = process_csiro.hals(update=True)
+dummy  = process_csiro.BE_time(method="all",update=True)
+dummy  = process_csiro.GW_correct(lag_h=24, et_method = None, fqs=None,update=True)
+
+#%%
+process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).make_regular()
 #%% demonstrate Most common frequency (MCF) (included in make_regular)
 mcf = data2.copy()
 mcf = mcf.hgs.filters.drop_nan # not necessary

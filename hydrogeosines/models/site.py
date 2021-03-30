@@ -61,6 +61,7 @@ class Site(Read, ET):
             self.__data = pd.DataFrame({"datetime": pd.Series([], dtype="datetime64[ns]"),
                                         "category": pd.Series([], dtype='object'),
                                         "location": pd.Series([], dtype='object'), 
+                                        "part": pd.Series([], dtype='object'), 
                                         "unit": pd.Series([], dtype='object'), 
                                         "value": pd.Series([], dtype='float')})
 
