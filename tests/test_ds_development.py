@@ -66,6 +66,15 @@ data2.loc[300000:302000,"value"] = np.nan
 # add dummy category
 data2.loc[302000:303000,"category"] = "ET"
 
+#%% Update function
+def dict_update(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = dict_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
 #%% Define Function for non-valid entries
 def non_valid():
     pass

@@ -35,13 +35,17 @@ class Processing(object):
         # check if both BP and GW exist    
         if any(cat not in obj.data["category"].unique() for cat in ("GW","BP")):            
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
-    
-    @staticmethod
-    def check_key(dict, key):
-        # use for global dict update
-        if dict.has_key(key):
-            pass
-        
+        # check for non valid categories
+        utils.check_affiliation(obj.data["category"].unique(), obj.VALID_CATEGORY)
+              
+    """
+    def results_update(self, name, results, update:bool = False):
+        if (not name in self.results):
+            self.results[name] = results
+        if (not name in self.results[name]) or (update):
+            print('UPDATE')
+            self.results[name].update({name: results})
+    """    
     def by_gwloc(self, gw_loc):
         # get idx to subset GW locations
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
@@ -50,7 +54,7 @@ class Processing(object):
         self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
         return self
         
-    def BE_method(self, method:str = "all", derivative=True):
+    def BE_time(self, method:str = "all", derivative=True):
         # output dict
         out = {}
         # get BE Time domain methods
@@ -67,7 +71,8 @@ class Processing(object):
         bp_data = data.hgs.filters.get_bp_data
         
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_col)
-        for gw_loc, GW in grouped:            
+        for gw_loc, GW in grouped:
+            results = {}            
             print(gw_loc)
             name = utils.join_tuple_string(gw_loc)
             filter_gw = bp_data.datetime.isin(GW.datetime)
@@ -77,7 +82,6 @@ class Processing(object):
             if derivative==True:
                BP, GW = np.diff(BP), np.diff(GW) # need to also divide by the time step length
                    
-            results = {}
             # select method            
             if method.lower() == 'all':
                 for key, val in method_dict.items():
@@ -87,6 +91,7 @@ class Processing(object):
             else: 
                 #check for non valid method 
                 utils.check_affiliation(method, method_dict.values())
+                # pass the data to the right method
                 result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
                 results.update({method: result})
             out[name] = results 
@@ -96,30 +101,46 @@ class Processing(object):
             #elif                
         return out       
 
-    def hals(self, cat="GW"):
+    def hals(self, update = False):
+        # output dict
         out = {}
-        #check for non valid category 
-        utils.check_affiliation(cat, self._obj.VALID_CATEGORY)
-        #ET = ET, GW = {ET, AT}, BP = AT 
-        comps = Site.comp_select(cat)
-        freqs = [i["freq"] for i in comps.values()]
-        data  = self.data[self.data.category == cat]  
-        grouped = data.groupby(by=data.hgs.filters.loc_col)
-        for name, group in grouped:
-            #out[name] = comps
+        # data                
+        data        = self.data
+        gw_data     = data.hgs.filters.get_gw_data         
+        categories  = data.category.unique()
+        # grouping by location and parts (loc_col)
+        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_col)
+        for gw_loc, GW in grouped: 
+            name = utils.join_tuple_string(gw_loc)
+            out[name] = {self.hals.__name__:dict.fromkeys(categories)}        
             print(name)
-            group   = group.hgs.filters.drop_nan
-            tf      = group.hgs.dt.to_zero
-            values  = group.value.values  
-            values  = Freq_domain.lin_window_ovrlp(tf, values)
-            values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
-            # calculate real Amplitude and Phase
-            var = utils.complex_to_real(tf, values["complex"])
-            # add results to dictionary
-            var["comps"] = list(comps.keys())
-            var.update(values)
-            out[name] = var
-
+            for cat in categories:
+                print(cat)
+                #ET = ET, GW = {ET, AT}, BP = AT 
+                comps = Site.comp_select(cat)
+                freqs = [i["freq"] for i in comps.values()]
+                if cat != "GW":                                                        
+                    group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
+                    filter_gw = group.datetime.isin(GW.datetime)
+                    group = group.loc[filter_gw,:]
+                else: 
+                    group = GW
+                
+                group   = group.hgs.filters.drop_nan
+                tf      = group.hgs.dt.to_zero
+                values  = group.value.values  
+                values  = Freq_domain.lin_window_ovrlp(tf, values)
+                values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
+                # calculate real Amplitude and Phase
+                var = utils.complex_to_real(tf, values["complex"])
+                # add results to dictionary
+                var["comps"] = list(comps.keys())
+                var.update(values)
+                # nested output dict with location, method, category
+                out[name][self.hals.__name__][cat] = var
+        
+        if update:
+            utils.dict_update(self.results,out)       
         return out
 
     def correct_GW(self, gw_locs=None, bp_loc:str=None, et_loc:str=None, lag_h=24, et_method=None, fqs=None):

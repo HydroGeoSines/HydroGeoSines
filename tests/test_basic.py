@@ -59,9 +59,14 @@ process_csiro = hgs.Processing(csiro_site)
 # create Instance of Processing for specific locations of csiro_site
 locations = ["Site_A","Site_B"]
 process_csiro_SiteA_B = hgs.Processing(csiro_site).by_gwloc(locations)
-hals_results  = process_csiro.hals()
-#be_results  = process_csiro.BE()
 
+# test hals method
+hals_results  = process_csiro.hals()
+
+# test be method
+be_results  = process_csiro.BE_time(method="all")
+
+print(process_csiro.results)
 ## Make data regular and aligned 
 regular = data2.hgs.make_regular(spl_freq=1200) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
 regular = regular.hgs.BP_align() # inter_max = 3600, method = "backfill", inter_max_total = 10

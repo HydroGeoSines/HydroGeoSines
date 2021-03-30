@@ -76,11 +76,11 @@ class Site(Read, ET):
     ## because constants are attributed to site
     @staticmethod
     def freq_select(cat):
-        # returns a set of unique frequency values for a given input category
+        ''' returns a set of unique frequency values for a given input category. For "GW" both et and at frequencies are selected.'''
         freqs = []
         if cat in ("ET","GW"):
             freqs.append(const['_etfqs'].values())
-        if cat in ("AT","GW"):
+        if cat in ("BP","GW"):
             freqs.append(const['_atfqs'].values())
         #flatten list of lists and return unique values
         return np.array(list(dict.fromkeys([item for sublist in freqs for item in sublist])))
@@ -91,7 +91,7 @@ class Site(Read, ET):
         # returns a set of unique frequency values for a given input category
         if cat == "ET":
             comps = const["_etfqs"]
-        if cat == "AT":
+        if cat == "BP":
             comps = const["_atfqs"]
         if cat == "GW":
             comps = {**const["_etfqs"], **const["_atfqs"]}

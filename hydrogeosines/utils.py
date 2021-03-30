@@ -1,6 +1,7 @@
 # required packages
 import numpy as np 
 import pandas as pd
+import collections.abc
 
 
 def check_affiliation(values,valid):
@@ -34,7 +35,6 @@ def find_nearest_idx(array,value):
 def check_all_equal(arr):
     return print((arr[:] == arr[0]).all(axis=0))
 
-
 def pi_range(value):
     value = np.array(value)
     idx = (value < np.pi)
@@ -57,8 +57,21 @@ def method_list(myClass, ID:str = None):
         method_list = [s for s in method_list if ID in s]
     return method_list
 
+
 def join_tuple_string(str_tuple) -> str:
-   return '_'.join(str_tuple)
+    if isinstance(str_tuple,tuple):    
+        return '_'.join(str_tuple)
+    elif isinstance(str_tuple, str):
+        return str_tuple
+        
+def dict_update(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = dict_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
 
 def gap_mask(s:pd.Series, maxgap:int):
     """
