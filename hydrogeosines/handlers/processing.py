@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt # this should probably not be added in here. Generally loaded in site through hgs
 import os, sys
+import inspect
 
 from ..ext.hgs_analysis import Time_domain, Freq_domain
 from ..models.site import Site
@@ -60,12 +61,16 @@ class Processing(object):
     def by_gwloc(self, gw_loc):
         # get idx to subset GW locations
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
+        if pos.eq(False).all():
+            raise Exception("Error: Non of the specified locations are present in the GW data!")
+
         pos_cat = self._obj.data["category"] == "GW"
         # drop all GW locations, but the selected ones
         self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
         return self
         
     def BE_time(self, method:str = "all", derivative=True, update=False):
+        name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {}
         # get BE Time domain methods
@@ -95,24 +100,25 @@ class Processing(object):
                    
             # select method            
             if method.lower() == 'all':
-                out[gw_loc[0]] = {gw_loc[1]:dict.fromkeys(method_dict.values())}
+                out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(method_dict.values())}}
                 for key, val in method_dict.items():
                     print(val)
                     result = getattr(Time_domain, key)(BP,GW) 
-                    out[gw_loc[0]][gw_loc[1]][val] = result
+                    out[gw_loc[0]][gw_loc[1]][name][val] = result
 
             else: 
                 #check for non valid method 
                 utils.check_affiliation(method, method_dict.values())
                 # pass the data to the right method
                 result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
-                out[gw_loc[0]] = {gw_loc[1]:{method:result}}
+                out[gw_loc[0]] = {gw_loc[1]:{name:{method:result}}}
 
         if update:
             utils.dict_update(self.results,out)    
         return out       
 
     def hals(self, update = False):
+        name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {}
         # data                
@@ -124,7 +130,7 @@ class Processing(object):
         for gw_loc, GW in grouped:
             print(gw_loc)
             # initiate output dict structure             
-            out[gw_loc[0]] = {gw_loc[1]:{self.hals.__name__:dict.fromkeys(categories)}}
+            out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(categories)}}
             # loop through categories
             for cat in categories:
                 print(cat)
@@ -149,14 +155,14 @@ class Processing(object):
                 var["comps"] = list(comps.keys())
                 var.update(values)
                 # nested output dict with location, method, category
-                out[gw_loc[0]][gw_loc[1]][self.hals.__name__][cat] = var
+                out[gw_loc[0]][gw_loc[1]][name][cat] = var
         
         if update:
             utils.dict_update(self.results,out)       
         return out
     
     def GW_correct(self, lag_h=24, et_method:str = "ts", fqs=None, update=False):
-        name = (self.GW_correct.__name__).lower()
+        name = (inspect.currentframe().f_code.co_name).lower()
         print("A complicated procedure ...")
         #TODO!: either adapt the BP_align to also align ET data or implement ET calc in Site to be used after bp_align (better!!)
         #TODO!: define dictionary with valid et_methods to use the utils.check_affiliation() method

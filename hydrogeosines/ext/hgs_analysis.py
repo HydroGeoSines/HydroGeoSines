@@ -36,7 +36,6 @@ class Time_domain(object):
     def __init__(self, GW, BP):
         self.BP = BP
         self.GW = GW
-    
     @staticmethod
     def BE_average_of_ratios(X, Y):
         '''
