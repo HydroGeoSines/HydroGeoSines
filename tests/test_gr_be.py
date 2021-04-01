@@ -10,7 +10,6 @@ acworth_site.import_csv('tests/data/death_valley/death_valley.csv',
                         input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","m"],
                         how="add", check_dublicates=True)
 
-
 #%% Processing
 # create Instance of Processing with csiro_site
 process_acworth = hgs.Processing(acworth_site)
@@ -33,3 +32,4 @@ be_results  = process_acworth.BE_time(method="all", update=True)
 
 be_freq  = process_acworth.BE_freq(method="acworth", freq_method='hals', update=True)
 print(be_freq)
+

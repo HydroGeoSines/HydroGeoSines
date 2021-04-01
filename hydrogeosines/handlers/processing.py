@@ -152,7 +152,7 @@ class Processing(object):
         elif freq_method.lower() == 'hals':
             # this threshold is hard coded and makes sure that 
             # the right frequency components are used for this method
-            max_freq_diff = 0.000001
+            max_freq_diff = 1e-6
             
             data = self.data
             # perform HALS
@@ -354,7 +354,8 @@ class Processing(object):
                 ET = et_data.loc[filter_gw,:].value.values
 
             else:
-                raise Exception("Error: Specified 'et_method' is not available!")    
+                raise Exception("Error: Specified 'et_method' is not available!")  
+                
             GW = GW.value.values
             
             #raise Exception('Error: Category ET must be regularly sampled!')
@@ -365,4 +366,5 @@ class Processing(object):
             
         if update:
             utils.dict_update(self.results,out) 
+            
         return out
