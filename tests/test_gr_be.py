@@ -27,9 +27,9 @@ gw_correct_results  = process_acworth.GW_correct(lag_h=24, et_method = None, fqs
 #%%
 # test be method
 be_results  = process_acworth.BE_time(method="all", update=True)
+print(be_results)
 
 #%% frequency domain stuff ...
 
 be_freq  = process_acworth.BE_freq(method="acworth", freq_method='hals', update=True)
 print(be_freq)
-

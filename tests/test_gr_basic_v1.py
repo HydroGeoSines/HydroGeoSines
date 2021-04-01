@@ -25,9 +25,13 @@ csiro_site.add_ET(et_comp='g', et_cat=4)
 process_csiro = hgs.Processing(csiro_site)
 
 # create Instance of Processing for specific locations of csiro_site
-locations = ["Loc_A","Loc_D"]
+locations = ["Loc_A","Loc_B"]
 process_csiro_SiteA_B = hgs.Processing(csiro_site).by_gwloc(locations)
 
+results = process_csiro_SiteA_B.BE_freq(method="acworth", freq_method='hals', update=True)
+print(results)
+
+#%%
 # add a regularly sampled data container to the processing object 
 # it is automatically reused in some of the methods, reducing computation times
 process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).make_regular()
