@@ -31,4 +31,5 @@ be_results  = process_acworth.BE_time(method="all", update=True)
 
 #%% frequency domain stuff ...
 
-be_freq  = process_acworth.BE_freq(method="rau", freq_method='fft', update=True)
+be_freq  = process_acworth.BE_freq(method="acworth", freq_method='hals', update=True)
+print(be_freq)

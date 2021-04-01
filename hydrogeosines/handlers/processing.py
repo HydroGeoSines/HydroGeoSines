@@ -124,6 +124,8 @@ class Processing(object):
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         
+        # this method relies on the distinct frequency components
+        # M2 and S2
         f_m2 = const['_etfqs']['M2']
         f_s2 = const['_etfqs']['S2']
         
@@ -149,8 +151,8 @@ class Processing(object):
             
         elif freq_method.lower() == 'hals':
             # this threshold is hard coded and makes sure that 
-            # the right frequency components are availble to use this method
-            max_freq_diff = 0.00001
+            # the right frequency components are used for this method
+            max_freq_diff = 0.000001
             
             data = self.data
             # perform HALS
