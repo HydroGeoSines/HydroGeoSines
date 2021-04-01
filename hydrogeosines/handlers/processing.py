@@ -68,7 +68,8 @@ class Processing(object):
         # drop all GW locations, but the selected ones
         self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
         return self
-        
+
+    #%% 
     def BE_time(self, method:str = "all", derivative=True, update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
@@ -117,6 +118,118 @@ class Processing(object):
             utils.dict_update(self.results,out)    
         return out       
 
+    #%%
+    def BE_freq(self, method:str = "all", freq_method:str='hals', update=False):
+        name = (inspect.currentframe().f_code.co_name).lower()
+        # output dict
+        out = {}
+        
+        # get BE Time domain methods
+        method_list = utils.method_list(Freq_domain, ID="BE")
+        method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
+        
+        # for FFT, dataset needs to be regular!
+        if freq_method.lower() == 'fft':
+            # make GW data regular and align it with BP
+            try:
+                data = self.data_regular
+            except AttributeError:   
+                data = self.make_regular().data_regular
+        elif freq_method.lower() == 'hals':
+            data = self.data
+        else:
+            raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
+            
+        # extract data categories
+        gw_data = data.hgs.filters.get_gw_data
+        bp_data = data.hgs.filters.get_bp_data
+        
+        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
+        for gw_loc, GW in grouped:          
+            print(gw_loc)
+            # create GW datetime filter for BP data
+            filter_gw = bp_data.datetime.isin(GW.datetime)
+            BP = bp_data.loc[filter_gw,:].value.values
+            GW = GW.value.values
+                   
+            # select method            
+            if method.lower() == 'all':
+                out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(method_dict.values())}}
+                for key, val in method_dict.items():
+                    print('Applying method: ', val)
+                    if freq_method.lower() == 'hals':
+                        comps = self.hals(update=update)
+                    
+                    elif freq_method.lower() == 'fft':
+                        comps = self.fft(update=update)
+                    
+                    print(comps)
+                    result = getattr(Freq_domain, key)(BP, GW) 
+                    out[gw_loc[0]][gw_loc[1]][name][val] = result
+
+            else: 
+                # check for non valid method 
+                utils.check_affiliation(method, method_dict.values())
+                # pass the data to the right method
+                result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
+                out[gw_loc[0]] = {gw_loc[1]:{name:{method:result}}}
+
+        if update:
+            utils.dict_update(self.results, out)
+            
+        return out  
+
+    #%%
+    def fft(self, update = False):
+        name = (inspect.currentframe().f_code.co_name).lower()
+        # output dict
+        out = {}
+        # make dataset regular
+        try:
+            data = self.data_regular
+        except AttributeError:   
+            data = self.make_regular().data_regular
+        # data                
+        data        = self.data
+        gw_data     = data.hgs.filters.get_gw_data         
+        categories  = data.category.unique()
+        # grouping by location and parts (loc_part)
+        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
+        for gw_loc, GW in grouped:
+            print(gw_loc)
+            # initiate output dict structure             
+            out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(categories)}}
+            # loop through categories
+            for cat in categories:
+                print(cat)
+                #ET = ET, GW = {ET, AT}, BP = AT 
+                comps = Site.comp_select(cat)
+                if cat != "GW":                                                        
+                    group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
+                    filter_gw = group.datetime.isin(GW.datetime)
+                    group = group.loc[filter_gw,:]
+                else: 
+                    group = GW
+                
+                group   = group.hgs.filters.drop_nan
+                tf      = group.hgs.dt.to_zero
+                values  = group.value.values  
+                values  = Freq_domain.lin_window_ovrlp(tf, values)
+                values  = Freq_domain.fft_comp(tf, values)            
+                # calculate real Amplitude and Phase
+                var = utils.complex_to_real(tf, values["complex"])
+                # add results to dictionary
+                var["comps"] = list(comps.keys())
+                var.update(values)
+                # nested output dict with location, method, category
+                out[gw_loc[0]][gw_loc[1]][name][cat] = var
+        
+        if update:
+            utils.dict_update(self.results,out)
+            
+        return out
+
+    #%%
     def hals(self, update = False):
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
@@ -158,9 +271,11 @@ class Processing(object):
                 out[gw_loc[0]][gw_loc[1]][name][cat] = var
         
         if update:
-            utils.dict_update(self.results,out)       
+            utils.dict_update(self.results,out)
+            
         return out
-    
+
+    #%%
     def GW_correct(self, lag_h=24, et_method:str = "ts", fqs=None, update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         print("A complicated procedure ...")

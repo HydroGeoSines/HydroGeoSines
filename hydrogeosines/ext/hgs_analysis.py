@@ -473,55 +473,6 @@ class Time_domain(object):
             
 #%% Static Class for FREQUENCY DOMAIN METHODS #################################
 class Freq_domain(object):
-   
-    @staticmethod
-    def harmonic_lsqr(tf, data, freqs):
-        '''
-        Inputs:
-            tf      - time float. Should be an N x 1 numpy array.
-            data    - estimated output. Should be an N x 1 numpy array.
-            freqs   - frequencies to look for. Should be a numpy array.
-        Outputs:
-            alpha_est - estimated amplitudes of the sinusoids.
-            phi_est - estimated phases of the sinusoids.
-            error_variance - variance of the error. MSE of reconstructed signal compared to y.
-            theta - parameters such that ||y - Phi*theta|| is
-             minimized, where Phi is the matrix defined by
-             freqs and tt that when multiplied by theta is a
-             sum of sinusoids.
-        '''
-        
-        N = data.shape[0]
-        f = np.array(freqs)*2*np.pi
-        num_freqs = len(f)
-        # make sure that time vectors are relative
-        # avoiding additional numerical errors
-        tf = tf - np.floor(tf[0])
-        # assemble the matrix
-        Phi = np.empty((N, 2*num_freqs + 1))
-        for j in range(num_freqs):
-            Phi[:,2*j] = np.cos(f[j]*tf)
-            Phi[:,2*j+1] = np.sin(f[j]*tf)
-        # account for any DC offsets
-        Phi[:,-1] = 1
-        # solve the system of linear equations
-        theta, residuals, rank, singular = np.linalg.lstsq(Phi, data, rcond=None)
-        # calculate the error variance
-        error_variance = residuals[0]/N
-        # when data is short, 'singular value' is important!
-        # 1 is perfect, larger than 10^5 or 10^6 there's a problem
-        condnum = np.max(singular) / np.min(singular)
-        # print('Conditioning number: {:,.0f}'.format(condnum))
-        if (condnum > 1e6):
-            warnings.warn('The solution is ill-conditioned!')
-        # 	print(Phi)
-        y_model = Phi@theta
-        # the DC component
-        dc_comp = theta[-1]
-        # create complex coefficients
-        hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
-        result = {'freq': freqs, 'complex': hals_comp, 'err_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
-        return result
 
     @staticmethod
     def lin_window_ovrlp(tf, data, length=3, stopper=3, n_ovrlp=3):
@@ -586,6 +537,55 @@ class Freq_domain(object):
             # replace nan-values assuming a mean of zero
             y_detrend[np.isnan(y_detrend)] = 0.0    
         return y_detrend
+    
+    @staticmethod
+    def harmonic_lsqr(tf, data, freqs):
+        '''
+        Inputs:
+            tf      - time float. Should be an N x 1 numpy array.
+            data    - estimated output. Should be an N x 1 numpy array.
+            freqs   - frequencies to look for. Should be a numpy array.
+        Outputs:
+            alpha_est - estimated amplitudes of the sinusoids.
+            phi_est - estimated phases of the sinusoids.
+            error_variance - variance of the error. MSE of reconstructed signal compared to y.
+            theta - parameters such that ||y - Phi*theta|| is
+             minimized, where Phi is the matrix defined by
+             freqs and tt that when multiplied by theta is a
+             sum of sinusoids.
+        '''
+        
+        N = data.shape[0]
+        f = np.array(freqs)*2*np.pi
+        num_freqs = len(f)
+        # make sure that time vectors are relative
+        # avoiding additional numerical errors
+        tf = tf - np.floor(tf[0])
+        # assemble the matrix
+        Phi = np.empty((N, 2*num_freqs + 1))
+        for j in range(num_freqs):
+            Phi[:,2*j] = np.cos(f[j]*tf)
+            Phi[:,2*j+1] = np.sin(f[j]*tf)
+        # account for any DC offsets
+        Phi[:,-1] = 1
+        # solve the system of linear equations
+        theta, residuals, rank, singular = np.linalg.lstsq(Phi, data, rcond=None)
+        # calculate the error variance
+        error_variance = residuals[0]/N
+        # when data is short, 'singular value' is important!
+        # 1 is perfect, larger than 10^5 or 10^6 there's a problem
+        condnum = np.max(singular) / np.min(singular)
+        # print('Conditioning number: {:,.0f}'.format(condnum))
+        if (condnum > 1e6):
+            warnings.warn('The solution is ill-conditioned!')
+        # 	print(Phi)
+        y_model = Phi@theta
+        # the DC component
+        dc_comp = theta[-1]
+        # create complex coefficients
+        hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
+        result = {'freq': freqs, 'complex': hals_comp, 'error_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
+        return result
         
     @staticmethod
     def fft_comp(tf, data):
