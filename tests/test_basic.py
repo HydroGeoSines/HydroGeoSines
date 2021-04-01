@@ -5,7 +5,7 @@ from copy import deepcopy
 
 #%% Csiro Data
 ## Model
-csiro_site = hgs.Site('csiro', geo=[141.762065, -31.065781, 160])
+csiro_site = hgs.Site('csiro', geoloc=[141.762065, -31.065781, 160])
 # read data
 csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_GW_short.csv', 
                         input_category=["GW"]*3, 
@@ -66,10 +66,11 @@ process_csiro = hgs.Processing(csiro_site)
 
 # create Instance of Processing for specific locations of csiro_site
 locations = ["Loc_A","Loc_D"]
-process_csiro_SiteA_B = hgs.Processing(csiro_site).by_gwloc(locations)
+process_csiro_SiteA = hgs.Processing(csiro_site).by_gwloc(locations)
 
 # add a regularly sampled data container to the processing object 
 # it is automatically reused in some of the methods, reducing computation times
+locations = ["Loc_A","Loc_B"]
 process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).make_regular()
 
 # test hals method
@@ -106,6 +107,11 @@ mask, counter = hgs.utils.gap_mask(x,12)
 
 group = mcf[mask].hgs.upsample(method="backfill") 
 
+#%% View structure
+
+view_csiro = Output()
+view_csiro.plot(method=)
+view_csrio.export()
 #%% Example and Ideas on MVC Paradigm
 """
 ## MODEL

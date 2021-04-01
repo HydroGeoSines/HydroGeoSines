@@ -48,7 +48,7 @@ class Processing(object):
             self.results[name].update({name: results})
     """    
     #def ET_calc(self):
-    #    self.data = acworth_site.add_ET(et_comp='g')
+    #    self.data = self.add_ET(et_comp='g')
     
     def make_regular(self):
         data = self.data
@@ -63,7 +63,6 @@ class Processing(object):
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
         if pos.eq(False).all():
             raise Exception("Error: Non of the specified locations are present in the GW data!")
-
         pos_cat = self._obj.data["category"] == "GW"
         # drop all GW locations, but the selected ones
         self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
@@ -72,7 +71,7 @@ class Processing(object):
     def BE_time(self, method:str = "all", derivative=True, update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
-        out = {}
+        out = {name:{}}
         # get BE Time domain methods
         method_list = utils.method_list(Time_domain, ID="BE")
         method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
@@ -100,18 +99,18 @@ class Processing(object):
                    
             # select method            
             if method.lower() == 'all':
-                out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(method_dict.values())}}
+                out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(method_dict.values())}})
                 for key, val in method_dict.items():
                     print(val)
                     result = getattr(Time_domain, key)(BP,GW) 
-                    out[gw_loc[0]][gw_loc[1]][name][val] = result
+                    out[name][gw_loc[0]][gw_loc[1]][val] = result
 
             else: 
                 #check for non valid method 
                 utils.check_affiliation(method, method_dict.values())
                 # pass the data to the right method
                 result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
-                out[gw_loc[0]] = {gw_loc[1]:{name:{method:result}}}
+                out[name].update({gw_loc[0]:{gw_loc[1]:{method:result}}})
 
         if update:
             utils.dict_update(self.results,out)    
@@ -120,7 +119,7 @@ class Processing(object):
     def hals(self, update = False):
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
-        out = {}
+        out = {name:{}}
         # data                
         data        = self.data
         gw_data     = data.hgs.filters.get_gw_data         
@@ -130,7 +129,7 @@ class Processing(object):
         for gw_loc, GW in grouped:
             print(gw_loc)
             # initiate output dict structure             
-            out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(categories)}}
+            out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(categories)}})
             # loop through categories
             for cat in categories:
                 print(cat)
@@ -155,7 +154,7 @@ class Processing(object):
                 var["comps"] = list(comps.keys())
                 var.update(values)
                 # nested output dict with location, method, category
-                out[gw_loc[0]][gw_loc[1]][name][cat] = var
+                out[name][gw_loc[0]][gw_loc[1]][cat] = var
         
         if update:
             utils.dict_update(self.results,out)       
@@ -167,7 +166,7 @@ class Processing(object):
         #TODO!: either adapt the BP_align to also align ET data or implement ET calc in Site to be used after bp_align (better!!)
         #TODO!: define dictionary with valid et_methods to use the utils.check_affiliation() method
         # output dict
-        out = {}
+        out = {name:{}}
         
         # check integrity of data
         if ((et_method is not None) and ('ET' not in self.data["category"].unique())):
@@ -191,9 +190,8 @@ class Processing(object):
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:   
 
-            print(gw_loc)
-            
-            out[gw_loc[0]] = {gw_loc[1]:{name:None}}
+            print(gw_loc)            
+            out[name].update({gw_loc[0]:{gw_loc[1]:None}})
 
             tf = GW.hgs.dt.to_zero # same results as delta function with utc offset = None
             filter_gw = bp_data.datetime.isin(GW.datetime)
@@ -211,7 +209,7 @@ class Processing(object):
 
             WLc, var = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
             var["WLc"] = WLc
-            out[gw_loc[0]][gw_loc[1]][name] = var
+            out[name][gw_loc[0]][gw_loc[1]] = var
             
         if update:
             utils.dict_update(self.results,out) 

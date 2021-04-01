@@ -10,11 +10,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Visualize(object):
+    #add attributes specific to Visualize here
 
-    def __init__(self, *args, **kwargs):
-        pass
-        #add attributes specific to Visualize here
-
+    def __init__(self, results_obj):
+        self._validate(results_obj)
+        self.data = results_obj
+    
+    @staticmethod
+    def _validate(obj):
+        # check if object is of type dict
+        if not isinstance(obj,dict):
+            raise AttributeError("Must be a dictionary!") 
+        #TODO!: check if object contains valid method keys
+    
+    @staticmethod    
+    def config_grid(ax):
+        for i in ['top', 'right']:
+            ax.spines[i].set_visible(False)
+        ax.grid(which='major', axis='both', c=(194./255., 194./255., 194./255.),
+            ls='-', lw=0.5)
+        ax.grid(which='minor', axis='both', c=(194./255., 194./255., 194./255.),
+            ls='-', lw=0.5)
+        
     def plot_linear_regression(X, Y, slope, intercept):
         '''
             Plot scatterplot of barometric and groundwater pressure data (or derivatives), as well as line of best fit.

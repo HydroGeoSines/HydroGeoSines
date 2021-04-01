@@ -35,7 +35,7 @@ class ET(object):
             elif(et_comp == 'g'):
                 et_comp_i = 0
             else:
-                raise Exception("Error: Keyword 'et_comp' most be 'pot' (potential) or 'g' (gravity)!")
+                raise Exception("Error: Keyword 'et_comp' must be 'pot' (potential) or 'g' (gravity)!")
             et_unit = {-1: 'm**2/s**2', 0: 'nm/s**2', 1: 'mas', 2: 'mm', 3: 'mm', 4: 'nstr', 5: 'nstr', 6: 'nstr', 7: 'nstr', 8: 'nstr', 9: 'mm'}
             if (self.geoloc == None):
                 raise Exception('Error: Geo-location (WGS84 longitude, latitude and height) must be set!')
