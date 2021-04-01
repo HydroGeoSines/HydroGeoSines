@@ -136,6 +136,7 @@ class Processing(object):
             # difference between S2 and M2. This allows best identification if a 
             # dataset has sufficient resolution
             max_freq_diff = (f_s2 - f_m2) / 3
+            
             # make GW data regular and align it with BP
             try:
                 data = self.data_regular
@@ -150,6 +151,7 @@ class Processing(object):
             # this threshold is hard coded and makes sure that 
             # the right frequency components are availble to use this method
             max_freq_diff = 0.00001
+            
             data = self.data
             # perform HALS
             # !!! check if this exists to save time
@@ -165,43 +167,41 @@ class Processing(object):
                 if (fdiff < max_freq_diff):
                     BP_s2 = vals[freq_method.lower()]['BP']['complex'][idx]
                 else:
-                    raise Exception("S2 component for BP is required but closest component is too far away!")
+                    raise Exception("S2 component for BP is required, but the closest component is too far away!")
                 
                 idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_s2)
                 if (fdiff < max_freq_diff):
                     ET_s2 = vals[freq_method.lower()]['ET']['complex'][idx]
                 else:
-                    raise Exception("S2 component for ET is required but closest component is too far away!")
+                    raise Exception("S2 component for ET is required, but the closest component is too far away!")
                 
                 idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_m2)
                 if (fdiff < max_freq_diff):
                     ET_m2 = vals[freq_method.lower()]['ET']['complex'][idx]
                 else:
-                    raise Exception("M2 component for ET is required but closest component is too far away!")
+                    raise Exception("M2 component for ET is required, but the closest component is too far away!")
                 
                 idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_s2)
                 if (fdiff < max_freq_diff):
                     GW_s2 = vals[freq_method.lower()]['GW']['complex'][idx]
                 else:
-                    raise Exception("S2 component for GW is required but closest component is too far away!")
+                    raise Exception("S2 component for GW is required, but the closest component is too far away!")
                 
                 idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_m2)
                 if (fdiff < max_freq_diff):
                     GW_m2 = vals[freq_method.lower()]['GW']['complex'][idx]
                 else:
-                    raise Exception("M2 component for GW is required but closest component is too far away!")
+                    raise Exception("M2 component for GW is required, but the closest component is too far away!")
                         
                 #%% BE method by Rau et al. (2020)          
                 if method.lower() == 'rau':
                     result = Freq_domain.BE_Rau(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2, amp_ratio=1)
-                    print(result)
                     
                     out.update({loc: {part: {name: {method: result}}}})
             
                 #%% BE method by Acworth et al. (2016)
                 elif method.lower() == 'acworth':
                     result = Freq_domain.BE_Acworth(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2)
-                    print(result)
                     
                     out.update({loc: {part: {name: {method: result}}}})
                 else:
