@@ -584,7 +584,7 @@ class Freq_domain(object):
         dc_comp = theta[-1]
         # create complex coefficients
         hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
-        result = {'freq': freqs, 'complex': hals_comp, 'error_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
+        result = {'freq': np.array(freqs), 'complex': hals_comp, 'error_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
         return result
         
     @staticmethod

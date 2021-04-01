@@ -16,6 +16,7 @@ from ..models.site import Site
 #from ...view import View
 
 from .. import utils
+from ..models.const import const
 
 class Processing(object):
     # define all class attributes here 
@@ -115,69 +116,101 @@ class Processing(object):
                 out[gw_loc[0]] = {gw_loc[1]:{name:{method:result}}}
 
         if update:
-            utils.dict_update(self.results,out)    
-        return out       
+            utils.dict_update(self.results,out)
+            
+        return out
 
     #%%
-    def BE_freq(self, method:str = "all", freq_method:str='hals', update=False):
+    def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
+        
+        f_m2 = const['_etfqs']['M2']
+        f_s2 = const['_etfqs']['S2']
+        
         # output dict
         out = {}
         
-        # get BE Time domain methods
-        method_list = utils.method_list(Freq_domain, ID="BE")
-        method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
-        
         # for FFT, dataset needs to be regular!
         if freq_method.lower() == 'fft':
+            # calculate the maximum frequency difference threshold based on the 
+            # difference between S2 and M2. This allows best identification if a 
+            # dataset has sufficient resolution
+            max_freq_diff = (f_s2 - f_m2) / 3
             # make GW data regular and align it with BP
             try:
                 data = self.data_regular
             except AttributeError:   
                 data = self.make_regular().data_regular
+            
+            # perform FFT
+            # !!! check if this exists to save time
+            comps = self.fft(update=update)
+            
         elif freq_method.lower() == 'hals':
+            # this threshold is hard coded and makes sure that 
+            # the right frequency components are availble to use this method
+            max_freq_diff = 0.00001
             data = self.data
+            # perform HALS
+            # !!! check if this exists to save time
+            comps = self.hals(update=update)
         else:
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
-            
+                    
         # extract data categories
-        gw_data = data.hgs.filters.get_gw_data
-        bp_data = data.hgs.filters.get_bp_data
-        
-        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
-        for gw_loc, GW in grouped:          
-            print(gw_loc)
-            # create GW datetime filter for BP data
-            filter_gw = bp_data.datetime.isin(GW.datetime)
-            BP = bp_data.loc[filter_gw,:].value.values
-            GW = GW.value.values
-                   
-            # select method            
-            if method.lower() == 'all':
-                out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(method_dict.values())}}
-                for key, val in method_dict.items():
-                    print('Applying method: ', val)
-                    if freq_method.lower() == 'hals':
-                        comps = self.hals(update=update)
+        for loc in comps.keys():       
+            for part, vals in comps[loc].items():
+                # extract the complex frequency components
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['BP']['freq'], f_s2)
+                if (fdiff < max_freq_diff):
+                    BP_s2 = vals[freq_method.lower()]['BP']['complex'][idx]
+                else:
+                    raise Exception("S2 component for BP is required but closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_s2)
+                if (fdiff < max_freq_diff):
+                    ET_s2 = vals[freq_method.lower()]['ET']['complex'][idx]
+                else:
+                    raise Exception("S2 component for ET is required but closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_m2)
+                if (fdiff < max_freq_diff):
+                    ET_m2 = vals[freq_method.lower()]['ET']['complex'][idx]
+                else:
+                    raise Exception("M2 component for ET is required but closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_s2)
+                if (fdiff < max_freq_diff):
+                    GW_s2 = vals[freq_method.lower()]['GW']['complex'][idx]
+                else:
+                    raise Exception("S2 component for GW is required but closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_m2)
+                if (fdiff < max_freq_diff):
+                    GW_m2 = vals[freq_method.lower()]['GW']['complex'][idx]
+                else:
+                    raise Exception("M2 component for GW is required but closest component is too far away!")
+                        
+                #%% BE method by Rau et al. (2020)          
+                if method.lower() == 'rau':
+                    result = Freq_domain.BE_Rau(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2, amp_ratio=1)
+                    print(result)
                     
-                    elif freq_method.lower() == 'fft':
-                        comps = self.fft(update=update)
+                    out.update({loc: {part: {name: {method: result}}}})
+            
+                #%% BE method by Acworth et al. (2016)
+                elif method.lower() == 'acworth':
+                    result = Freq_domain.BE_Acworth(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2)
+                    print(result)
                     
-                    print(comps)
-                    result = getattr(Freq_domain, key)(BP, GW) 
-                    out[gw_loc[0]][gw_loc[1]][name][val] = result
-
-            else: 
-                # check for non valid method 
-                utils.check_affiliation(method, method_dict.values())
-                # pass the data to the right method
-                result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
-                out[gw_loc[0]] = {gw_loc[1]:{name:{method:result}}}
+                    out.update({loc: {part: {name: {method: result}}}})
+                else:
+                    raise Exception("The method '{}' is not implemented!".format(method.lower()))
 
         if update:
             utils.dict_update(self.results, out)
-            
-        return out  
+        
+        return out
 
     #%%
     def fft(self, update = False):
