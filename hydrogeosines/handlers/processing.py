@@ -116,7 +116,7 @@ class Processing(object):
                 out[gw_loc[0]] = {gw_loc[1]:{name:{method:result}}}
 
         if update:
-            utils.dict_update(self.results,out)
+            utils.dict_update(self.results, out)
             
         return out
 
@@ -156,7 +156,7 @@ class Processing(object):
             comps = self.hals(update=update)
         else:
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
-                    
+        
         # extract data categories
         for loc in comps.keys():       
             for part, vals in comps[loc].items():
@@ -205,7 +205,7 @@ class Processing(object):
                     
                     out.update({loc: {part: {name: {method: result}}}})
                 else:
-                    raise Exception("The method '{}' is not implemented!".format(method.lower()))
+                    raise Exception("The BE method '{}' is not implemented!".format(method.lower()))
 
         if update:
             utils.dict_update(self.results, out)
