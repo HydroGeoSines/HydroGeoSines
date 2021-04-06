@@ -10,6 +10,7 @@ from ... import utils
 import pandas as pd
 import numpy as np
 import pytz
+from datetime import datetime, timedelta
 
 class Read(object):
     # define all class attributes here 
@@ -20,7 +21,7 @@ class Read(object):
         #add attributes specific to Load here
         #self.attribute = variable            
            
-    def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", loc_names=None, check_dublicates=False):        
+    def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", loc_names=None, header = 0, check_dublicates=False):        
         
         #check for non valid categories 
         utils.check_affiliation(input_category, self.VALID_CATEGORY)
@@ -33,30 +34,38 @@ class Read(object):
         if any(cat in input_category for cat in ("ET")):
             #TODO: add units and their converstion to glob.py 
             pass                       
+        
+        # custom headers for locations
+        if loc_names != None:
+            loc_names = list(np.array([loc_names]).flatten())
             
-        # load the csv file into variable
-        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header=0)
+        # load the csv file into variable. column headers are required (header=0)
+        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header = header, names= loc_names)
        
         # ignore column numbers beyond input length
-        ncols = len(input_category)
+        ncols = len(np.array(input_category).flatten())
         data = data.iloc[:, :ncols]
 
         data.index.rename(name="datetime",inplace=True) # streamline datetime name
-            
+        #print(data.head(2))    
         # make sure the first column is a correctly identified datetime    
         if not isinstance(data.index, pd.DatetimeIndex):
             raise Exception("Error: First column must be a datetime column")
             
-        # make UTC correction
-        data.index = pd.to_datetime(data.index.tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)) 
-        
-        # custom headers for locations
-        if loc_names != None:
-            locations = list(np.array([loc_names]).flatten())
+        # Setting DateTime
+        d = pd.to_datetime(data.index)
+        data.index = d
+        # check if dt is "naive":
+        if d.tzinfo is None or d.tzinfo.utcoffset(d) is None:
+            # make UTC correction
+            print("Datetime was 'naive'. Localizing and converting to UTC!")
+            data.index = data.index.tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc) 
+        # datetime is "aware"
         else:
-            locations = data.columns
+            data.index = data.index.tz_convert(pytz.utc)               
                 
-        # format table with multiindex and melt            
+        # format table with multiindex and melt   
+        locations = data.columns        
         header = utils.zip_formatter(locations, input_category, unit)
         data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])                
         data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower)                 

@@ -31,7 +31,10 @@ class Visualize(object):
             ls='-', lw=0.5)
         ax.grid(which='minor', axis='both', c=(194./255., 194./255., 194./255.),
             ls='-', lw=0.5)
-        
+    
+    def BE_time_plot(data,method):
+        pass
+    
     def plot_linear_regression(X, Y, slope, intercept):
         '''
             Plot scatterplot of barometric and groundwater pressure data (or derivatives), as well as line of best fit.

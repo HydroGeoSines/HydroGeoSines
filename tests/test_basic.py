@@ -2,6 +2,7 @@ import hydrogeosines as hgs
 import numpy as np
 import pandas as pd
 from copy import deepcopy
+import random 
 
 #%% Csiro Data
 ## Model
@@ -9,7 +10,8 @@ csiro_site = hgs.Site('csiro', geoloc=[141.762065, -31.065781, 160])
 # read data
 csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_GW_short.csv', 
                         input_category=["GW"]*3, 
-                        utc_offset=10, unit=["m"]*3, loc_names = ["Loc_A","Loc_B","Loc_C"],
+                        utc_offset=10, unit=["m"]*3, 
+                        loc_names = ["Loc_A","Loc_B","Loc_C"],
                         how="add", check_dublicates=True) 
 
 csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv', 
@@ -23,13 +25,48 @@ data = csiro_site.data
 # Full data test set with gaps
 data2 = csiro_site.data.copy()
 data2.loc[12000:12500,"value"] = np.nan # BP value gap
-data2.loc[30000:32000,"value"] = np.nan # GW value large_gap1
+#data2.loc[30000:30500,"value"] = np.nan # GW value large_gap1
+#data2.loc[72000:75000,"value"] = np.nan # GW value large_gap1
 data2.loc[151000:155000,"value"] = np.nan # GW value large_gap2
 data2.loc[300000:302000,"value"] = np.nan # GW value large_gap3
-data2.loc[30000:32000,"value"] = np.nan # GW value small_gap1
+#data2.loc[22000:22600,"value"] = np.nan # GW value small_gap1
 # add dummy category
 #data2.loc[302000:303000,"category"] = "ET" # add additional category for testing
 
+k = 0.10 # 5% missing values
+# get 5% of GW values
+idx = random.sample(list(data2.loc[data2["category"]== "GW"].index), int(k*len(data2.loc[data2["category"]== "GW"])))
+data2.drop(labels=idx,inplace=True) 
+
+data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
+data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
+
+# check for gaps and outliers
+import matplotlib.pyplot as plt
+data2.loc[data2.location == "Loc_A"].plot.scatter(x="datetime",y="value")
+data2.loc[data2.location == "Loc_B"].plot.scatter(x="datetime",y="value")
+data2.loc[data2.location == "Loc_C"].plot.scatter(x="datetime",y="value")
+
+#%% reload data
+example_site = hgs.Site('example', geoloc=[141.762065, -31.065781, 160])
+example_site.import_csv('tests/data/notebook/GW_record.csv', 
+                        input_category=["GW"]*3, 
+                        utc_offset=10, unit=["m"]*3, 
+                        loc_names = ["Loc_A","Loc_B","Loc_C"],
+                        header = None,
+                        how="add", check_dublicates=True)
+
+example_site.import_csv('tests/data/notebook/BP_record.csv', 
+                        input_category="BP", 
+                        utc_offset=10, unit="m", 
+                        loc_names = ["Baro"],
+                        header = None,
+                        how="add", check_dublicates=True) 
+
+data3 = example_site.data
+
+data4 = data2.hgs.filters.drop_nan.reset_index(drop=True)
+data5 = data3.hgs.filters.drop_nan.reset_index(drop=True)
 #%% HGS pandas function examples
 ## easy access to data and values by location
 bp_data = data.hgs.filters.get_bp_data  
@@ -42,7 +79,7 @@ bp_locs = data.hgs.filters.get_bp_locs
 gw_locs = data.hgs.filters.get_gw_locs
 
 ## Make data regular and aligned 
-regular = data2.hgs.make_regular(spl_freq=1200) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
+regular = data2.hgs.make_regular(spl_freq=1200, part_min = 15) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
 regular = regular.hgs.BP_align() # inter_max = 3600, method = "backfill", inter_max_total = 10
 # check integrity
 regular.hgs.check_BP_align
