@@ -41,7 +41,7 @@ class Read(object):
         ncols = len(input_category)
         data = data.iloc[:, :ncols]
 
-        data.index.rename(name="datetime",inplace=True) # streamline datetime name
+        data.index.rename(name="datetime", inplace=True) # streamline datetime name
             
         # make sure the first column is a correctly identified datetime    
         if not isinstance(data.index, pd.DatetimeIndex):
