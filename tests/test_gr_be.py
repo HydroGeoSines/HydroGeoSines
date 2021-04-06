@@ -6,7 +6,7 @@ from copy import deepcopy
 #%% Csiro Data
 #%%  Testing MVC principal
 acworth_site = hgs.Site('death valley', geoloc=[-116.471360, 36.408130, 688])
-acworth_site.import_csv('tests/data/death_valley/death_valley.csv',
+acworth_site.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
                         input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","m"],
                         how="add", check_dublicates=True)
 
@@ -31,5 +31,5 @@ print(be_results)
 
 #%% frequency domain stuff ...
 
-be_freq  = process_acworth.BE_freq(method="acworth", freq_method='hals', update=True)
+be_freq  = process_acworth.BE_freq(method="rau", freq_method='hals', update=True)
 print(be_freq)
