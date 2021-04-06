@@ -7,7 +7,7 @@ const['_pucf'] = {'m': 1.0, 'dm': 0.1, 'cm': 0.01, 'mm': 0.001, 'pa': 0.00010197
 
 # Earth tide units
 const['_etunit'] = {'m**2/s**2', 'm/s**2', 'nm/s**2', 'str', 'nstr'}
-    
+
 # the most common Earth tide frequencies found in groundwater pressure (Merritt, 2004; McMillan et al., 2019)
 const['_etfqs'] = {'Q1': 0.893244, 'O1': 0.929536, 'M1': 0.966446, 'P1': 0.997262, 'S1': 1.0, 'K1': 1.002738, 'N2': 1.895982, 'M2': 1.932274, 'S2': 2.0, 'K2': 2.005476}
 # the most common atmospheric tide frequencies (McMillan et al., 2019)
