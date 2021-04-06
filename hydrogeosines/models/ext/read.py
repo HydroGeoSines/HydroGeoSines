@@ -31,8 +31,8 @@ class Read(object):
         
         #check for non valid accelaration units (ET)
         if any(cat in input_category for cat in ("ET")):
-            #TODO: add units and their converstion to glob.py 
-            utils.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_etunit'].keys())                       
+            #TODO: add units and their converstion to glob.py   
+            pass                    
             
         # load the csv file into variable
         data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header=0)
