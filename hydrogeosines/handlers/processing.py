@@ -16,7 +16,6 @@ from ..models.site import Site
 #from ...view import View
 
 from .. import utils
-from ..models.const import const
 
 class Processing(object):
     # define all class attributes here 
@@ -126,8 +125,8 @@ class Processing(object):
         
         # this method relies on the distinct frequency components
         # M2 and S2
-        f_m2 = const['_etfqs']['M2']
-        f_s2 = const['_etfqs']['S2']
+        f_m2 = self._obj.const['_etfqs']['M2']
+        f_s2 = self._obj.const['_etfqs']['S2']
         
         # output dict
         out = {}
