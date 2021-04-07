@@ -60,7 +60,8 @@ class Processing(object):
         # drop all GW locations, but the selected ones
         self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
         return self
-        
+
+    #%% 
     def BE_time(self, method:str = "all", derivative=True, update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
@@ -106,9 +107,155 @@ class Processing(object):
                 out[name].update({gw_loc[0]:{gw_loc[1]:{method:result}}})
 
         if update:
-            utils.dict_update(self.results,out)    
-        return out       
+            utils.dict_update(self.results, out)
+            
+        return out
 
+    #%%
+    def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
+        name = (inspect.currentframe().f_code.co_name).lower()
+        
+        # this method relies on the distinct frequency components
+        # M2 and S2
+        f_m2 = self._obj.const['_etfqs']['M2']
+        f_s2 = self._obj.const['_etfqs']['S2']
+        
+        # output dict
+        out = {}
+        
+        # for FFT, dataset needs to be regular!
+        if freq_method.lower() == 'fft':
+            # calculate the maximum frequency difference threshold based on the 
+            # difference between S2 and M2. This allows best identification if a 
+            # dataset has sufficient resolution
+            max_freq_diff = (f_s2 - f_m2) / 3
+            
+            # make GW data regular and align it with BP
+            try:
+                data = self.data_regular
+            except AttributeError:   
+                data = self.make_regular().data_regular
+            
+            # perform FFT
+            # !!! check if this exists to save time
+            comps = self.fft(update=update)
+            
+        elif freq_method.lower() == 'hals':
+            # this threshold is hard coded and makes sure that 
+            # the right frequency components are used for this method
+            max_freq_diff = 1e-6
+            
+            data = self.data
+            # perform HALS
+            # !!! check if this exists to save time
+            comps = self.hals(update=update)
+        else:
+            raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
+        
+        # extract data categories
+        for loc in comps.keys():       
+            for part, vals in comps[loc].items():
+                # extract the complex frequency components
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['BP']['freq'], f_s2)
+                if (fdiff < max_freq_diff):
+                    BP_s2 = vals[freq_method.lower()]['BP']['complex'][idx]
+                else:
+                    raise Exception("S2 component for BP is required, but the closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_s2)
+                if (fdiff < max_freq_diff):
+                    ET_s2 = vals[freq_method.lower()]['ET']['complex'][idx]
+                else:
+                    raise Exception("S2 component for ET is required, but the closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_m2)
+                if (fdiff < max_freq_diff):
+                    ET_m2 = vals[freq_method.lower()]['ET']['complex'][idx]
+                else:
+                    raise Exception("M2 component for ET is required, but the closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_s2)
+                if (fdiff < max_freq_diff):
+                    GW_s2 = vals[freq_method.lower()]['GW']['complex'][idx]
+                else:
+                    raise Exception("S2 component for GW is required, but the closest component is too far away!")
+                
+                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_m2)
+                if (fdiff < max_freq_diff):
+                    GW_m2 = vals[freq_method.lower()]['GW']['complex'][idx]
+                else:
+                    raise Exception("M2 component for GW is required, but the closest component is too far away!")
+                        
+                #%% BE method by Rau et al. (2020)          
+                if method.lower() == 'rau':
+                    result = Freq_domain.BE_Rau(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2, amp_ratio=1)
+                    
+                    out.update({loc: {part: {name: {method: result}}}})
+            
+                #%% BE method by Acworth et al. (2016)
+                elif method.lower() == 'acworth':
+                    result = Freq_domain.BE_Acworth(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2)
+                    
+                    out.update({loc: {part: {name: {method: result}}}})
+                else:
+                    raise Exception("The BE method '{}' is not implemented!".format(method.lower()))
+
+        if update:
+            utils.dict_update(self.results, out)
+        
+        return out
+
+    #%%
+    def fft(self, update = False):
+        name = (inspect.currentframe().f_code.co_name).lower()
+        # output dict
+        out = {}
+        # make dataset regular
+        try:
+            data = self.data_regular
+        except AttributeError:   
+            data = self.make_regular().data_regular
+        # data                
+        data        = self.data
+        gw_data     = data.hgs.filters.get_gw_data         
+        categories  = data.category.unique()
+        # grouping by location and parts (loc_part)
+        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
+        for gw_loc, GW in grouped:
+            print(gw_loc)
+            # initiate output dict structure             
+            out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(categories)}}
+            # loop through categories
+            for cat in categories:
+                print(cat)
+                #ET = ET, GW = {ET, AT}, BP = AT 
+                comps = Site.comp_select(cat)
+                if cat != "GW":                                                        
+                    group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
+                    filter_gw = group.datetime.isin(GW.datetime)
+                    group = group.loc[filter_gw,:]
+                else: 
+                    group = GW
+                
+                group   = group.hgs.filters.drop_nan
+                tf      = group.hgs.dt.to_zero
+                values  = group.value.values  
+                values  = Freq_domain.lin_window_ovrlp(tf, values)
+                values  = Freq_domain.fft_comp(tf, values)            
+                # calculate real Amplitude and Phase
+                var = utils.complex_to_real(tf, values["complex"])
+                # add results to dictionary
+                var["comps"] = list(comps.keys())
+                var.update(values)
+                # nested output dict with location, method, category
+                out[gw_loc[0]][gw_loc[1]][name][cat] = var
+        
+        if update:
+            utils.dict_update(self.results,out)
+            
+        return out
+
+    #%%
     def hals(self, update = False):
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
@@ -150,9 +297,11 @@ class Processing(object):
                 out[name][gw_loc[0]][gw_loc[1]][cat] = var
         
         if update:
-            utils.dict_update(self.results,out)       
+            utils.dict_update(self.results,out)
+            
         return out
-    
+
+    #%%
     def GW_correct(self, lag_h=24, et_method:str = "ts", fqs=None, update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         print("A complicated procedure ...")
@@ -195,7 +344,8 @@ class Processing(object):
                 ET = et_data.loc[filter_gw,:].value.values
 
             else:
-                raise Exception("Error: Specified 'et_method' is not available!")    
+                raise Exception("Error: Specified 'et_method' is not available!")  
+                
             GW = GW.value.values
             
             #raise Exception('Error: Category ET must be regularly sampled!')
@@ -206,4 +356,5 @@ class Processing(object):
             
         if update:
             utils.dict_update(self.results,out) 
+            
         return out

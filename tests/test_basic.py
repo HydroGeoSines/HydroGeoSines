@@ -94,6 +94,7 @@ mcf = mcf.hgs.filters.drop_nan # used within hgs processing workflows
 #TODO: replace non_valid entries? Dublicates already handled at import
 # Sample frequency for each group
 spl_freqs = mcf.hgs.spl_freq_groupby
+
 # Resampling for each group
 mcf = mcf.hgs.resample_by_group(spl_freqs)
 

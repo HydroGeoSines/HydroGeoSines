@@ -25,12 +25,11 @@ def zip_formatter(arg1,*args):
         args_list = args
     return list(zip(arg1,*args_list)) 
 
- 
-def find_nearest_idx(array,value):
+def find_nearest_idx(array, value):
     # find index nearest to value
-    idx = np.argmin(np.array(np.abs(array-value)))
-    return idx.astype(int)
-
+    delta = np.abs(np.array(array-value))
+    idx = np.argmin(delta).astype(int)
+    return idx, delta[idx]
                  
 def check_all_equal(arr):
     return print((arr[:] == arr[0]).all(axis=0))
@@ -71,7 +70,6 @@ def dict_update(d, u):
         else:
             d[k] = v
     return d
-
 
 def gap_mask(s:pd.Series, maxgap:int):
     """
