@@ -7,9 +7,7 @@ Created on Wed Sep 23 16:13:00 2020
 
 import pandas as pd
 import numpy as np
-import pytz
-import datetime as datetime
-import os,sys
+import os
 
 from pygtide import pygtide as pyg
 
@@ -184,6 +182,3 @@ class ET(object):
         
 
         
-
-    
-    
