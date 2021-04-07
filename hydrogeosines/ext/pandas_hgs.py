@@ -62,8 +62,11 @@ class HgsAccessor(object):
     
     @property
     def check_BP_align(self):
-        df = self._obj.hgs.pivot
-        # check if any BP entry is null and if for any row all the GW entries are null
+        df = self._obj
+        # mask posible ET values
+        df = df[df["category"] != "ET"]
+        df = df.hgs.pivot
+        # check if any BP entry is null and if for any row all the GW entries are null        
         if (df["BP"].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
             print("The groundwater (GW) and barometric pressure (BP) data is now aligned. There is now exactly one BP for every GW entry!")
         else:

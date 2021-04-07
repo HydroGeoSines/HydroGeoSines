@@ -11,6 +11,8 @@ import pytz
 import datetime as datetime
 import os,sys
 
+import pygtide as pyg
+
 from scipy.interpolate import interp1d
 
 class ET(object):
@@ -103,71 +105,59 @@ class ET(object):
         pass
         
     def calc_ET_align(self, et_comp='pot', et_cat=8, waves=None, geoloc:list=None):
-        # check if PyGTide is available
-        try:
-            # print(sys.path)
-            sys.path.append(os.path.abspath(os.path.join('pygtide')))
-            # print(sys.path)
-            from pygtide import pygtide
-            print("PyGTide module successfully imported")
-            if (et_comp == 'pot'):
-                et_comp_i = -1
-            elif(et_comp == 'g'):
-                et_comp_i = 0
-            else:
-                raise Exception("Error: Keyword 'et_comp' must be 'pot' (potential) or 'g' (gravity)!")
-            
-            if (geoloc == None):
-                raise Exception('Error: Geo-location (WGS84 longitude, latitude and height) must be set!')
-            
-            # !!!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
-            # change the current directory for PyGTide to work properly
-            os.chdir('pygtide')
-            # !!!!!!!!!!!!!!!!!
-            # create a PyGTide object
-            pt = pygtide()
-            # ! Conversion not utc not necessary -> done at import into site object
-            # ! better write a check function for processing class whether dt of data is UTC
-            # convert to UTC
-            dt = self.hgs.pivot.index
-            start = dt.min().tz_localize(None).to_pydatetime()
-            duration = ((dt.max() - dt.min()).days + 2)*24
-            td = (dt - pd.to_datetime('1899-12-30', utc=True))
-            dt_tf = td.days + td.seconds/86400
-            dt_s = td.seconds
-            # is this correct??
-            samplerate = int(np.median(np.diff(dt_s)))
-            # set the recommended wave groups
-            # as implemented in the wrapper
-            if waves is None:
-                pt.set_wavegroup()
-            else:
-                # pt.set_wavegroup(wavedata = np.array([[0.8, 2.2, 1., 0.]]))
-                pt.set_wavegroup(wavedata = waves)
-            pt.predict(geoloc[1], geoloc[0], geoloc[2], start, duration, samplerate, tidalcompo=et_comp_i, tidalpoten=et_cat)
-            # retrieve the results as dataframe
-            pt_data = pt.results()
-            return pt_data
-            """
-            # !!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
-            # change working directory back to normal ...
-            os.chdir('..')
-            # print(data.iloc[:30, 0:3])
-            # convert time to floating point for matching
-            et_td = (pt_data['UTC'] - pd.to_datetime('1899-12-30', utc=True)).dt
-            et_tf = et_td.days + et_td.seconds/86400
-            # !!! to allow irregular time stamps, interpolate the Earth tide data (cubic spline)
-            et_interp = interp1d(et_tf, pt_data.iloc[:, 1].values, kind='cubic')
-            et = et_interp(dt_tf)
-            
-            #######################################################
-            # MERGE EARTH TIDES WITH LONG TABLE
-            et_data = pd.DataFrame({'datetime': et_td, 'value': et})
-            return et_data
-            """
-            print("Earth tide time series were calculated and added ...")
-            
-            # !!!!!!!!!!!!!!!!!
-        except ImportError:
-            raise Exception('Error: The PyGTide module was not found!')
-        pass
+
+        if (et_comp == 'pot'):
+            et_comp_i = -1
+        elif(et_comp == 'g'):
+            et_comp_i = 0
+        else:
+            raise Exception("Error: Keyword 'et_comp' must be 'pot' (potential) or 'g' (gravity)!")
+        
+        if (geoloc == None):
+            raise Exception('Error: Geo-location (WGS84 longitude, latitude and height) must be set!')
+        
+        pt = pyg.pygtide()
+        # ! Conversion not utc not necessary -> done at import into site object
+        # ! better write a check function for processing class whether dt of data is UTC
+        # convert to UTC
+        dt = self.hgs.pivot.index
+        start = dt.min().tz_localize(None).to_pydatetime()
+        duration = ((dt.max() - dt.min()).days + 2)*24
+        td = (dt - pd.to_datetime('1899-12-30', utc=True))
+        dt_tf = td.days + td.seconds/86400
+        dt_s = td.seconds
+        # is this correct??
+        samplerate = int(np.median(np.diff(dt_s)))
+        # set the recommended wave groups
+        # as implemented in the wrapper
+        if waves is None:
+            pt.set_wavegroup()
+        else:
+            # pt.set_wavegroup(wavedata = np.array([[0.8, 2.2, 1., 0.]]))
+            pt.set_wavegroup(wavedata = waves)
+        pt.predict(geoloc[1], geoloc[0], geoloc[2], start, duration, samplerate, tidalcompo=et_comp_i, tidalpoten=et_cat)
+        # retrieve the results as dataframe
+        pt_data = pt.results()
+        return pt_data
+        """
+        # !!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
+        # change working directory back to normal ...
+        os.chdir('..')
+        # print(data.iloc[:30, 0:3])
+        # convert time to floating point for matching
+        et_td = (pt_data['UTC'] - pd.to_datetime('1899-12-30', utc=True)).dt
+        et_tf = et_td.days + et_td.seconds/86400
+        # !!! to allow irregular time stamps, interpolate the Earth tide data (cubic spline)
+        et_interp = interp1d(et_tf, pt_data.iloc[:, 1].values, kind='cubic')
+        et = et_interp(dt_tf)
+        
+        #######################################################
+        # MERGE EARTH TIDES WITH LONG TABLE
+        et_data = pd.DataFrame({'datetime': et_td, 'value': et})
+        return et_data
+        """
+        print("Earth tide time series were calculated and added ...")
+        
+
+    
+    

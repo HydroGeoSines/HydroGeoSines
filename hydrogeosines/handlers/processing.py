@@ -38,15 +38,7 @@ class Processing(object):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
         # check for non valid categories
         utils.check_affiliation(obj.data["category"].unique(), obj.VALID_CATEGORY)
-              
-    """
-    def results_update(self, name, results, update:bool = False):
-        if (not name in self.results):
-            self.results[name] = results
-        if (not name in self.results[name]) or (update):
-            print('UPDATE')
-            self.results[name].update({name: results})
-    """    
+               
     def ET_calc(self):
         self.data = self._obj.add_ET(et_comp='g')
     
