@@ -30,9 +30,8 @@ class Read(object):
             utils.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_pucf'].keys())
         
         #check for non valid accelaration units (ET)
-        if any(cat in input_category for cat in ("ET")):
-            #TODO: add units and their converstion to glob.py 
-            pass                       
+        if any(cat in input_category for cat in ("ET")):   
+            utils.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_etunit'])
             
         # load the csv file into variable
         data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header=0)
@@ -41,7 +40,7 @@ class Read(object):
         ncols = len(input_category)
         data = data.iloc[:, :ncols]
 
-        data.index.rename(name="datetime",inplace=True) # streamline datetime name
+        data.index.rename(name="datetime", inplace=True) # streamline datetime name
             
         # make sure the first column is a correctly identified datetime    
         if not isinstance(data.index, pd.DatetimeIndex):
@@ -66,7 +65,7 @@ class Read(object):
         
         # reformat unit column to SI units
         data["value"], data["unit"] = data.hgs.pucf_converter_vec(self.const["_pucf"]) # vectorizing
-                
+        
         # add utc_offset to site instead of data, to keep number of columns at a minimum
         self.utc_offset.update(dict(utils.zip_formatter(locations, utc_offset)))
 
