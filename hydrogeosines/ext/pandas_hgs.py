@@ -218,7 +218,7 @@ class HgsAccessor(object):
             else:    
                 print("{:.2f} % of the '{}' data at '{}' was interpolated due to gaps < {}s!".format((counter/len(s)*100), group.name[0], group.name[1],inter_max))
         else:
-            raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!", inter_max_total)
+            raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!".format(inter_max_total))
         ## interpolate gaps smaller than maxgap
         # choose interpolation (runs on datetime index)
         group = group[mask].hgs.upsample(method=method)

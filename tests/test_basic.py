@@ -119,6 +119,11 @@ be_results  = process_csiro.BE_time(method="all")
 # test gw_correct
 gw_correct_results  = process_csiro.GW_correct(lag_h=24, et_method = None, fqs=None)
 
+# add et
+csiro_site.add_ET()
+process_cisro_ET = hgs.Processing(csiro_site)
+gw_correct_results  = process_csiro.GW_correct(lag_h=24, fqs=None)
+
 #should still be empty
 print(process_csiro.results)
 
@@ -127,7 +132,7 @@ dummy  = process_csiro.hals(update=True)
 dummy  = process_csiro.BE_time(method="all",update=True)
 dummy  = process_csiro.GW_correct(lag_h=24, et_method = None, fqs=None,update=True)
 
-print(process_csiro.results)
+#print(process_csiro.results)
 
 # create a new site object with the "polluted" data
 csiro_site_part = deepcopy(csiro_site)
@@ -146,9 +151,9 @@ group = mcf[mask].hgs.upsample(method="backfill")
 
 #%% View structure
 
-view_csiro = Output()
-view_csiro.plot(method=)
-view_csrio.export()
+#view_csiro = Output()
+#view_csiro.plot(method=)
+#view_csrio.export()
 #%% Example and Ideas on MVC Paradigm
 """
 ## MODEL

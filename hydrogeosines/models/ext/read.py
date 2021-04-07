@@ -58,7 +58,7 @@ class Read(object):
         # check if dt is "naive":
         if d.tzinfo is None or d.tzinfo.utcoffset(d) is None:
             # make UTC correction
-            print("Datetime was 'naive'. Localizing and converting to UTC!")
+            print("Datetime was 'naive'. Localized and converted to UTC!")
             data.index = data.index.tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc) 
         # datetime is "aware"
         else:

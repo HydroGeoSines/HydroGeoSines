@@ -47,8 +47,8 @@ class Processing(object):
             print('UPDATE')
             self.results[name].update({name: results})
     """    
-    #def ET_calc(self):
-    #    self.data = self.add_ET(et_comp='g')
+    def ET_calc(self):
+        self.data = self._obj.add_ET(et_comp='g')
     
     def make_regular(self):
         data = self.data
