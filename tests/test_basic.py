@@ -38,8 +38,8 @@ k = 0.10 # 5% missing values
 idx = random.sample(list(data2.loc[data2["category"]== "GW"].index), int(k*len(data2.loc[data2["category"]== "GW"])))
 data2.drop(labels=idx,inplace=True) 
 
-data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
-data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
+#data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
+#data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
 
 # check for gaps and outliers
 import matplotlib.pyplot as plt
@@ -120,10 +120,11 @@ be_results  = process_csiro.BE_time(method="all")
 # test gw_correct
 gw_correct_results  = process_csiro.GW_correct(lag_h=24, et_method = None, fqs=None)
 
-
+be_freq = process_csiro.BE_freq()
 #should still be empty
 print(process_csiro.results)
 
+#%% use UPDATE method
 # test update functionality of processing methods
 dummy  = process_csiro.hals(update=True)
 dummy  = process_csiro.BE_time(method="all",update=True)

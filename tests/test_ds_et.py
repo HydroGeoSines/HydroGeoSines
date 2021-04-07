@@ -68,3 +68,14 @@ s = s.set_index("datetime")
 s = s[~s.index.duplicated(keep='first')]
 s = s.interpolate(method="cubic")
 
+#%% Test be_freq method with acworth data and et
+acworth_site = hgs.Site('acworth', geoloc=[141.762065, -31.065781, 160])
+
+acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv',
+                        input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"],
+                        loc_names = ["Site_A","Baro","Site_C"], how="add", check_dublicates=True)
+
+process_acworth = hgs.Processing(acworth_site)
+process_acworth.ET_calc()
+be_freq = process_acworth.BE_freq(freq_method="fft")
+
