@@ -81,7 +81,7 @@ class ET(object):
             et_data['category'] = 'ET'
             et_data['location'] = 'ET'
             et_data['part'] = 'all'
-            et_data['unit'] = self.et_unit[et_comp_i]
+            et_data['unit'] = ET.et_unit[et_comp_i]
             # print(et_data.iloc[:30, 0:3])
             # kill existing ET values
             self.data = self.data.drop(self.data[self.data.category == 'ET'].index)
