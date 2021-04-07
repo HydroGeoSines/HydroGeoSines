@@ -39,8 +39,9 @@ class Processing(object):
         # check for non valid categories
         utils.check_affiliation(obj.data["category"].unique(), obj.VALID_CATEGORY)
                
+    #TODO!: The method changes the site_obj itself. Maybe add_ET should return a new DataFrame, not self
     def ET_calc(self):
-        self.data = self._obj.add_ET(et_comp='g')
+        self._obj.add_ET(et_comp='g')
     
     def make_regular(self):
         data = self.data

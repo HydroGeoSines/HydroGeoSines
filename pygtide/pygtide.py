@@ -94,7 +94,7 @@ The original Fortran code was also modified for use with f2py:
 import numpy as np
 import pandas as pd
 import datetime as dt
-import etpred
+from . import etpred as etpred
 import os
 from pathlib import Path
 
