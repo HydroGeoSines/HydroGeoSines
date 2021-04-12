@@ -111,7 +111,38 @@ dict_new = {"Site_A": {'hals': {'BP': {'amp': [0.0, 1.0, 5.0, 1.0, 0]}}},
             "Site_B": {'hals': {'GW': {'amp': [0.0, 1.0, 2.0, 1.0, 0]}}}
             }
 dict_update(dict_test,dict_new)
-    #%% Define Function for non-valid entries
+
+#%% recursion for nested dict to df
+user_dict = hals_results.copy()
+def flatten(object):
+    for item in object:
+        if isinstance(item, (list, tuple, set)):
+            yield from flatten(item)
+        else:
+            yield item
+
+def dict_depth(dic, level = 1):      
+    if not isinstance(dic, dict) or not dic:
+        return level
+    return max(dict_depth(dic[key], level + 1)
+                               for key in dic)
+
+def nested_dict_to_df(d):
+    d = {tuple(flatten((i,j))): d[i][j] 
+     for i in d.keys() 
+     for j in d[i].keys()}
+    #print([(a, *rest) for a, rest in d.keys()])
+    depth = dict_depth(d)
+    print(depth)
+    if depth == 2:
+        return d
+    else:
+        return nested_dict_to_df(d) 
+
+d_new = nested_dict_to_df(user_dict)    
+s = pd.Series(d_new).reset_index()
+
+#%% Define Function for non-valid entries
 def non_valid():
     pass
  

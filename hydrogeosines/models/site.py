@@ -1,8 +1,5 @@
 import numpy as np
-import datetime as dt
 import pandas as pd
-
-from scipy.optimize import leastsq
 
 # import additional functionalities
 from .ext.read import Read

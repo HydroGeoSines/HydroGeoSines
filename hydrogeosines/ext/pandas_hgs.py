@@ -62,8 +62,11 @@ class HgsAccessor(object):
     
     @property
     def check_BP_align(self):
-        df = self._obj.hgs.pivot
-        # check if any BP entry is null and if for any row all the GW entries are null
+        df = self._obj
+        # mask posible ET values
+        df = df[df["category"] != "ET"]
+        df = df.hgs.pivot
+        # check if any BP entry is null and if for any row all the GW entries are null        
         if (df["BP"].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
             print("The groundwater (GW) and barometric pressure (BP) data is now aligned. There is now exactly one BP for every GW entry!")
         else:
@@ -218,7 +221,7 @@ class HgsAccessor(object):
             else:    
                 print("{:.2f} % of the '{}' data at '{}' was interpolated due to gaps < {}s!".format((counter/len(s)*100), group.name[0], group.name[1],inter_max))
         else:
-            raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!", inter_max_total)
+            raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!".format(inter_max_total))
         ## interpolate gaps smaller than maxgap
         # choose interpolation (runs on datetime index)
         group = group[mask].hgs.upsample(method=method)

@@ -38,17 +38,11 @@ class Processing(object):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
         # check for non valid categories
         utils.check_affiliation(obj.data["category"].unique(), obj.VALID_CATEGORY)
-              
-    """
-    def results_update(self, name, results, update:bool = False):
-        if (not name in self.results):
-            self.results[name] = results
-        if (not name in self.results[name]) or (update):
-            print('UPDATE')
-            self.results[name].update({name: results})
-    """    
-    #def ET_calc(self):
-    #    self.data = acworth_site.add_ET(et_comp='g')
+               
+    #TODO!: The method changes the site_obj itself. Maybe add_ET should return a new DataFrame, not self
+    def ET_calc(self):
+        self._obj.add_ET(et_comp='g')
+        self.data = self._obj.data.copy()
     
     def make_regular(self):
         data = self.data
@@ -63,7 +57,6 @@ class Processing(object):
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
         if pos.eq(False).all():
             raise Exception("Error: Non of the specified locations are present in the GW data!")
-
         pos_cat = self._obj.data["category"] == "GW"
         # drop all GW locations, but the selected ones
         self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
@@ -71,9 +64,10 @@ class Processing(object):
 
     #%% 
     def BE_time(self, method:str = "all", derivative=True, update=False):
+        print("\nProcessing BE_time method...")
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
-        out = {}
+        out = {name:{}}
         # get BE Time domain methods
         method_list = utils.method_list(Time_domain, ID="BE")
         method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
@@ -90,7 +84,7 @@ class Processing(object):
         
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:          
-            print(gw_loc)
+            #print(gw_loc)
             # create GW datetime filter for BP data
             filter_gw = bp_data.datetime.isin(GW.datetime)
             BP = bp_data.loc[filter_gw,:].value.values
@@ -101,18 +95,19 @@ class Processing(object):
                    
             # select method            
             if method.lower() == 'all':
-                out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(method_dict.values())}}
+                out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(method_dict.values())}})
                 for key, val in method_dict.items():
-                    print(val)
+                    #print(val)
                     result = getattr(Time_domain, key)(BP,GW) 
-                    out[gw_loc[0]][gw_loc[1]][name][val] = result
+                    out[name][gw_loc[0]][gw_loc[1]][val] = result
 
             else: 
                 #check for non valid method 
                 utils.check_affiliation(method, method_dict.values())
                 # pass the data to the right method
                 result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
-                out[gw_loc[0]] = {gw_loc[1]:{name:{method:result}}}
+                out[name].update({gw_loc[0]:{gw_loc[1]:{method:result}}})
+            print("Successfully calculated using method '{}' on GW data from '{}'!".format(method,str(gw_loc)))
 
         if update:
             utils.dict_update(self.results, out)
@@ -121,90 +116,66 @@ class Processing(object):
 
     #%%
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
-        name = (inspect.currentframe().f_code.co_name).lower()
-        
-        # this method relies on the distinct frequency components
-        # M2 and S2
-        f_m2 = self._obj.const['_etfqs']['M2']
-        f_s2 = self._obj.const['_etfqs']['S2']
-        
-        # output dict
-        out = {}
-        
-        # for FFT, dataset needs to be regular!
-        if freq_method.lower() == 'fft':
-            # calculate the maximum frequency difference threshold based on the 
-            # difference between S2 and M2. This allows best identification if a 
-            # dataset has sufficient resolution
-            max_freq_diff = (f_s2 - f_m2) / 3
-            
-            # make GW data regular and align it with BP
-            try:
-                data = self.data_regular
-            except AttributeError:   
-                data = self.make_regular().data_regular
-            
-            # perform FFT
-            # !!! check if this exists to save time
-            comps = self.fft(update=update)
-            
-        elif freq_method.lower() == 'hals':
-            # this threshold is hard coded and makes sure that 
-            # the right frequency components are used for this method
-            max_freq_diff = 1e-6
-            
-            data = self.data
-            # perform HALS
-            # !!! check if this exists to save time
-            comps = self.hals(update=update)
-        else:
+        name = (inspect.currentframe().f_code.co_name).lower()   
+             
+        if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
         
-        # extract data categories
+        if "ET" not in self.data["category"].unique():            
+            raise Exception('Error: ET data is required but not found in the dataset!')    
+            
+        # this method relies on the distinct frequency components
+        # M2 and S2
+        freqs = {}
+        freqs["m2"] = self._obj.const['_etfqs']['M2']
+        freqs["s2"] = self._obj.const['_etfqs']['S2']
+        max_freq_diff = {"hals": 1e-6, "fft": (freqs["s2"] - freqs["m2"]) / 3}
+        mfd = max_freq_diff[freq_method.lower()]
+        
+        # output dict
+        out = {name:{}}
+
+        # !!! check if method results already exist to save time. 
+        #Problematic if results was previously calculated without ET -> update can be buggy
+        try:
+            comps = self.results[freq_method.lower()]
+        except KeyError:  
+            comps = getattr(self, freq_method.lower())()[freq_method.lower()]                  
+        
+        # extract data categories        
         for loc in comps.keys():       
             for part, vals in comps[loc].items():
-                # extract the complex frequency components
-                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['BP']['freq'], f_s2)
-                if (fdiff < max_freq_diff):
-                    BP_s2 = vals[freq_method.lower()]['BP']['complex'][idx]
-                else:
-                    raise Exception("S2 component for BP is required, but the closest component is too far away!")
-                
-                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_s2)
-                if (fdiff < max_freq_diff):
-                    ET_s2 = vals[freq_method.lower()]['ET']['complex'][idx]
-                else:
-                    raise Exception("S2 component for ET is required, but the closest component is too far away!")
-                
-                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['ET']['freq'], f_m2)
-                if (fdiff < max_freq_diff):
-                    ET_m2 = vals[freq_method.lower()]['ET']['complex'][idx]
-                else:
-                    raise Exception("M2 component for ET is required, but the closest component is too far away!")
-                
-                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_s2)
-                if (fdiff < max_freq_diff):
-                    GW_s2 = vals[freq_method.lower()]['GW']['complex'][idx]
-                else:
-                    raise Exception("S2 component for GW is required, but the closest component is too far away!")
-                
-                idx, fdiff = utils.find_nearest_idx(vals[freq_method.lower()]['GW']['freq'], f_m2)
-                if (fdiff < max_freq_diff):
-                    GW_m2 = vals[freq_method.lower()]['GW']['complex'][idx]
-                else:
-                    raise Exception("M2 component for GW is required, but the closest component is too far away!")
-                        
+                complex_dict = {}
+                for cat in self._obj.VALID_CATEGORY:
+                    for key,freq in freqs.items():
+                        # for all categories and freq combinations except BP_s2
+                        if ((cat != "BP") or (key != "m2")):
+                            idx, fdiff = utils.find_nearest_idx(vals[cat]['freq'], freq)
+                            if (fdiff < mfd):
+                                complex_dict[str(cat)+"_"+ str(key)] = vals[cat]['complex'][idx]
+                            else:
+                                raise Exception("{} component for {} is required, but the closest component is too far away!".format(key.upper(),cat))
+
                 #%% BE method by Rau et al. (2020)          
                 if method.lower() == 'rau':
-                    result = Freq_domain.BE_Rau(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2, amp_ratio=1)
+                    result = Freq_domain.BE_Rau(complex_dict["BP_s2"],
+                                                complex_dict["ET_m2"], 
+                                                complex_dict["ET_s2"], 
+                                                complex_dict["GW_m2"], 
+                                                complex_dict["GW_s2"], amp_ratio=1)
                     
-                    out.update({loc: {part: {name: {method: result}}}})
+                    #out[name][loc][part][method.lower()] = result
+                    out[name].update({loc: {part: {method: result}}})
             
                 #%% BE method by Acworth et al. (2016)
                 elif method.lower() == 'acworth':
-                    result = Freq_domain.BE_Acworth(BP_s2, ET_m2, ET_s2, GW_m2, GW_s2)
+                    result = Freq_domain.BE_Acworth(complex_dict["BP_s2"],
+                                                complex_dict["ET_m2"], 
+                                                complex_dict["ET_s2"], 
+                                                complex_dict["GW_m2"], 
+                                                complex_dict["GW_s2"],)
                     
-                    out.update({loc: {part: {name: {method: result}}}})
+                    out[name].update({loc: {part: {method: result}}})
                 else:
                     raise Exception("The BE method '{}' is not implemented!".format(method.lower()))
 
@@ -215,24 +186,24 @@ class Processing(object):
 
     #%%
     def fft(self, update = False):
+        #TODO! NOT adviced to use on site.data with non-aligned ET 
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
-        out = {}
+        out = {name:{}}
         # make dataset regular
         try:
             data = self.data_regular
         except AttributeError:   
             data = self.make_regular().data_regular
-        # data                
-        data        = self.data
+            
         gw_data     = data.hgs.filters.get_gw_data         
         categories  = data.category.unique()
         # grouping by location and parts (loc_part)
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:
             print(gw_loc)
-            # initiate output dict structure             
-            out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(categories)}}
+            # initiate output dict structure  
+            out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(categories)}})
             # loop through categories
             for cat in categories:
                 print(cat)
@@ -255,8 +226,8 @@ class Processing(object):
                 # add results to dictionary
                 var["comps"] = list(comps.keys())
                 var.update(values)
-                # nested output dict with location, method, category
-                out[gw_loc[0]][gw_loc[1]][name][cat] = var
+                # nested output dict with method, location, category
+                out[name][gw_loc[0]][gw_loc[1]][cat] = var
         
         if update:
             utils.dict_update(self.results,out)
@@ -267,7 +238,7 @@ class Processing(object):
     def hals(self, update = False):
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
-        out = {}
+        out = {name:{}}
         # data                
         data        = self.data
         gw_data     = data.hgs.filters.get_gw_data         
@@ -277,7 +248,7 @@ class Processing(object):
         for gw_loc, GW in grouped:
             print(gw_loc)
             # initiate output dict structure             
-            out[gw_loc[0]] = {gw_loc[1]:{name:dict.fromkeys(categories)}}
+            out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(categories)}})
             # loop through categories
             for cat in categories:
                 print(cat)
@@ -302,7 +273,7 @@ class Processing(object):
                 var["comps"] = list(comps.keys())
                 var.update(values)
                 # nested output dict with location, method, category
-                out[gw_loc[0]][gw_loc[1]][name][cat] = var
+                out[name][gw_loc[0]][gw_loc[1]][cat] = var
         
         if update:
             utils.dict_update(self.results,out)
@@ -316,7 +287,7 @@ class Processing(object):
         #TODO!: either adapt the BP_align to also align ET data or implement ET calc in Site to be used after bp_align (better!!)
         #TODO!: define dictionary with valid et_methods to use the utils.check_affiliation() method
         # output dict
-        out = {}
+        out = {name:{}}
         
         # check integrity of data
         if ((et_method is not None) and ('ET' not in self.data["category"].unique())):
@@ -340,9 +311,8 @@ class Processing(object):
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:   
 
-            print(gw_loc)
-            
-            out[gw_loc[0]] = {gw_loc[1]:{name:None}}
+            print(gw_loc)            
+            out[name].update({gw_loc[0]:{gw_loc[1]:None}})
 
             tf = GW.hgs.dt.to_zero # same results as delta function with utc offset = None
             filter_gw = bp_data.datetime.isin(GW.datetime)
@@ -361,7 +331,7 @@ class Processing(object):
 
             WLc, var = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
             var["WLc"] = WLc
-            out[gw_loc[0]][gw_loc[1]][name] = var
+            out[name][gw_loc[0]][gw_loc[1]] = var
             
         if update:
             utils.dict_update(self.results,out) 
