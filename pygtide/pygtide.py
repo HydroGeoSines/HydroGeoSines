@@ -102,6 +102,7 @@ class pygtide(object):
     """
     The PyGTide class will initialise internal variables
     """
+    # TODO add comdat path for handover to Fortran
     
     def __init__(self, msg=True):
         """
