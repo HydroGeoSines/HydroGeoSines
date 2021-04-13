@@ -60,18 +60,19 @@ class HgsAccessor(object):
             print("No dublicates being found ...")
             return self._obj
     
-    @property
-    def check_BP_align(self):
+    def check_alignment(self,cat:str="BP"):
         df = self._obj
-        # mask posible ET values
-        df = df[df["category"] != "ET"]
+        # mask possible other categories values
+        df = df[df["category"].isin(["GW",cat])]
         df = df.hgs.pivot
         # check if any BP entry is null and if for any row all the GW entries are null        
-        if (df["BP"].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
-            print("The groundwater (GW) and barometric pressure (BP) data is now aligned. There is now exactly one BP for every GW entry!")
+        if (df[cat].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
+            print("The groundwater (GW) and  {} data is aligned. There is exactly one {} for every GW entry!".format(cat,cat))
+            return True
         else:
-            print("Your groundwater and barometric pressure data are not aligned. Please use the 'make_regular' and 'bp_align' methods!")    
-    
+            print("Your groundwater data is NOT aligned with {}. Please consider using the 'make_regular' and 'bp_align' methods!".format(cat))  
+            return False
+        
     @staticmethod
     def unit_converter_vec(df,unit_dict : dict):  
         # adjust values based on a unit conversion factor dictionary

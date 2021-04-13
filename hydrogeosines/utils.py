@@ -32,6 +32,7 @@ def find_nearest_idx(array, value):
     return idx, delta[idx]
                  
 def check_all_equal(arr):
+    """ check if all values are equal to the first element """
     return print((arr[:] == arr[0]).all(axis=0))
 
 def pi_range(value):

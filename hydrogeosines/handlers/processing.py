@@ -11,6 +11,7 @@ import inspect
 
 from ..ext.hgs_analysis import Time_domain, Freq_domain
 from ..models.site import Site
+from ..models.ext.et import ET_data as etides
 #from ...view import View
 
 from .. import utils
@@ -46,7 +47,7 @@ class Processing(object):
         data = self.data
         data = data.hgs.make_regular()
         data = data.hgs.BP_align()
-        data.hgs.check_BP_align # check integrity
+        data.hgs.check_alignment() # check integrity
         self.data_regular = data
         return self
     
@@ -82,7 +83,6 @@ class Processing(object):
         
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:          
-            #print(gw_loc)
             # create GW datetime filter for BP data
             datetime = GW.datetime
             filter_gw = bp_data.datetime.isin(datetime)
@@ -91,22 +91,26 @@ class Processing(object):
                          
             if derivative==True:
                BP, GW = np.diff(BP), np.diff(GW) # need to also divide by the time step length
+               datetime = datetime[1:]
+            
+            # aggregate data for results container
+            data_group = pd.DataFrame(data = {"GW":GW,"BP":BP},index=datetime,columns=["GW","BP"])
+            info = {"derivative":derivative}
 
-            out[name].update({gw_loc[0]:{gw_loc[1]:{"BP":BP,"GW":GW,"dt":datetime, "derivative":derivative}}})
             # select method            
             if method.lower() == 'all':
-                out[name][gw_loc[0]][gw_loc[1]].update(dict.fromkeys(method_dict.values()))
+                results = dict.fromkeys(method_dict.values())
                 for key, val in method_dict.items():
-                    #print(val)
-                    result = getattr(Time_domain, key)(BP,GW) 
-                    out[name][gw_loc[0]][gw_loc[1]][val] = result
+                    results[val] = getattr(Time_domain, key)(BP,GW)                    
                                         
             else: 
                 #check for non valid method 
                 utils.check_affiliation(method, method_dict.values())
-                # pass the data to the right method
-                result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
-                out[name][gw_loc[0]][gw_loc[1]].update({method:result})
+                # pass the data to the right method in Time_domain using the method_dict
+                results = {method:getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW)} 
+            
+            # add results to the out dictionary  
+            out[name].update({gw_loc:[results,data_group,info]})
             print("Successfully calculated using method '{}' on GW data from '{}'!".format(method,str(gw_loc)))
 
         if update:
@@ -116,7 +120,8 @@ class Processing(object):
 
     #%%
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
-        name = (inspect.currentframe().f_code.co_name).lower()   
+        name = (inspect.currentframe().f_code.co_name).lower() 
+        info = None
              
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
@@ -141,43 +146,60 @@ class Processing(object):
             comps = self.results[freq_method.lower()]
         except KeyError:  
             comps = getattr(self, freq_method.lower())()[freq_method.lower()]                  
+        print("start")
+        #loc = [i[:-1] for i in list(comps.keys())]
+        #print(dict(loc))
+        #print(loc)
+        #unique_loc = [tuple(i) for i in np.unique(loc, axis=0)]
+        #print(unique_loc)
+        ## reasamble dict so it only contains the required data
+        data_list = [comps[i][0] for i in comps.keys()]
+        comps = dict.fromkeys(comps)
+        for key,val in zip(comps.keys(),data_list):
+            comps[key] = val
         
-        # extract data categories        
-        for loc in comps.keys():       
-            for part, vals in comps[loc].items():
-                complex_dict = {}
-                for cat in self._obj.VALID_CATEGORY:
-                    for key,freq in freqs.items():
-                        # for all categories and freq combinations except BP_s2
-                        if ((cat != "BP") or (key != "m2")):
-                            idx, fdiff = utils.find_nearest_idx(vals[cat]['freq'], freq)
-                            if (fdiff < mfd):
-                                complex_dict[str(cat)+"_"+ str(key)] = vals[cat]['complex'][idx]
-                            else:
-                                raise Exception("{} component for {} is required, but the closest component is too far away!".format(key.upper(),cat))
-
-                #%% BE method by Rau et al. (2020)          
-                if method.lower() == 'rau':
-                    result = Freq_domain.BE_Rau(complex_dict["BP_s2"],
-                                                complex_dict["ET_m2"], 
-                                                complex_dict["ET_s2"], 
-                                                complex_dict["GW_m2"], 
-                                                complex_dict["GW_s2"], amp_ratio=1)
-                    
-                    #out[name][loc][part][method.lower()] = result
-                    out[name].update({loc: {part: {method: result}}})
+        # create DataFrame for unique locations/parts
+        df = pd.DataFrame.from_dict(comps,orient="index").reset_index().rename(columns={"level_0":"location","level_1":"part","level_2":"category"})
+        grouped = df.groupby(by=(["location","part"]))
+        for group, val in grouped:
+            print(group)
+            complex_dict = {}
+            for cat in val.category.unique():
+                print(cat)                
+                data = val[val["category"] == cat]    
+                            
+                for key,freq in freqs.items():
+                    print(key,freq)
+                    # for all categories and freq combinations except BP_s2
+                    if ((cat != "BP") or (key != "m2")):
+                        print(cat, key)
+                        idx, fdiff = utils.find_nearest_idx(np.hstack(data['freq']), freq)
+                        if (fdiff < mfd):
+                            complex_dict[str(cat)+"_"+ str(key)] = np.hstack(data['complex'])[idx]
+                        else:
+                            raise Exception("{} component for {} is required, but the closest component is too far away!".format(key.upper(),cat))
             
-                #%% BE method by Acworth et al. (2016)
-                elif method.lower() == 'acworth':
-                    result = Freq_domain.BE_Acworth(complex_dict["BP_s2"],
-                                                complex_dict["ET_m2"], 
-                                                complex_dict["ET_s2"], 
-                                                complex_dict["GW_m2"], 
-                                                complex_dict["GW_s2"],)
-                    
-                    out[name].update({loc: {part: {method: result}}})
-                else:
-                    raise Exception("The BE method '{}' is not implemented!".format(method.lower()))
+            #%% BE method by Rau et al. (2020)          
+            if method.lower() == 'rau':
+                results = Freq_domain.BE_Rau(complex_dict["BP_s2"],
+                                            complex_dict["ET_m2"], 
+                                            complex_dict["ET_s2"], 
+                                            complex_dict["GW_m2"], 
+                                            complex_dict["GW_s2"], amp_ratio=1)
+                
+                out[name].update({group:[results,data,info]})
+        
+            #%% BE method by Acworth et al. (2016)
+            elif method.lower() == 'acworth':
+                results = Freq_domain.BE_Acworth(complex_dict["BP_s2"],
+                                            complex_dict["ET_m2"], 
+                                            complex_dict["ET_s2"], 
+                                            complex_dict["GW_m2"], 
+                                            complex_dict["GW_s2"],)
+                
+                out[name].update({group:[results,data,info]})
+            else:
+                raise Exception("The BE method '{}' is not implemented!".format(method.lower()))
 
         if update:
             utils.dict_update(self.results, out)
@@ -201,12 +223,10 @@ class Processing(object):
         # grouping by location and parts (loc_part)
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:
-            print(gw_loc)
-            # initiate output dict structure  
-            out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(categories)}})
             # loop through categories
             for cat in categories:
-                print(cat)
+                ident = (*gw_loc,cat)
+                print(ident)
                 #ET = ET, GW = {ET, AT}, BP = AT 
                 comps = Site.comp_select(cat)
                 if cat != "GW":                                                        
@@ -222,12 +242,14 @@ class Processing(object):
                 values  = Freq_domain.lin_window_ovrlp(tf, values)
                 values  = Freq_domain.fft_comp(tf, values)            
                 # calculate real Amplitude and Phase
-                var = utils.complex_to_real(tf, values["complex"])
-                # add results to dictionary
-                var["comps"] = list(comps.keys())
-                var.update(values)
-                # nested output dict with method, location, category
-                out[name][gw_loc[0]][gw_loc[1]][cat] = var
+                results = utils.complex_to_real(tf, values["complex"])
+                results["comps"] = list(comps.keys())
+                results.update(values)  
+                #slim data container
+                data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
+                # nested output dict with list for [results, data, info]
+                out[name].update({ident:[results,data_group,None]})
+
         
         if update:
             utils.dict_update(self.results,out)
@@ -246,12 +268,10 @@ class Processing(object):
         # grouping by location and parts (loc_part)
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:
-            print(gw_loc)
-            # initiate output dict structure             
-            out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(categories)}})
             # loop through categories
             for cat in categories:
-                print(cat)
+                ident = (*gw_loc,cat)
+                print(ident)
                 #ET = ET, GW = {ET, AT}, BP = AT 
                 comps = Site.comp_select(cat)
                 freqs = [i["freq"] for i in comps.values()]
@@ -268,12 +288,13 @@ class Processing(object):
                 values  = Freq_domain.lin_window_ovrlp(tf, values)
                 values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
                 # calculate real Amplitude and Phase
-                var = utils.complex_to_real(tf, values["complex"])
-                # add results to dictionary
-                var["comps"] = list(comps.keys())
-                var.update(values)
-                # nested output dict with location, method, category
-                out[name][gw_loc[0]][gw_loc[1]][cat] = var
+                results = utils.complex_to_real(tf, values["complex"])
+                results["comps"] = list(comps.keys())
+                results.update(values)
+                # slim data container
+                data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
+                # nested output dict with list for [results, data, info]
+                out[name].update({ident:[results,data_group,None]})
         
         if update:
             utils.dict_update(self.results,out)
@@ -282,58 +303,69 @@ class Processing(object):
 
     #%%
     def GW_correct(self, lag_h=24, et_method:str = "ts", fqs=None, update=False):
-        name = (inspect.currentframe().f_code.co_name).lower()
-        print("A complicated procedure ...")
-        #TODO!: either adapt the BP_align to also align ET data or implement ET calc in Site to be used after bp_align (better!!)
+        name    = (inspect.currentframe().f_code.co_name)
+        print(name)
+        sig     = inspect.signature(getattr(Processing,name))
+        info    = sig.parameters
+        #info = {lag_h}
+        #print(sig,info)
         #TODO!: define dictionary with valid et_methods to use the utils.check_affiliation() method
         # output dict
         out = {name:{}}
         
-        # check integrity of data
-        if ((et_method is not None) and ('ET' not in self.data["category"].unique())):
-            raise Exception('Error: ET time series is required but not found in the dataset!')
-            
         # make GW data regular and align it with BP
         try:
             data = self.data_regular
         except AttributeError:   
-            data = self.make_regular().data_regular
-            
-        #data.hgs.check_align(cat=ET)
-
+            data = self.make_regular().data_regular            
+            data.hgs.check_alignment(cat="BP")
+                
+        ## check integrity of ET data
+        # ET data is already present and needed
+        if ((et_method not in(None,"hals")) and ('ET' in self.data["category"].unique())): 
+            ## check if et is aligned
+            if data.hgs.check_alignment(cat="ET"):                
+                et_data = data.hgs.filters.get_et_data
+            else:                   
+                et_data = etides.calc_ET_align(data,geoloc=self._obj.geoloc)
+                print("ET was recalculated and aligned")
+        else:
+            et_data = None
+            #et_data = etides.calc_ET_align(data,geoloc=self._obj.geoloc)
+                        
         # extract data categories
         gw_data = data.hgs.filters.get_gw_data
         bp_data = data.hgs.filters.get_bp_data
-        if et_method != None:
-            et_data = data.hgs.filters.get_et_data
-            #acworth_site.add_ET(et_comp='g')
 
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:   
-
             print(gw_loc)            
-            out[name].update({gw_loc[0]:{gw_loc[1]:None}})
-
             tf = GW.hgs.dt.to_zero # same results as delta function with utc offset = None
-            filter_gw = bp_data.datetime.isin(GW.datetime)
+            datetime = GW.datetime
+            filter_gw = bp_data.datetime.isin(datetime)           
             BP = bp_data.loc[filter_gw,:].value.values
             if et_method in (None,"hals"):
                 ET = None
             elif et_method == 'ts':
-                ET = et_data.loc[filter_gw,:].value.values
-
+                if et_data is None:
+                    ET = etides.calc_ET_align(GW,geoloc=self._obj.geoloc)
+                    ET = ET.value.values
+                else:   
+                    filter_gw = et_data.datetime.isin(datetime)
+                    ET = et_data.loc[filter_gw,:].value.values
             else:
                 raise Exception("Error: Specified 'et_method' is not available!")  
                 
             GW = GW.value.values
-            
-            #raise Exception('Error: Category ET must be regularly sampled!')
-
-            WLc, var = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
-            var["WLc"] = WLc
-            out[name][gw_loc[0]][gw_loc[1]] = var
+            WLc, results = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
+            results["WLc"] = WLc
+            # add results to the out dictionary  
+            data_group = pd.DataFrame(data = {"GW":GW,"BP":BP,"ET":ET},index=datetime,columns=["GW","BP","ET"])
+            out[name].update({gw_loc:[results,data_group,info]})
             
         if update:
             utils.dict_update(self.results,out) 
             
         return out
+        
+        

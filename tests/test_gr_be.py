@@ -33,3 +33,4 @@ print(be_results)
 
 be_freq  = process_acworth.BE_freq(method="rau", freq_method='hals', update=True)
 print(be_freq)
+print(0.61)
