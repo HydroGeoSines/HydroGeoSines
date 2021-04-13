@@ -7,8 +7,6 @@ Created on Wed Sep 23 16:13:00 2020
 
 import pandas as pd
 import numpy as np
-import datetime as dt # this should probably not be added in here. Generally loaded in site through hgs
-import os, sys
 import inspect
 
 from ..ext.hgs_analysis import Time_domain, Freq_domain
@@ -86,27 +84,29 @@ class Processing(object):
         for gw_loc, GW in grouped:          
             #print(gw_loc)
             # create GW datetime filter for BP data
-            filter_gw = bp_data.datetime.isin(GW.datetime)
+            datetime = GW.datetime
+            filter_gw = bp_data.datetime.isin(datetime)
             BP = bp_data.loc[filter_gw,:].value.values
             GW = GW.value.values
                          
             if derivative==True:
                BP, GW = np.diff(BP), np.diff(GW) # need to also divide by the time step length
-                   
+
+            out[name].update({gw_loc[0]:{gw_loc[1]:{"BP":BP,"GW":GW,"dt":datetime, "derivative":derivative}}})
             # select method            
             if method.lower() == 'all':
-                out[name].update({gw_loc[0]:{gw_loc[1]:dict.fromkeys(method_dict.values())}})
+                out[name][gw_loc[0]][gw_loc[1]].update(dict.fromkeys(method_dict.values()))
                 for key, val in method_dict.items():
                     #print(val)
                     result = getattr(Time_domain, key)(BP,GW) 
                     out[name][gw_loc[0]][gw_loc[1]][val] = result
-
+                                        
             else: 
                 #check for non valid method 
                 utils.check_affiliation(method, method_dict.values())
                 # pass the data to the right method
                 result = getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW) 
-                out[name].update({gw_loc[0]:{gw_loc[1]:{method:result}}})
+                out[name][gw_loc[0]][gw_loc[1]].update({method:result})
             print("Successfully calculated using method '{}' on GW data from '{}'!".format(method,str(gw_loc)))
 
         if update:

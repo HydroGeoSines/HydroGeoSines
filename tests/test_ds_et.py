@@ -77,5 +77,6 @@ acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv',
 
 process_acworth = hgs.Processing(acworth_site)
 process_acworth.ET_calc()
-be_freq = process_acworth.BE_freq(freq_method="fft")
+be_freq_hals = process_acworth.BE_freq(freq_method="hals")
+be_freq_fft = process_acworth.BE_freq(freq_method="fft")
 
