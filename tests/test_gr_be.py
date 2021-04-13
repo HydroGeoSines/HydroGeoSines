@@ -7,7 +7,7 @@ from copy import deepcopy
 #%%  Testing MVC principal
 acworth_site = hgs.Site('death valley', geoloc=[-116.471360, 36.408130, 688])
 acworth_site.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
-                        input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","m"],
+                        input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","nstr"],
                         how="add", check_dublicates=True)
 
 #%% Processing
