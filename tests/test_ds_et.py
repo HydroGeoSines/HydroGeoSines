@@ -55,6 +55,7 @@ process_acworth = hgs.Processing(acworth_site)
 ## Make data regular and aligned 
 regular = process_acworth.data.hgs.make_regular() #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
 regular = regular.hgs.BP_align() # inter_max = 3600, method = "backfill", inter_max_total = 10
+regular.hgs.check_align(cat="BP")
 # check integrity
 regular.hgs.check_BP_align
 
@@ -77,5 +78,8 @@ acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv',
 
 process_acworth = hgs.Processing(acworth_site)
 process_acworth.ET_calc()
-be_freq = process_acworth.BE_freq(freq_method="fft")
+gw_results_ac = process_acworth.GW_correct()
+
+be_freq_hals = process_acworth.BE_freq(freq_method="hals")
+be_freq_fft = process_acworth.BE_freq(freq_method="fft")
 

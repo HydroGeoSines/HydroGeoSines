@@ -96,7 +96,17 @@ class ET(object):
         except ImportError:
             raise Exception('Error: The PyGTide module was not found!')
         pass
-        
+
+class ET_data(object):
+    # define all class attributes here 
+    #attr = attr
+    et_unit = {-1: 'm**2/s**2', 0: 'nm/s**2', 1: 'mas', 2: 'mm', 3: 'mm', 4: 'nstr', 5: 'nstr', 6: 'nstr', 7: 'nstr', 8: 'nstr', 9: 'mm'}
+    
+    def __init__(self, *args, **kwargs):        
+        pass  
+        #add attributes specific to Load here
+        #self.attribute = variable            
+            
     def calc_ET_align(self, et_comp='pot', et_cat=8, waves=None, geoloc:list=None):
         """
         Method for hgs.DataFrame NOT Site as input. Best used on Site.data_regular.
@@ -171,7 +181,7 @@ class ET(object):
         pt_data.iloc[:,1].interpolate(method="cubic", inplace = True)
         #######################################################
         # MERGE EARTH TIDES WITH LONG TABLE
-        out = pd.DataFrame({'datetime': pt_data.index.values,
+        out = pd.DataFrame({'datetime': pd.to_datetime(pt_data.index.values,utc="UTC"),
                             'category': "ET",
                             'location': "ET",
                             'part'    : "all",
