@@ -112,6 +112,27 @@ dict_new = {"Site_A": {'hals': {'BP': {'amp': [0.0, 1.0, 5.0, 1.0, 0]}}},
             }
 dict_update(dict_test,dict_new)
 
+#%%
+test_structure =   {"hals": {("loc_A","1","BP"): {'amp': [0.0, 1.0, 5.0, 1.0, 0], 
+                                                'phs': [ 2.66415026, -0.65681186,  2.30896196,  2.98585062, -1.74334083],
+                                                'freq': [0.997262, 1.0, 1.002738, 2.0, 2.005476]}
+                                                ,
+                            ("loc_A","2","BP"): {'amp': [0.0, 2.0, 10.0, 2.0, 1], 
+                                                'phs': [ 3.66415026, -0.65681186,  2.30896196,  2.98585062, -1.74334083],
+                                                'freq': [0.997262, 1.0, 1.002738, 2.0, 2.005476]}
+                                                ,
+                            ("loc_A","2","ET"): {'amp': [0.0, 2.0, 18.0, 2.0, 1], 
+                                                'phs': [ 5.66415026, -0.65681186,  5.30896196,  2.98585062, -10.74334083],
+                                                'freq': [0.997262, 1.0, 1.002738, 2.0, 2.005476]}
+                                                ,
+                                                ("loc_B","2","GW"): {'amp': [10.0, 22.0, 2.0, 4.0, 1], 
+                                                'phs': [ 51.66415026, -10.65681186,  25.30896196,  8.98585062, -10.74334083],
+                                                'freq': [0.997262, 1.0, 1.002738, 2.0, 2.005476]
+                                                }},                                                
+                  "fft": {("loc_A","1","GW"): {'amp': [5.0, 21.0, 9.0, 7.0, 1], 
+                                                'phs': [ 51.66415026, -17.65681186,  25.30896196,  8.98585062, -10.74334083],
+                                                'freq': [0.997262, 1.0, 1.002738, 2.0, 2.005476]}
+                                                }}
 #%% recursion for nested dict to df
 user_dict = hals_results.copy()
 def flatten(object):
@@ -127,21 +148,55 @@ def dict_depth(dic, level = 1):
     return max(dict_depth(dic[key], level + 1)
                                for key in dic)
 
-def nested_dict_to_df(d):
+def nested_dict_to_tuple_key(d):
     d = {tuple(flatten((i,j))): d[i][j] 
      for i in d.keys() 
      for j in d[i].keys()}
     #print([(a, *rest) for a, rest in d.keys()])
     depth = dict_depth(d)
-    print(depth)
+    #print("dict depth = ",depth)
     if depth == 2:
         return d
     else:
-        return nested_dict_to_df(d) 
+        return nested_dict_to_tuple_key(d) 
 
-d_new = nested_dict_to_df(user_dict)    
+d_new = nested_dict_to_tuple_key(user_dict)    
 s = pd.Series(d_new).reset_index()
 
+#%%
+from pandas import DataFrame, MultiIndex
+
+d = {('m1', 17): 4, ('m1', 12): 2, ('m1', 1): 5, ('m3', 11): 4, ('m3', 17): [15,5,5,0]}
+d_out = DataFrame(
+    data={'column_name': list(d.values())}, 
+    index=MultiIndex.from_tuples(tuples=d.keys(), names=['site', 'id']))
+
+#%%
+# Nested dictionary to convert it
+# into multiindex dataframe
+nested_dict = {'A': {'a': [1, 2, 3,
+						4, 5],
+					'b': [6, 7, 8,
+						9, 10]},
+
+			'B': {'a': [11, 12, 13,
+						14, 15],
+					'b': [16, 17, 18,
+						19, 20]}}
+
+
+def dict_reform(nested_dict):
+    '''    Works for two level nested dict   '''
+    reformed_dict = {}
+    for outerKey, innerDict in nested_dict.items():
+    	for innerKey, values in innerDict.items():
+    		reformed_dict[(outerKey,
+    					innerKey)] = values
+    return reformed_dict        
+
+# Multiindex dataframe
+reformed_dict = dict_reform(nested_dict)
+multiIndex_df = pd.DataFrame(reformed_dict)
 #%% Define Function for non-valid entries
 def non_valid():
     pass

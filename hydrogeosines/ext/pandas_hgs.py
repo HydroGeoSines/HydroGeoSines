@@ -60,28 +60,32 @@ class HgsAccessor(object):
             print("No dublicates being found ...")
             return self._obj
     
-    @property
-    def check_BP_align(self):
+    def check_alignment(self,cat:str="BP"):
         df = self._obj
-        # mask posible ET values
-        df = df[df["category"] != "ET"]
+        # mask possible other categories values
+        df = df[df["category"].isin(["GW",cat])]
         df = df.hgs.pivot
         # check if any BP entry is null and if for any row all the GW entries are null        
-        if (df["BP"].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
-            print("The groundwater (GW) and barometric pressure (BP) data is now aligned. There is now exactly one BP for every GW entry!")
+        if (df[cat].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
+            print("The groundwater (GW) and  {} data is aligned. There is exactly one {} for every GW entry!".format(cat,cat))
+            return True
         else:
-            print("Your groundwater and barometric pressure data are not aligned. Please use the 'make_regular' and 'bp_align' methods!")    
-    
-    def unit_converter_vec(self,unit_dict : dict):  
+            print("Your groundwater data is NOT aligned with {}. Please consider using the 'make_regular' and 'bp_align' methods!".format(cat))  
+            return False
+        
+    @staticmethod
+    def unit_converter_vec(df,unit_dict : dict):  
         # adjust values based on a unit conversion factor dictionary
-        return self._obj.value*np.vectorize(unit_dict.__getitem__)(self._obj.unit.str.lower())
+        return df.value*np.vectorize(unit_dict.__getitem__)(df.unit.str.lower())
     
     def pucf_converter_vec(self,unit_dict : dict): # using vectorization        
-        # convert pressure units for GW and BP into SI unit meter        
-        idx     = (((self._obj.category == "GW") | (self._obj.category == "BP")) & (self._obj.unit != "m"))
-        val     = np.where(idx, self.unit_converter_vec(unit_dict),self._obj.value) 
-        unit    = np.where(idx, "m", self._obj.unit) 
-        return val, unit    
+        # convert pressure units for GW and BP into SI unit meter    
+        df = self._obj
+        idx     = df.category.isin(["GW","BP"]) & (df.unit != "m")
+        if len(df[idx]) > 0:
+            df.loc[idx,"value"] = self.unit_converter_vec(df[idx],unit_dict) 
+            df.loc[:,"unit"]    = np.where(idx, "m", df.unit) 
+        return df
 
     def pucf_converter(self,row): # loop based
         # convert pressure units for GW and BP into SI unit meter

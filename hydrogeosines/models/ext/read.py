@@ -28,11 +28,13 @@ class Read(object):
 
         #check for non valid pressure units (GW,BP)
         if any(cat in input_category for cat in ("GW","BP")):
-            utils.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_pucf'].keys())
+            idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e in ("GW","BP")]
+            utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_pucf'].keys())
 
         #check for non valid accelaration units (ET)
-        if any(cat in input_category for cat in ("ET")):
-            utils.check_affiliation([u.lower() for u in np.array(unit).flatten()], self.const['_etunit'])
+        if "ET" in input_category:
+            idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e == "ET"]
+            utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_etunit'])
 
         # custom headers for locations
         if loc_names != None:
@@ -73,7 +75,7 @@ class Read(object):
         data["part"] = "all"
 
         # reformat unit column to SI units
-        data["value"], data["unit"] = data.hgs.pucf_converter_vec(self.const["_pucf"]) # vectorizing
+        data = data.hgs.pucf_converter_vec(self.const["_pucf"]) # vectorizing
 
         # add utc_offset to site instead of data, to keep number of columns at a minimum
         self.utc_offset.update(dict(utils.zip_formatter(locations, utc_offset)))
