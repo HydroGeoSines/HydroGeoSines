@@ -218,9 +218,8 @@ class Processing(object):
         return out
 
     #%%
-    def K_Ss_estimate(self, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, method:str = "hsieh", freq_method:str='hals', update=False):
-        name = (inspect.currentframe().f_code.co_name).lower() 
-        info = method.lower()
+    def K_Ss_estimate(self, method:str=None, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, freq_method:str='hals', update=False):
+        name = (inspect.currentframe().f_code.co_name).lower()
         
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
@@ -228,9 +227,9 @@ class Processing(object):
         if "ET" not in self.data["category"].unique():            
             raise Exception('Error: ET data is required but not found in the dataset!')    
         else:
-            print('unit check')
+            # print('unit check')
             unit = self.data.loc[self.data["category"] == 'ET', 'unit'].unique()
-            print(unit)
+            # print(unit)
             if 'nstr' not in unit:
                 raise Exception('Error: Strain units are required for ET data!')
         
@@ -252,7 +251,7 @@ class Processing(object):
         except KeyError:  
             comps = getattr(self, freq_method.lower())()[freq_method.lower()]                  
         
-        print("start")
+        # print("start")
         #loc = [i[:-1] for i in list(comps.keys())]
         #print(dict(loc))
         #print(loc)
@@ -290,8 +289,8 @@ class Processing(object):
             #%% determine the phase shift ...
             phase_shift = np.angle(complex_dict["GW_m2"] / complex_dict["ET_m2"])
             
-            #%% K and Ss estimation by Hsieh et al. (1987)          
-            if (phase_shift <= 0):
+            #%% Negative phase shift: K and Ss estimation by Hsieh et al. (1987)          
+            if (method == 'hsieh') or (phase_shift <= 0):
                 info = 'hsieh'
                 if (scr_len <=0):
                     raise Exception("For method '{}' the screen length (scr_len) must have a valid value!".format(method.lower()))
@@ -304,8 +303,8 @@ class Processing(object):
                 out[name].update({group:[results,data,info]})
                 pass
             
-            #%% K and Ss estimation by Wand (2000)          
-            else:
+            #%% Positive phase shift: K and Ss estimation by Wang (2000)          
+            if (method == 'wang') or (phase_shift > 0):
                 info = 'wang'
                 if (scr_depth <=0):
                     raise Exception("For method '{}' the screen depth (scr_depth) must have a valid value!".format(method.lower()))

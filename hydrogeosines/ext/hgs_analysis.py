@@ -690,6 +690,8 @@ class Freq_domain(object):
         # ET-GW phase difference
         phase_shift = np.angle(GW_m2 / ET_m2)
         print("-------------------------------------------------")
+        print("Analytical solution by Hsie et al. (1987)")
+        print("---")
         print("Amplitude strain response (A_str): {:,.0f} [m/nstr]".format(amp_resp))
         print("Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
         if (np.degrees(phase_shift) > 1):
@@ -740,21 +742,20 @@ class Freq_domain(object):
             # print(error)
             return error
 
-        print("-------------------------------------------------")
+        print("---")
         print('Joint inversion of K and Ss:')
         # least squares fitting
-        fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_resp, phase_shift, case_rad, scr_rad, scr_len, f_m2), method='lm')
+        fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_resp, phase_shift, case_rad, scr_rad, scr_len, f_m2), bounds=((1e-20,1e-20),(0.01,0.01)), method='lm')
         # print(fit)
 
-        print("-------------------------------------------------")
+        print("---")
         if (fit.status > 0):
         # change units to m and s
             K = fit.x[0]/24/3600
             Ss = fit.x[1]
-            print('Success:')
             print("Hydraulic conductivity (K): {:.2e} m/s".format(K))
             print("Specific storage (Ss): {:.2e} 1/m".format(Ss))
-            print("-------------------------------------------------")
+            print("---")
             print("Amplitude ratio (A_r): {:.3f} [-]".format(amp_resp*Ss))
             print("-------------------------------------------------")
 
@@ -777,11 +778,13 @@ class Freq_domain(object):
         # ET-GW phase difference
         phase_shift = np.angle(GW_m2 / ET_m2)
         print("-------------------------------------------------")
+        print("Analytical solution by Wang (2000)")
+        print("---")
         print("Amplitude strain response (A_str): {:,.0f} [m/nstr]".format(amp_resp))
         print("Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
         if (np.degrees(phase_shift) < 0):
             raise Exception("The phase shift is {:.2f} but must be >0 ° for the Wang method!".format(np.degrees(phase_shift)))
-            
+        
         # the vertical flow / positive phase_shift model
         def vflow_amp(K, S_s, z=20, f=f_m2):
             D_h = K / S_s
@@ -801,20 +804,19 @@ class Freq_domain(object):
             res_amp = amp_ratio*S_s - vflow_amp(K, S_s, depth, freq)
             res_phase = phase_shift - vflow_phase(K, S_s, depth, freq)
             error = np.asarray([res_amp, res_phase])
-            print(error)
+            # print(error)
             return error
 
         # least squares fitting wang
-        fit =  least_squares(residuals, [0.01, 0.01], args=(amp_resp, phase_shift, scr_depth, f_m2), method='lm')
+        fit =  least_squares(residuals, [0.01, 0.01], args=(amp_resp, phase_shift, scr_depth, f_m2), bounds=((1e-20,1e-20),(0.01,0.01)), xtol=3e-16, ftol=3e-16, gtol=3e-16)
 
-        print("-------------------------------------------------")
+        print("---")
         if (fit.status > 0):
             K = fit.x[0]
             Ss = fit.x[1]
-            print('Success:')
             print("Hydraulic conductivity is: {:.3e} m/s".format(K))
             print("Specific storage is: {:.3e} 1/m".format(Ss))
-            print("-------------------------------------------------")
+            print("---")
             print("Amplitude ratio (A_r): {:.3f} [-]".format(amp_resp*Ss))
             print("-------------------------------------------------")
             
