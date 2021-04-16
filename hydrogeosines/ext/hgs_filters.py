@@ -7,7 +7,7 @@ class HgsFilters(object):
     VALID_CATEGORY  = {"ET", "BP", "GW"}
     NON_VALID_VALUES = {""}
     
-    def __init__(self,hgs_obj):        
+    def __init__(self, hgs_obj):        
         ## add attribute specific to Time here   
         #self._validate(hgs_obj)
         self._obj = hgs_obj
@@ -19,7 +19,7 @@ class HgsFilters(object):
             setattr(self,f'get_{attr.lower()}_locs', self.make_attr(attr)()["location"].unique()) 
               
     # access function 
-    def make_attr(self,category):
+    def make_attr(self, category):
         def inner():
             return self._obj[self._obj['category'] == category].copy()
         return inner  

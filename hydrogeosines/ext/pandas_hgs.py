@@ -86,8 +86,8 @@ class HgsAccessor(object):
             df.loc[idx,"value"] = self.unit_converter_vec(df[idx],unit_dict) 
             df.loc[:,"unit"]    = np.where(idx, "m", df.unit) 
         return df
-
-    def pucf_converter(self,row): # loop based
+    
+    def pucf_converter(self, row): # loop based
         # convert pressure units for GW and BP into SI unit meter
         if row["category"] in ("GW", "BP") and row["unit"] != "m":
             return row["value"] * self.const['_pucf'][row["unit"].lower()], "m"
@@ -99,7 +99,7 @@ class HgsAccessor(object):
         out = self._obj.set_index("datetime")
         out = self._obj.interpolate(method=method).reset_index(drop=True)
         return out      
- 
+    
     def resample(self, freq):
         # resamples by group and by a given frequency in "seconds".
         # should be used on the (calculated) median frequency of the datetime
@@ -107,8 +107,8 @@ class HgsAccessor(object):
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
         return out
-                    
-    def resample_by_group(self,freq_groupby):
+    
+    def resample_by_group(self, freq_groupby):
         #TODO: write validation logic for freq_groupby. It must be same length as number of groups, e.g. len(cat*loc*unit)
         # resample by median for each location and category individually
         out = []

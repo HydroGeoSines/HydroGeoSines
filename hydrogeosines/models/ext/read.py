@@ -26,12 +26,12 @@ class Read(object):
         #check for non valid categories
         utils.check_affiliation(input_category, self.VALID_CATEGORY)
 
-        #check for non valid pressure units (GW,BP)
+        #check for non valid pressure units (cat: GW, BP)
         if any(cat in input_category for cat in ("GW","BP")):
             idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e in ("GW","BP")]
             utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_pucf'].keys())
 
-        #check for non valid accelaration units (ET)
+        #check for non valid Earth tide units (cat: ET)
         if "ET" in input_category:
             idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e == "ET"]
             utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_etunit'])

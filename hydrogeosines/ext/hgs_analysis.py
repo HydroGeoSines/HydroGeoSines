@@ -473,7 +473,8 @@ class Time_domain(object):
             
 #%% Static Class for FREQUENCY DOMAIN METHODS #################################
 class Freq_domain(object):
-
+    
+    #%%
     @staticmethod
     def lin_window_ovrlp(tf, data, length=3, stopper=3, n_ovrlp=3):
         """
@@ -538,6 +539,7 @@ class Freq_domain(object):
             y_detrend[np.isnan(y_detrend)] = 0.0    
         return y_detrend
     
+    #%%
     @staticmethod
     def harmonic_lsqr(tf, data, freqs):
         '''
@@ -586,7 +588,8 @@ class Freq_domain(object):
         hals_comp = theta[:-1:2]*1j + theta[1:-1:2]
         result = {'freq': np.array(freqs), 'complex': hals_comp, 'error_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
         return result
-        
+    
+    #%%
     @staticmethod
     def fft_comp(tf, data):
         spd = 1/(tf[1] - tf[0])
@@ -602,7 +605,8 @@ class Freq_domain(object):
         #fft_phs = -(np.arctan(fft_win.real/fft_win.imag))
         result = {'freq': fft_f, 'complex': fft, 'dc_comp': np.abs(fft[0])}
         return result
-
+    
+    #%%
     @staticmethod
     def BE_Rau(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, amp_ratio:float=1):
         """
@@ -641,7 +645,8 @@ class Freq_domain(object):
             warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
             
         return BE
-
+    
+    #%%
     @staticmethod
     def BE_Acworth(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex):
         """
@@ -676,141 +681,153 @@ class Freq_domain(object):
 
         return BE
     
+    #%%
     @staticmethod
-    def K_Ss_estimate(ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, case_rad, scr_len, scr_rad, scr_depth):
-        # !!! need borehole construction parameters !!!
-        # !!! need to make sure that ET data has strain units nstr !!!
-
+    def K_Ss_Hsieh(ET_m2:complex, GW_m2:complex, scr_len:float, case_rad:float, scr_rad:float):
         # M2 frequency
-        f_m2 = const['_etfqs']['M2']
-
-        amp_ratio = np.abs(GW_m2 / ET_m2)
-        # amp_ratio = GW_amp_M2 / ETstr_man #
-        print("Amplitude response / areal strain sensitivity: {:.3f}".format(amp_ratio))
-
-        #ET phase difference
+        f_m2 = const.const['_etfqs']['M2']
+        amp_resp = np.abs(GW_m2 / (ET_m2*1e-9))
+        # ET-GW phase difference
         phase_shift = np.angle(GW_m2 / ET_m2)
-        print("delta_ET-GW: {:.4f} [rad], {:.4f} [°]".format(phase_shift, np.degrees(phase_shift)))
-
-        results = {'GW-ET_Ar': amp_ratio, 'GW-ET_dphi': phase_shift}
-
+        print("-------------------------------------------------")
+        print("Amplitude strain response (A_str): {:,.0f} [m/nstr]".format(amp_resp))
+        print("Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
+        if (np.degrees(phase_shift) > 1):
+            raise Exception("The phase shift is {:.2f} but must be <1 ° for the Hsieh method!".format(np.degrees(phase_shift)))
+        
         #%% use the Hsieh model
-        if (phase_shift < 0.01):
+        global Ker, Kei, Power, Sqrt
+        Ker = np.frompyfunc(ker, 2, 1)
+        Kei = np.frompyfunc(kei, 2, 1)
+        Power = np.frompyfunc(power, 2, 1)
+        Sqrt = np.frompyfunc(sqrt, 1, 1)
+
+        # the horizontal flow / negative phase_shift model
+        def et_hflow(K, S_s, r_w=0.1, r_c=0.1, b=2, f=f_m2):
             global Ker, Kei, Power, Sqrt
-            Ker = np.frompyfunc(ker, 2, 1)
-            Kei = np.frompyfunc(kei, 2, 1)
-            Power = np.frompyfunc(power, 2, 1)
-            Sqrt = np.frompyfunc(sqrt, 1, 1)
+            # create numpy function from mpmath
+            # https://stackoverflow.com/questions/51971328/how-to-evaluate-a-numpy-array-inside-an-mpmath-fuction
+            D_h = K / S_s
+            omega = 2*np.pi*f
+            tmp = omega / D_h
+            # prevent errors from negative square roots
+            if (tmp >= 0):
+                T = K*b
+                sqrt_of_2 = Sqrt(2)
+                alpha_w = r_w * Sqrt(tmp)
+                ker_0_alpha_w = Ker(0, alpha_w)
+                ker_1_alpha_w = Ker(1, alpha_w)
+                kei_0_alpha_w = Kei(0, alpha_w)
+                kei_1_alpha_w = Kei(1, alpha_w)
+                denom = Power(ker_1_alpha_w, 2) + Power(kei_1_alpha_w, 2)
+                Psi = - (ker_1_alpha_w - kei_1_alpha_w) / (sqrt_of_2 * alpha_w * denom)
+                Phi = - (ker_1_alpha_w + kei_1_alpha_w) / (sqrt_of_2 * alpha_w * denom)
+                E = np.float64(1 - (((omega*Power(r_c, 2))/(2*T)) * (Psi*ker_0_alpha_w + Phi*kei_0_alpha_w)))
+                F = np.float64((((omega*Power(r_c,2))/(2*T)) * (Phi*ker_0_alpha_w - Psi*kei_0_alpha_w)))
+                Ar = (E**2 + F**2)**(-0.5)
+                dPhi = -np.arctan(F/E)
+                return Ar, dPhi
+            else:
+                return np.Inf, np.Inf
 
-            # the horizontal flow / negative phase_shift model
-            def et_hflow(K, S_s, r_w=0.1, r_c=0.1, b=2, f=f_m2):
-                global Ker, Kei, Power, Sqrt
-                # create numpy function from mpmath
-                # https://stackoverflow.com/questions/51971328/how-to-evaluate-a-numpy-array-inside-an-mpmath-fuction
-                D_h = K / S_s
-                omega = 2*np.pi*f
-                tmp = omega / D_h
-                # prevent errors from negative square roots
-                if (tmp >= 0):
-                    T = K*b
-                    sqrt_of_2 = Sqrt(2)
-                    alpha_w = r_w * Sqrt(tmp)
-                    ker_0_alpha_w = Ker(0, alpha_w)
-                    ker_1_alpha_w = Ker(1, alpha_w)
-                    kei_0_alpha_w = Kei(0, alpha_w)
-                    kei_1_alpha_w = Kei(1, alpha_w)
-                    denom = Power(ker_1_alpha_w, 2) + Power(kei_1_alpha_w, 2)
-                    Psi = - (ker_1_alpha_w - kei_1_alpha_w) / (sqrt_of_2 * alpha_w * denom)
-                    Phi = - (ker_1_alpha_w + kei_1_alpha_w) / (sqrt_of_2 * alpha_w * denom)
-                    E = np.float64(1 - (((omega*Power(r_c, 2))/(2*T)) * (Psi*ker_0_alpha_w + Phi*kei_0_alpha_w)))
-                    F = np.float64((((omega*Power(r_c,2))/(2*T)) * (Phi*ker_0_alpha_w - Psi*kei_0_alpha_w)))
-                    Ar = (E**2 + F**2)**(-0.5)
-                    dPhi = -np.arctan(F/E)
-                    return Ar, dPhi
-                else:
-                    return np.Inf, np.Inf
+        def fit_amp_phase(props, amp_resp, phase_shift, r_c, r_w, scr_len, freq):
+            #print(props)
+            K, S_s = props
+            Ar, dPhi = et_hflow(K, S_s, r_c, r_w, scr_len, freq)
+            res_amp = amp_resp*S_s - Ar
+            res_phase = phase_shift - dPhi
+            error = np.asarray([res_amp,res_phase])
+            # print(error)
+            return error
 
-            def fit_amp_phase(props, amp_ratio, phase_shift, r_c, r_w, scr_len, freq):
-                #print(props)
-                K, S_s = props
-                Ar, dPhi = et_hflow(K, S_s, r_c, r_w, scr_len, freq)
-                res_amp = amp_ratio*S_s - Ar
-                res_phase = phase_shift - dPhi
-                error = np.asarray([res_amp,res_phase])
-            #    print(error)
-                return error
+        print("-------------------------------------------------")
+        print('Joint inversion of K and Ss:')
+        # least squares fitting
+        fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_resp, phase_shift, case_rad, scr_rad, scr_len, f_m2), method='lm')
+        # print(fit)
 
-            #%%
-            print("-------------------------------------------------")
-            print('Joint inversion of K and Ss:')
-            # least squares fitting
-            fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_ratio, phase_shift, case_rad, scr_rad, scr_len, f_m2), xtol=1e-30, ftol=1e-30, gtol=1e-16, method='lm')
-            print(fit)
-
-            # change units to m and s
+        print("-------------------------------------------------")
+        if (fit.status > 0):
+        # change units to m and s
             K = fit.x[0]/24/3600
             Ss = fit.x[1]
-
+            print('Success:')
+            print("Hydraulic conductivity (K): {:.2e} m/s".format(K))
+            print("Specific storage (Ss): {:.2e} 1/m".format(Ss))
             print("-------------------------------------------------")
-            if (fit.status > 0):
-                print("Hydraulic conductivity: {:.2e} m/s".format(K))
-                print("Specific storage: {:.2e} 1/m".format(Ss))
-                print("-------------------------------------------------")
-                Ar, dPhi = et_hflow(fit.x[0], fit.x[1], r_c=case_rad, r_w=scr_rad, b=scr_len, f=f_m2)
-                print("Amplitude ratio: {:.3f} [-]".format(Ar))
-                print("Phase shift: {:.3f} [rad], {:.2f}°".format(dPhi, np.degrees(dPhi)))
-                print("-------------------------------------------------")
+            print("Amplitude ratio (A_r): {:.3f} [-]".format(amp_resp*Ss))
+            print("-------------------------------------------------")
 
-                results.update({'K': K, 'Ss': Ss, 'Model': 'Hsieh', 'redidual': 'XXXX', 'screen_radius': scr_rad, 'casing_radius': case_rad, 'screen_length': scr_len})
-            else:
-                print('Failed!')
-
-        #%% use the Wang model
+            results = {'A_str': amp_resp, 'dPhi': phase_shift, 'A_r': amp_resp*Ss, 'K': K, 'Ss': Ss, 'A_r_residual': fit.fun[0], 'dPhi_residual': fit.fun[1], 'screen_radius': scr_rad, 'casing_radius': case_rad, 'screen_length': scr_len}
         else:
-            # the vertical flow / positive phase_shift model
-            def vflow_amp(K, S_s, z=20, f=f_m2):
-                D_h = K / S_s
-                omega = 2*np.pi*(f/24/3600)
-                delta = np.sqrt(2*D_h/omega)
-                return (np.sqrt(1 - 2*np.exp(-z/delta) * np.cos(z/delta) + np.exp((-2*z)/delta)))
-
-            # Note: negative added in front of arctan
-            def vflow_phase(K, S_s, z=20, f=f_m2):
-                D_h = K / S_s
-                omega = 2*np.pi*(f/24/3600)
-                delta = np.sqrt(2*D_h/omega)
-                return np.arctan((np.exp(-z/delta)*np.sin(z/delta))/(1-np.exp(-z/delta)*np.cos(z/delta)))
-
-            def residuals(props, amp_ratio, phase_shift, depth, freq):
-                K, S_s = props
-                res_amp = amp_ratio*S_s - vflow_amp(K, S_s, depth, freq)
-                res_phase = phase_shift - vflow_phase(K, S_s, depth, freq)
-                error = np.asarray([res_amp, res_phase])
-                print(error)
-                return error
-
-            # least squares fitting wang
-            fit =  least_squares(residuals, [0.01, 0.01], args=(amp_ratio, phase_shift, scr_depth, f_m2), method='lm')
-
-            # change units to m and s
-            K = fit.x[0]
-            Ss = fit.x[1]
-
-            print(fit)
-
+            print("Attention: The solver did not converge!")
             print("-------------------------------------------------")
-            if (fit.status > 0):
-                print('Success:')
-                print("Hydraulic conductivity is: {:.3e} m/s".format(K))
-                print("Specific storage is: {:.3e} 1/m".format(Ss))
-
-                results.update({'K': K, 'Ss': Ss, 'Model': 'Wang', 'redidual': 'XXXX', 'screen_depth': scr_depth})
-                
-            else:
-                print('Failed!')
+            results = {}
 
         return results
+    
+    #%%
+    @staticmethod
+    def K_Ss_Wang(ET_m2:complex, GW_m2:complex, scr_depth:float):
+        # !!! need borehole construction parameters !!!
+        
+        # M2 frequency
+        f_m2 = const.const['_etfqs']['M2']
+        amp_resp = np.abs(GW_m2 / (ET_m2*1e-9))
+        # ET-GW phase difference
+        phase_shift = np.angle(GW_m2 / ET_m2)
+        print("-------------------------------------------------")
+        print("Amplitude strain response (A_str): {:,.0f} [m/nstr]".format(amp_resp))
+        print("Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
+        if (np.degrees(phase_shift) < 0):
+            raise Exception("The phase shift is {:.2f} but must be >0 ° for the Wang method!".format(np.degrees(phase_shift)))
+            
+        # the vertical flow / positive phase_shift model
+        def vflow_amp(K, S_s, z=20, f=f_m2):
+            D_h = K / S_s
+            omega = 2*np.pi*(f/24/3600)
+            delta = np.sqrt(2*D_h/omega)
+            return (np.sqrt(1 - 2*np.exp(-z/delta) * np.cos(z/delta) + np.exp((-2*z)/delta)))
 
+        # Note: negative added in front of arctan
+        def vflow_phase(K, S_s, z=20, f=f_m2):
+            D_h = K / S_s
+            omega = 2*np.pi*(f/24/3600)
+            delta = np.sqrt(2*D_h/omega)
+            return np.arctan((np.exp(-z/delta)*np.sin(z/delta))/(1-np.exp(-z/delta)*np.cos(z/delta)))
+
+        def residuals(props, amp_ratio, phase_shift, depth, freq):
+            K, S_s = props
+            res_amp = amp_ratio*S_s - vflow_amp(K, S_s, depth, freq)
+            res_phase = phase_shift - vflow_phase(K, S_s, depth, freq)
+            error = np.asarray([res_amp, res_phase])
+            print(error)
+            return error
+
+        # least squares fitting wang
+        fit =  least_squares(residuals, [0.01, 0.01], args=(amp_resp, phase_shift, scr_depth, f_m2), method='lm')
+
+        print("-------------------------------------------------")
+        if (fit.status > 0):
+            K = fit.x[0]
+            Ss = fit.x[1]
+            print('Success:')
+            print("Hydraulic conductivity is: {:.3e} m/s".format(K))
+            print("Specific storage is: {:.3e} 1/m".format(Ss))
+            print("-------------------------------------------------")
+            print("Amplitude ratio (A_r): {:.3f} [-]".format(amp_resp*Ss))
+            print("-------------------------------------------------")
+            
+            results = {'A_str': amp_resp, 'dPhi': phase_shift, 'A_r': amp_resp*Ss, 'K': K, 'Ss': Ss, 'A_r_residual': fit.fun[0], 'dPhi_residual': fit.fun[1], 'screen_depth': scr_depth}
+            
+        else:
+            print("Attention: The solver did not converge!")
+            print("-------------------------------------------------")
+            results = {}
+
+        return results
+    
+    #%%
     @staticmethod
     def Porosity():
         pass 

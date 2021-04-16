@@ -62,7 +62,7 @@ regular.hgs.check_BP_align
 # pivot data to get multiindex by datetime. perfectly aligned now
 pivot = regular.hgs.pivot
 
-ET_data = ET.calc_ET_align(regular,geoloc=acworth_site.geoloc)
+ET_data = ET.calc_ET_align(regular, geoloc=acworth_site.geoloc)
 
 s = data_ac.loc[:,["datetime","value"]]
 s = s.set_index("datetime")

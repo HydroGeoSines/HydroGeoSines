@@ -63,7 +63,7 @@ class Processing(object):
 
     #%% 
     def BE_time(self, method:str = "all", derivative=True, update=False):
-        print("\nProcessing BE_time method...")
+        print("Processing BE_time method...")
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {name:{}}
@@ -95,7 +95,7 @@ class Processing(object):
             
             # aggregate data for results container
             data_group = pd.DataFrame(data = {"GW":GW,"BP":BP},index=datetime,columns=["GW","BP"])
-            info = {"derivative":derivative}
+            info = {"derivative": derivative}
 
             # select method            
             if method.lower() == 'all':
@@ -121,8 +121,8 @@ class Processing(object):
     #%%
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower() 
-        info = None
-             
+        info = method.lower()
+        
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
         
@@ -141,17 +141,19 @@ class Processing(object):
         out = {name:{}}
 
         # !!! check if method results already exist to save time. 
-        #Problematic if results was previously calculated without ET -> update can be buggy
+        # Problematic if results was previously calculated without ET -> update can be buggy
         try:
             comps = self.results[freq_method.lower()]
         except KeyError:  
-            comps = getattr(self, freq_method.lower())()[freq_method.lower()]                  
-        print("start")
+            comps = getattr(self, freq_method.lower())()[freq_method.lower()]      
+            
+        # print("start")
         #loc = [i[:-1] for i in list(comps.keys())]
         #print(dict(loc))
         #print(loc)
         #unique_loc = [tuple(i) for i in np.unique(loc, axis=0)]
         #print(unique_loc)
+        
         ## reasamble dict so it only contains the required data
         data_list = [comps[i][0] for i in comps.keys()]
         comps = dict.fromkeys(comps)
@@ -162,17 +164,17 @@ class Processing(object):
         df = pd.DataFrame.from_dict(comps,orient="index").reset_index().rename(columns={"level_0":"location","level_1":"part","level_2":"category"})
         grouped = df.groupby(by=(["location","part"]))
         for group, val in grouped:
-            print(group)
+            # print(group)
             complex_dict = {}
             for cat in val.category.unique():
-                print(cat)                
+                # print(cat)                
                 data = val[val["category"] == cat]    
                             
                 for key,freq in freqs.items():
-                    print(key,freq)
+                    # print(key,freq)
                     # for all categories and freq combinations except BP_s2
                     if ((cat != "BP") or (key != "m2")):
-                        print(cat, key)
+                        # print(cat, key)
                         idx, fdiff = utils.find_nearest_idx(np.hstack(data['freq']), freq)
                         if (fdiff < mfd):
                             complex_dict[str(cat)+"_"+ str(key)] = np.hstack(data['complex'])[idx]
@@ -181,11 +183,19 @@ class Processing(object):
             
             #%% BE method by Rau et al. (2020)          
             if method.lower() == 'rau':
+                # see if the response amplitude ratio was set previously
+                try:
+                    amp_ratio = self.results['k_ss_estimate'][group][0]['A_r']
+                # if not, use 1
+                except:
+                    amp_ratio = 1
+                
+                # print(amp_ratio)
                 results = Freq_domain.BE_Rau(complex_dict["BP_s2"],
                                             complex_dict["ET_m2"], 
                                             complex_dict["ET_s2"], 
                                             complex_dict["GW_m2"], 
-                                            complex_dict["GW_s2"], amp_ratio=1)
+                                            complex_dict["GW_s2"], amp_ratio=amp_ratio)
                 
                 out[name].update({group:[results,data,info]})
         
@@ -198,6 +208,7 @@ class Processing(object):
                                             complex_dict["GW_s2"],)
                 
                 out[name].update({group:[results,data,info]})
+                
             else:
                 raise Exception("The BE method '{}' is not implemented!".format(method.lower()))
 
@@ -206,6 +217,107 @@ class Processing(object):
         
         return out
 
+    #%%
+    def K_Ss_estimate(self, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, method:str = "hsieh", freq_method:str='hals', update=False):
+        name = (inspect.currentframe().f_code.co_name).lower() 
+        info = method.lower()
+        
+        if freq_method not in ("hals","fft"):
+            raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
+        
+        if "ET" not in self.data["category"].unique():            
+            raise Exception('Error: ET data is required but not found in the dataset!')    
+        else:
+            print('unit check')
+            unit = self.data.loc[self.data["category"] == 'ET', 'unit'].unique()
+            print(unit)
+            if 'nstr' not in unit:
+                raise Exception('Error: Strain units are required for ET data!')
+        
+        # this method relies on the distinct frequency components
+        # M2 and S2
+        freqs = {}
+        freqs["m2"] = self._obj.const['_etfqs']['M2']
+        freqs["s2"] = self._obj.const['_etfqs']['S2']
+        max_freq_diff = {"hals": 1e-6, "fft": (freqs["s2"] - freqs["m2"]) / 3}
+        mfd = max_freq_diff[freq_method.lower()]
+        
+        # output dict
+        out = {name:{}}
+
+        # !!! check if method results already exist to save time. 
+        #Problematic if results was previously calculated without ET -> update can be buggy
+        try:
+            comps = self.results[freq_method.lower()]
+        except KeyError:  
+            comps = getattr(self, freq_method.lower())()[freq_method.lower()]                  
+        
+        print("start")
+        #loc = [i[:-1] for i in list(comps.keys())]
+        #print(dict(loc))
+        #print(loc)
+        #unique_loc = [tuple(i) for i in np.unique(loc, axis=0)]
+        #print(unique_loc)
+        
+        ## reasamble dict so it only contains the required data
+        data_list = [comps[i][0] for i in comps.keys()]
+        comps = dict.fromkeys(comps)
+        for key,val in zip(comps.keys(),data_list):
+            comps[key] = val
+        
+        # create DataFrame for unique locations/parts
+        df = pd.DataFrame.from_dict(comps,orient="index").reset_index().rename(columns={"level_0":"location","level_1":"part","level_2":"category"})
+        # print(df)
+        grouped = df.groupby(by=(["location","part"]))
+        for group, val in grouped:
+            # print(group)
+            complex_dict = {}
+            for cat in val.category.unique():
+                # print(cat)                
+                data = val[val["category"] == cat]    
+                
+                for key,freq in freqs.items():
+                    # print(key,freq)
+                    # for all categories and freq combinations except BP_s2
+                    if ((cat != "BP") or (key != "m2")):
+                        # print(cat, key)
+                        idx, fdiff = utils.find_nearest_idx(np.hstack(data['freq']), freq)
+                        if (fdiff < mfd):
+                            complex_dict[str(cat)+"_"+ str(key)] = np.hstack(data['complex'])[idx]
+                        else:
+                            raise Exception("{} component for {} is required, but the closest component is too far away!".format(key.upper(),cat))
+            
+            #%% determine the phase shift ...
+            phase_shift = np.angle(complex_dict["GW_m2"] / complex_dict["ET_m2"])
+            
+            #%% K and Ss estimation by Hsieh et al. (1987)          
+            if (phase_shift <= 0):
+                info = 'hsieh'
+                if (scr_len <=0):
+                    raise Exception("For method '{}' the screen length (scr_len) must have a valid value!".format(method.lower()))
+                if (case_rad <=0):
+                    raise Exception("For method '{}' the casing radius (case_rad) must have a valid value!".format(method.lower()))
+                if (scr_rad <=0):
+                    raise Exception("For method '{}' the screen radius (scr_rad) must have a valid value!".format(method.lower()))
+                    
+                results = Freq_domain.K_Ss_Hsieh(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_len, case_rad, scr_rad)
+                out[name].update({group:[results,data,info]})
+                pass
+            
+            #%% K and Ss estimation by Wand (2000)          
+            else:
+                info = 'wang'
+                if (scr_depth <=0):
+                    raise Exception("For method '{}' the screen depth (scr_depth) must have a valid value!".format(method.lower()))
+                
+                results = Freq_domain.K_Ss_Wang(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_depth)
+                out[name].update({group:[results,data,info]})
+                
+        if update:
+            utils.dict_update(self.results, out)
+        
+        return out
+    
     #%%
     def fft(self, update = False):
         #TODO! NOT adviced to use on site.data with non-aligned ET 
@@ -258,6 +370,7 @@ class Processing(object):
 
     #%%
     def hals(self, update = False):
+        #!!! ALLO DATA GAPS HERE !!!!
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {name:{}}
