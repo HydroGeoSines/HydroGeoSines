@@ -22,14 +22,10 @@ process = hgs.Processing(site)
 # test hals method
 # hals_results  = process.hals()
 
-#%% ...
-be_freq_1  = process.BE_freq(method="rau", freq_method='hals')
-print(be_freq_1)
-
 #%% estimate hydraulic properties ...
 hyd_prop  = process.K_Ss_estimate(scr_len=10, case_rad=0.127, scr_rad=0.127, scr_depth=78, update=True)
 print(hyd_prop)
 
-#%%
+#%% quantify BE using the frequency domain approach
 be_freq_2  = process.BE_freq(method="rau", freq_method='hals', update=True)
 print(be_freq_2)

@@ -828,8 +828,5 @@ class Freq_domain(object):
             results = {}
 
         return results
-    
-    #%%
-    @staticmethod
-    def Porosity():
-        pass 
+
+# further methods here ...
