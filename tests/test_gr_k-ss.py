@@ -20,7 +20,7 @@ site.import_csv('tests/data/thirlmere_lakes/GW075409.1.2.csv',
 process = hgs.Processing(site)
 
 # test hals method
-# hals_results  = process.hals()
+hals_results  = process.hals()
 
 #%% estimate hydraulic properties ...
 hyd_prop  = process.K_Ss_estimate(scr_len=10, case_rad=0.127, scr_rad=0.127, scr_depth=78, update=True)

@@ -5,14 +5,14 @@ import numpy as np
 #%%  Testing MVC principal
 acworth_site = hgs.Site('death valley', geoloc=[-116.471360, 36.408130, 688])
 acworth_site.import_csv('tests/data/death_valley/death_valley.csv',
-                        input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","m"],
+                        input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","nstr"],
                         how="add", check_dublicates=True)
 
 data = acworth_site.data
 raw = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 
 #%%
-acworth_site.add_ET(et_comp='g')
+acworth_site.add_ET(et_comp='nstr')
 data = acworth_site.data
 heads = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 
@@ -21,18 +21,3 @@ print("Correct heads ...")
 process_acworth = hgs.Processing(acworth_site)
 
 corrected = process_acworth.GW_correct(et_method='hals', lag_h=8)
-
-#%% plot corrected heads
-plt.figure()
-plt.plot(heads.index.values, heads['GW']['BLM-1'])
-plt.plot(heads.index.values, corrected['BLM-1']['all']['gw_correct']['WLc'])
-
-#%%
-plt.figure()
-lag_t = corrected['BLM-1']['all']['gw_correct']['brf']['lag']
-crf = corrected['BLM-1']['all']['gw_correct']['brf']['crf']
-
-plt.plot(lag_t, crf)
-plt.ylim([0,1])
-
-print(heads)

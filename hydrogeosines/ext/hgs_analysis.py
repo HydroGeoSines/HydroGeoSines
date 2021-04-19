@@ -15,6 +15,8 @@ from scipy.stats import linregress
 from scipy.signal import csd
 from mpmath import ker, kei, power, sqrt
 
+from IPython.core.display import display, HTML, Markdown
+
 from .. import utils
 from ..models import const
 
@@ -504,7 +506,7 @@ class Freq_domain(object):
         The reg_times array is extended by value of "length" in both directions to improve averaging and window overlap at boundaries. High overlap values in combination with high
         The "stopper" values will cause reducion in window numbers at time array boundaries.   
         """
-        
+        # !!! how to allow data gaps in here??
         x = np.array(tf).flatten()
         y = np.array(data).flatten()
         y_detr      = np.zeros(shape=(y.shape[0]))
@@ -556,6 +558,9 @@ class Freq_domain(object):
              freqs and tt that when multiplied by theta is a
              sum of sinusoids.
         '''
+        # !!! find a criteria for which a dataset can be analysed
+        if ((tf.max() - tf.min()) < 20):
+            raise Exception("To use FFT, the duration must be >=20 days!")
         
         N = data.shape[0]
         f = np.array(freqs)*2*np.pi
@@ -592,6 +597,13 @@ class Freq_domain(object):
     #%%
     @staticmethod
     def fft_comp(tf, data):
+        if (len(tf) != len(data)):
+            raise Exception("To use FFT, the times must have the same length as data!")
+        if np.any(np.isnan(data)):
+            raise Exception("To use FFT, the data must not have gaps!")
+        if ((tf.max() - tf.min()) < 60):
+            raise Exception("To use FFT, the duration must be >=60 days!")
+            
         spd = 1/(tf[1] - tf[0])
         fft_N = len(tf)
         hanning = np.hanning(fft_N)
@@ -638,6 +650,11 @@ class Freq_domain(object):
         GW_ET_s2 = (GW_m2 / ET_m2) * ET_s2
         GW_AT_s2 = GW_s2 - GW_ET_s2
         BE = (1/amp_ratio)*np.abs(GW_AT_s2 / BP_s2)
+        print("-------------------------------------------------")
+        print("BE calculated using the method in Rau et al. (2020)")
+        print("---")
+        print("Barometric efficiency (BE): {:.3f} [-]".format(BE))
+        print("-------------------------------------------------")
         
         # a phase check ...
         GW_ET_m2_dphi = np.angle(GW_m2 / ET_m2)
@@ -674,7 +691,12 @@ class Freq_domain(object):
         """
         # Calculate BE values
         BE = (np.abs(GW_s2)  + np.abs(ET_s2) * np.cos(np.angle(BP_s2) - np.angle(ET_s2)) * (np.abs(GW_m2) / np.abs(ET_m2))) / np.abs(BP_s2)
-
+        print("-------------------------------------------------")
+        print("BE calculated using the method in Acworth et al. (2016)")
+        print("---")
+        print("Barometric efficiency (BE): {:.3f} [-]".format(BE))
+        print("-------------------------------------------------")
+        
         # provide a user warning ...
         if (np.abs(GW_m2) > np.abs(GW_s2)):
             warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")

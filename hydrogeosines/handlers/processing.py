@@ -320,6 +320,7 @@ class Processing(object):
     #%%
     def fft(self, update = False):
         #TODO! NOT adviced to use on site.data with non-aligned ET 
+        # !!! check for fata gaps?
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {name:{}}
@@ -349,7 +350,8 @@ class Processing(object):
                 
                 group   = group.hgs.filters.drop_nan
                 tf      = group.hgs.dt.to_zero
-                values  = group.value.values  
+                values  = group.value.values
+                # apply detrending and signal processing
                 values  = Freq_domain.lin_window_ovrlp(tf, values)
                 values  = Freq_domain.fft_comp(tf, values)            
                 # calculate real Amplitude and Phase
@@ -360,7 +362,6 @@ class Processing(object):
                 data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                 # nested output dict with list for [results, data, info]
                 out[name].update({ident:[results,data_group,None]})
-
         
         if update:
             utils.dict_update(self.results,out)
@@ -369,7 +370,7 @@ class Processing(object):
 
     #%%
     def hals(self, update = False):
-        #!!! ALLO DATA GAPS HERE !!!!
+        #!!! ALLOW DATA GAPS HERE !!!!
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {name:{}}
@@ -397,6 +398,7 @@ class Processing(object):
                 group   = group.hgs.filters.drop_nan
                 tf      = group.hgs.dt.to_zero
                 values  = group.value.values  
+                # apply detrending and signal processing
                 values  = Freq_domain.lin_window_ovrlp(tf, values)
                 values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
                 # calculate real Amplitude and Phase
@@ -479,5 +481,4 @@ class Processing(object):
             utils.dict_update(self.results,out) 
             
         return out
-        
         
