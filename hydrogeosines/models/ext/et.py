@@ -28,6 +28,8 @@ class ET(object):
             et_comp_i = -1
         elif(et_comp == 'g'):
             et_comp_i = 0
+        elif(et_comp == 'nstr'):
+            et_comp_i = 6
         else:
             raise Exception("Error: Keyword 'et_comp' must be 'pot' (potential) or 'g' (gravity)!")
         
@@ -137,6 +139,8 @@ class ET_data(object):
             et_comp_i = -1
         elif(et_comp == 'g'):
             et_comp_i = 0
+        elif(et_comp == 'nstr'):
+            et_comp_i = 6
         else:
             raise Exception("Error: Keyword 'et_comp' must be 'pot' (potential) or 'g' (gravity)!")
         

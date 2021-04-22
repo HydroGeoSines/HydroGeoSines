@@ -218,9 +218,8 @@ class Processing(object):
         return out
 
     #%%
-    def K_Ss_estimate(self, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, method:str = "hsieh", freq_method:str='hals', update=False):
-        name = (inspect.currentframe().f_code.co_name).lower() 
-        info = method.lower()
+    def K_Ss_estimate(self, method:str=None, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, freq_method:str='hals', update=False):
+        name = (inspect.currentframe().f_code.co_name).lower()
         
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
@@ -228,9 +227,9 @@ class Processing(object):
         if "ET" not in self.data["category"].unique():            
             raise Exception('Error: ET data is required but not found in the dataset!')    
         else:
-            print('unit check')
+            # print('unit check')
             unit = self.data.loc[self.data["category"] == 'ET', 'unit'].unique()
-            print(unit)
+            # print(unit)
             if 'nstr' not in unit:
                 raise Exception('Error: Strain units are required for ET data!')
         
@@ -246,20 +245,20 @@ class Processing(object):
         out = {name:{}}
 
         # !!! check if method results already exist to save time. 
-        #Problematic if results was previously calculated without ET -> update can be buggy
+        # Problematic if results was previously calculated without ET -> update can be buggy
         try:
             comps = self.results[freq_method.lower()]
         except KeyError:  
             comps = getattr(self, freq_method.lower())()[freq_method.lower()]                  
         
-        print("start")
+        # print("start")
         #loc = [i[:-1] for i in list(comps.keys())]
         #print(dict(loc))
         #print(loc)
         #unique_loc = [tuple(i) for i in np.unique(loc, axis=0)]
         #print(unique_loc)
         
-        ## reasamble dict so it only contains the required data
+        ## reassemble dict so it only contains the required data
         data_list = [comps[i][0] for i in comps.keys()]
         comps = dict.fromkeys(comps)
         for key,val in zip(comps.keys(),data_list):
@@ -267,7 +266,7 @@ class Processing(object):
         
         # create DataFrame for unique locations/parts
         df = pd.DataFrame.from_dict(comps,orient="index").reset_index().rename(columns={"level_0":"location","level_1":"part","level_2":"category"})
-        # print(df)
+        print(df)
         grouped = df.groupby(by=(["location","part"]))
         for group, val in grouped:
             # print(group)
@@ -290,8 +289,8 @@ class Processing(object):
             #%% determine the phase shift ...
             phase_shift = np.angle(complex_dict["GW_m2"] / complex_dict["ET_m2"])
             
-            #%% K and Ss estimation by Hsieh et al. (1987)          
-            if (phase_shift <= 0):
+            #%% Negative phase shift: K and Ss estimation by Hsieh et al. (1987)          
+            if (method == 'hsieh') or (phase_shift <= 0):
                 info = 'hsieh'
                 if (scr_len <=0):
                     raise Exception("For method '{}' the screen length (scr_len) must have a valid value!".format(method.lower()))
@@ -304,8 +303,8 @@ class Processing(object):
                 out[name].update({group:[results,data,info]})
                 pass
             
-            #%% K and Ss estimation by Wand (2000)          
-            else:
+            #%% Positive phase shift: K and Ss estimation by Wang (2000)          
+            if (method == 'wang') or (phase_shift > 0):
                 info = 'wang'
                 if (scr_depth <=0):
                     raise Exception("For method '{}' the screen depth (scr_depth) must have a valid value!".format(method.lower()))
@@ -321,6 +320,7 @@ class Processing(object):
     #%%
     def fft(self, update = False):
         #TODO! NOT adviced to use on site.data with non-aligned ET 
+        # !!! check for fata gaps?
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {name:{}}
@@ -350,7 +350,8 @@ class Processing(object):
                 
                 group   = group.hgs.filters.drop_nan
                 tf      = group.hgs.dt.to_zero
-                values  = group.value.values  
+                values  = group.value.values
+                # apply detrending and signal processing
                 values  = Freq_domain.lin_window_ovrlp(tf, values)
                 values  = Freq_domain.fft_comp(tf, values)            
                 # calculate real Amplitude and Phase
@@ -361,7 +362,6 @@ class Processing(object):
                 data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                 # nested output dict with list for [results, data, info]
                 out[name].update({ident:[results,data_group,None]})
-
         
         if update:
             utils.dict_update(self.results,out)
@@ -370,7 +370,7 @@ class Processing(object):
 
     #%%
     def hals(self, update = False):
-        #!!! ALLO DATA GAPS HERE !!!!
+        #!!! ALLOW DATA GAPS HERE !!!!
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {name:{}}
@@ -398,6 +398,7 @@ class Processing(object):
                 group   = group.hgs.filters.drop_nan
                 tf      = group.hgs.dt.to_zero
                 values  = group.value.values  
+                # apply detrending and signal processing
                 values  = Freq_domain.lin_window_ovrlp(tf, values)
                 values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
                 # calculate real Amplitude and Phase
@@ -417,7 +418,7 @@ class Processing(object):
     #%%
     def GW_correct(self, lag_h=24, et_method:str = "ts", fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
-        print(name)
+        # print(name)
         sig     = inspect.signature(getattr(Processing,name))
         info    = sig.parameters
         #info = {lag_h}
@@ -480,5 +481,4 @@ class Processing(object):
             utils.dict_update(self.results,out) 
             
         return out
-        
         
