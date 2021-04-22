@@ -13,11 +13,13 @@ raw = data.pivot(index='datetime', columns=['category', 'location'], values='val
 
 #%%
 acworth_site.add_ET(et_comp='nstr')
-data = acworth_site.data
-heads = data.pivot(index='datetime', columns=['category', 'location'], values='value')
+# heads = data.pivot(index='datetime', columns=['category', 'location'], values='value')
 
 #%% Processing
 print("Correct heads ...")
 process_acworth = hgs.Processing(acworth_site)
 
-corrected = process_acworth.GW_correct(et_method='hals', lag_h=8)
+corrected = process_acworth.GW_correct(et_method='ts', lag_h=8)
+
+#%%
+print(corrected['GW_correct'][('BLM-1', 'all')][0]['WLc'])

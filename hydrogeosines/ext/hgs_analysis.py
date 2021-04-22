@@ -20,7 +20,6 @@ from IPython.core.display import display, HTML, Markdown
 from .. import utils
 from ..models import const
 
-
 #%% General methods ##########################################################
 def brf_total(Z):
     #print(dir(Phi))
@@ -267,7 +266,7 @@ class Time_domain(object):
         print("-------------------------------------------------")
         # decite if Earth tides are included or not
         if (et_method == 'hals'):
-            print("DEBUG: PERFORM HALS")
+            # print("DEBUG: PERFORM HALS")
             t  = tf
             # make time relative to avoid ET least squares errors
             dt = t[1] - t[0]
@@ -364,7 +363,7 @@ class Time_domain(object):
 
         # this method uses Earth tide time series
         elif(et_method == 'ts'):
-            print("DEBUG: PERFORM TS")
+            # print("DEBUG: PERFORM TS")
             if et:
                 if (ET is None):
                     raise Exception("Error: Please input valid Earth tide data!")
@@ -655,7 +654,7 @@ class Freq_domain(object):
         BE = (1/amp_ratio)*np.abs(GW_AT_s2 / BP_s2)
         print("-------------------------------------------------")
         print("BE calculated using the method by Rau et al. (2020) [doi:10.5194/hess-24-6033-2020]")
-        print("---")
+        print(">>>")
         print("Barometric efficiency (BE): {:.3f} [-]".format(BE))
         print("-------------------------------------------------")
         
@@ -696,14 +695,14 @@ class Freq_domain(object):
         BE = (np.abs(GW_s2)  + np.abs(ET_s2) * np.cos(np.angle(BP_s2) - np.angle(ET_s2)) * (np.abs(GW_m2) / np.abs(ET_m2))) / np.abs(BP_s2)
         print("-------------------------------------------------")
         print("BE calculated using the method by Acworth et al. (2016) [doi:10.1002/2016GL071328]")
-        print("---")
+        print(">>>")
         print("Barometric efficiency (BE): {:.3f} [-]".format(BE))
         print("-------------------------------------------------")
         
         # provide a user warning ...
         if (np.abs(GW_m2) > np.abs(GW_s2)):
             warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
-
+            
         return BE
     
     #%%
@@ -716,7 +715,7 @@ class Freq_domain(object):
         phase_shift = np.angle(GW_m2 / ET_m2)
         print("-------------------------------------------------")
         print("Analytical solution by Hsie et al. (1987) [doi:10.1029/WR023i010p01824]")
-        print("---")
+        print(">>>")
         print("Amplitude strain response (A_str): {:,.0f} [m/nstr]".format(amp_resp))
         print("Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
         if (np.degrees(phase_shift) > 1):
@@ -767,20 +766,20 @@ class Freq_domain(object):
             # print(error)
             return error
 
-        print("---")
+        print(">>>")
         print('Joint inversion of K and Ss:')
         # least squares fitting
-        fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_resp, phase_shift, case_rad, scr_rad, scr_len, f_m2), bounds=((1e-20,1e-20),(0.01,0.01)), method='lm')
+        fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_resp, phase_shift, case_rad, scr_rad, scr_len, f_m2), method='lm')
         # print(fit)
 
-        print("---")
+        print(">>>")
         if (fit.status > 0):
         # change units to m and s
             K = fit.x[0]/24/3600
             Ss = fit.x[1]
             print("Hydraulic conductivity (K): {:.2e} m/s".format(K))
             print("Specific storage (Ss): {:.2e} 1/m".format(Ss))
-            print("---")
+            print(">>>")
             print("Amplitude ratio (Ar): {:.3f} [-]".format(amp_resp*Ss))
             print("-------------------------------------------------")
 
@@ -804,7 +803,7 @@ class Freq_domain(object):
         phase_shift = np.angle(GW_m2 / ET_m2)
         print("-------------------------------------------------")
         print("Analytical solution by Wang (2000) [ISBN:9780691037462]")
-        print("---")
+        print(">>>")
         print("Amplitude strain response (A_str): {:,.0f} [m/nstr]".format(amp_resp))
         print("Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
         if (np.degrees(phase_shift) < 0):
@@ -835,13 +834,13 @@ class Freq_domain(object):
         # least squares fitting wang
         fit =  least_squares(residuals, [0.01, 0.01], args=(amp_resp, phase_shift, scr_depth, f_m2), bounds=((1e-20,1e-20),(0.01,0.01)), xtol=3e-16, ftol=3e-16, gtol=3e-16)
 
-        print("---")
+        print(">>>")
         if (fit.status > 0):
             K = fit.x[0]
             Ss = fit.x[1]
             print("Hydraulic conductivity (K) is: {:.3e} m/s".format(K))
             print("Specific storage (Ss) is: {:.3e} 1/m".format(Ss))
-            print("---")
+            print(">>>")
             print("Amplitude ratio (Ar): {:.3f} [-]".format(amp_resp*Ss))
             print("-------------------------------------------------")
             

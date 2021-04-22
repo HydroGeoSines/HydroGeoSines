@@ -245,7 +245,7 @@ class Processing(object):
         out = {name:{}}
 
         # !!! check if method results already exist to save time. 
-        #Problematic if results was previously calculated without ET -> update can be buggy
+        # Problematic if results was previously calculated without ET -> update can be buggy
         try:
             comps = self.results[freq_method.lower()]
         except KeyError:  
@@ -258,7 +258,7 @@ class Processing(object):
         #unique_loc = [tuple(i) for i in np.unique(loc, axis=0)]
         #print(unique_loc)
         
-        ## reasamble dict so it only contains the required data
+        ## reassemble dict so it only contains the required data
         data_list = [comps[i][0] for i in comps.keys()]
         comps = dict.fromkeys(comps)
         for key,val in zip(comps.keys(),data_list):
@@ -266,7 +266,7 @@ class Processing(object):
         
         # create DataFrame for unique locations/parts
         df = pd.DataFrame.from_dict(comps,orient="index").reset_index().rename(columns={"level_0":"location","level_1":"part","level_2":"category"})
-        # print(df)
+        print(df)
         grouped = df.groupby(by=(["location","part"]))
         for group, val in grouped:
             # print(group)
@@ -418,7 +418,7 @@ class Processing(object):
     #%%
     def GW_correct(self, lag_h=24, et_method:str = "ts", fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
-        print(name)
+        # print(name)
         sig     = inspect.signature(getattr(Processing,name))
         info    = sig.parameters
         #info = {lag_h}
