@@ -18,7 +18,7 @@ Developed by:
 
 ### Please note that HGS is currently under development!
 
-If you want to help out, plese contact [Gabriel Rau](https://hydrogeo.science)
+If you want to help out, please contact [Gabriel Rau](https://hydrogeo.science)
 
 **Funding**: This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement No 835852.
 
