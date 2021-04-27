@@ -14,7 +14,7 @@ Developed by:
 
 [Groundwater head correction from Earth tides and atmospheric pressure](examples/Notebooks/Groundwater_head_correction.ipynb)
 
-[Estimating hydraulic conductivity (K), specific storage (Ss) and barometric efficiency (BE)](examples/Notebooks/Estimation_of_K_Ss_BE)
+[Estimating hydraulic conductivity (K), specific storage (Ss) and barometric efficiency (BE)](examples/Notebooks/Estimation_of_K_Ss_BE.ipynb)
 
 ### Please note that HGS is currently under development!
 
