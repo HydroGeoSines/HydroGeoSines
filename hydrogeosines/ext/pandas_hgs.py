@@ -57,7 +57,7 @@ class HgsAccessor(object):
             print("Dublicate entries detected and deleted")            
             return self._obj.drop_duplicates(subset=None, keep='first', ignore_index=True)
         else:
-            print("No dublicates being found ...")
+            print("No dublicates found ...")
             return self._obj
     
     def check_alignment(self,cat:str="BP"):

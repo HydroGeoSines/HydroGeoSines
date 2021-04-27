@@ -8,6 +8,7 @@ Created on Wed Sep 23 16:13:00 2020
 import pandas as pd
 import numpy as np
 import inspect
+import warnings
 
 from ..ext.hgs_analysis import Time_domain, Freq_domain
 from ..models.site import Site
@@ -62,7 +63,7 @@ class Processing(object):
         return self
 
     #%% 
-    def BE_time(self, method:str = "all", derivative=True, update=False):
+    def BE_time(self, method:str="all", derivative=True, update=False):
         print("Processing BE_time method...")
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
@@ -70,7 +71,9 @@ class Processing(object):
         # get BE Time domain methods
         method_list = utils.method_list(Time_domain, ID="BE")
         method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
-
+        
+        print("-------------------------------------------------")
+        
         # make GW data regular and align it with BP
         try:
             data = self.data_regular
@@ -122,13 +125,15 @@ class Processing(object):
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower() 
         info = method.lower()
+        print("-------------------------------------------------")
+        print("Method: {}".format(name))
         
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
         
         if "ET" not in self.data["category"].unique():            
             raise Exception('Error: ET data is required but not found in the dataset!')    
-            
+                
         # this method relies on the distinct frequency components
         # M2 and S2
         freqs = {}
@@ -144,8 +149,8 @@ class Processing(object):
         # Problematic if results was previously calculated without ET -> update can be buggy
         try:
             comps = self.results[freq_method.lower()]
-        except KeyError:  
-            comps = getattr(self, freq_method.lower())()[freq_method.lower()]      
+        except KeyError:
+            comps = getattr(self, freq_method.lower())(update=update)[freq_method.lower()]
             
         # print("start")
         #loc = [i[:-1] for i in list(comps.keys())]
@@ -164,6 +169,8 @@ class Processing(object):
         df = pd.DataFrame.from_dict(comps,orient="index").reset_index().rename(columns={"level_0":"location","level_1":"part","level_2":"category"})
         grouped = df.groupby(by=(["location","part"]))
         for group, val in grouped:
+            print("-------------------------------------------------")
+            print('Location: {}, Part: {}'.format(group[0], group[1]))
             # print(group)
             complex_dict = {}
             for cat in val.category.unique():
@@ -189,6 +196,7 @@ class Processing(object):
                 # if not, use 1
                 except:
                     amp_ratio = 1
+                    warnings.warn("Attention: Amplitude ratio is required for accurate BE results! Please run method 'K_Ss_estimate(loc='{}', update=True)' before!".format(group[0]))
                 
                 # print(amp_ratio)
                 results = Freq_domain.BE_Rau(complex_dict["BP_s2"],
@@ -218,8 +226,10 @@ class Processing(object):
         return out
 
     #%%
-    def K_Ss_estimate(self, method:str=None, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, freq_method:str='hals', update=False):
+    def K_Ss_estimate(self, loc:str, method:str=None, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
+        print("-------------------------------------------------")
+        print("Method: {}".format(name))
         
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
@@ -243,14 +253,27 @@ class Processing(object):
         
         # output dict
         out = {name:{}}
-
-        # !!! check if method results already exist to save time. 
-        # Problematic if results was previously calculated without ET -> update can be buggy
-        try:
-            comps = self.results[freq_method.lower()]
-        except KeyError:  
-            comps = getattr(self, freq_method.lower())()[freq_method.lower()]                  
         
+        # !!! check if method results already exist to save time. 
+        # !!!! check that location exists
+        
+        # Problematic if results was previously calculated without ET -> update can be buggy
+        # print(self.results[freq_method.lower()].keys())
+        comps = {}
+        if freq_method.lower() in self.results.keys():
+            for key, value in self.results[freq_method.lower()].items():
+                if key[0] == loc:
+                    comps[key] = value
+        else:
+            comps = getattr(self, freq_method.lower())(loc=loc, update=update)[freq_method.lower()]
+            
+        if not len(comps):
+            comps = getattr(self, freq_method.lower())(loc=loc, update=update)[freq_method.lower()]
+        
+        if not len(comps):
+            raise Exception("Location '{}' does not exist!".format(loc))
+            
+        # print('Comps:', comps)
         # print("start")
         #loc = [i[:-1] for i in list(comps.keys())]
         #print(dict(loc))
@@ -260,16 +283,17 @@ class Processing(object):
         
         ## reassemble dict so it only contains the required data
         data_list = [comps[i][0] for i in comps.keys()]
+        # print(data_list)
         comps = dict.fromkeys(comps)
         for key,val in zip(comps.keys(),data_list):
             comps[key] = val
         
         # create DataFrame for unique locations/parts
         df = pd.DataFrame.from_dict(comps,orient="index").reset_index().rename(columns={"level_0":"location","level_1":"part","level_2":"category"})
-        print(df)
+        # print(df)
         grouped = df.groupby(by=(["location","part"]))
         for group, val in grouped:
-            # print(group)
+            print('Location: {}, Part: {}'.format(group[0], group[1]))
             complex_dict = {}
             for cat in val.category.unique():
                 # print(cat)                
@@ -318,10 +342,13 @@ class Processing(object):
         return out
     
     #%%
-    def fft(self, update = False):
+    def fft(self, loc:list=None, update=False):
         #TODO! NOT adviced to use on site.data with non-aligned ET 
-        # !!! check for fata gaps?
+        # !!! check for data gaps?
         name = (inspect.currentframe().f_code.co_name).lower()
+        print("-------------------------------------------------")
+        print("Method: {}".format(name))
+        
         # output dict
         out = {name:{}}
         # make dataset regular
@@ -335,43 +362,50 @@ class Processing(object):
         # grouping by location and parts (loc_part)
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:
-            # loop through categories
-            for cat in categories:
-                ident = (*gw_loc,cat)
-                print(ident)
-                #ET = ET, GW = {ET, AT}, BP = AT 
-                comps = Site.comp_select(cat)
-                if cat != "GW":                                                        
-                    group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
-                    filter_gw = group.datetime.isin(GW.datetime)
-                    group = group.loc[filter_gw,:]
-                else: 
-                    group = GW
-                
-                group   = group.hgs.filters.drop_nan
-                tf      = group.hgs.dt.to_zero
-                values  = group.value.values
-                # apply detrending and signal processing
-                values  = Freq_domain.lin_window_ovrlp(tf, values)
-                values  = Freq_domain.fft_comp(tf, values)            
-                # calculate real Amplitude and Phase
-                results = utils.complex_to_real(tf, values["complex"])
-                results["comps"] = list(comps.keys())
-                results.update(values)  
-                #slim data container
-                data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
-                # nested output dict with list for [results, data, info]
-                out[name].update({ident:[results,data_group,None]})
-        
+            if (loc is None) or (gw_loc[0] in loc):
+                print('Calculating FFT for location: {}'.format(gw_loc[0]))
+                # loop through categories
+                for cat in categories:
+                    ident = (*gw_loc,cat)
+                    # print(ident)
+                    #ET = ET, GW = {ET, AT}, BP = AT 
+                    comps = Site.comp_select(cat)
+                    if cat != "GW":                                                        
+                        group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
+                        filter_gw = group.datetime.isin(GW.datetime)
+                        group = group.loc[filter_gw,:]
+                    else: 
+                        group = GW
+                    
+                    group   = group.hgs.filters.drop_nan
+                    tf      = group.hgs.dt.to_zero
+                    values  = group.value.values
+                    # apply detrending and signal processing
+                    values  = Freq_domain.lin_window_ovrlp(tf, values)
+                    values  = Freq_domain.fft_comp(tf, values)            
+                    # calculate real Amplitude and Phase
+                    results = utils.complex_to_real(tf, values["complex"])
+                    results["comps"] = list(comps.keys())
+                    results.update(values)  
+                    #slim data container
+                    data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
+                    # nested output dict with list for [results, data, info]
+                    out[name].update({ident:[results,data_group,None]})
+
+        if not len(out[name]):
+            raise Exception("Please use at least one valid location for '{}'!".format(name))
+            
         if update:
             utils.dict_update(self.results,out)
-            
+        
         return out
 
     #%%
-    def hals(self, update = False):
+    def hals(self, loc:list=None, update=False):
         #!!! ALLOW DATA GAPS HERE !!!!
         name = (inspect.currentframe().f_code.co_name).lower()
+        print("-------------------------------------------------")
+        print("Method: {}".format(name))
         # output dict
         out = {name:{}}
         # data                
@@ -381,42 +415,48 @@ class Processing(object):
         # grouping by location and parts (loc_part)
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:
-            # loop through categories
-            for cat in categories:
-                ident = (*gw_loc,cat)
-                print(ident)
-                #ET = ET, GW = {ET, AT}, BP = AT 
-                comps = Site.comp_select(cat)
-                freqs = [i["freq"] for i in comps.values()]
-                if cat != "GW":                                                        
-                    group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
-                    filter_gw = group.datetime.isin(GW.datetime)
-                    group = group.loc[filter_gw,:]
-                else: 
-                    group = GW
-                
-                group   = group.hgs.filters.drop_nan
-                tf      = group.hgs.dt.to_zero
-                values  = group.value.values  
-                # apply detrending and signal processing
-                values  = Freq_domain.lin_window_ovrlp(tf, values)
-                values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
-                # calculate real Amplitude and Phase
-                results = utils.complex_to_real(tf, values["complex"])
-                results["comps"] = list(comps.keys())
-                results.update(values)
-                # slim data container
-                data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
-                # nested output dict with list for [results, data, info]
-                out[name].update({ident:[results,data_group,None]})
+            # filter by location, if required
+            if (loc is None) or (gw_loc[0] in loc):
+                print('Calculating HALS for location: {}'.format(gw_loc[0]))
+                # loop through categories
+                for cat in categories:
+                    ident = (*gw_loc,cat)
+                    # print(ident)
+                    #ET = ET, GW = {ET, AT}, BP = AT 
+                    comps = Site.comp_select(cat)
+                    freqs = [i["freq"] for i in comps.values()]
+                    if cat != "GW":                                                        
+                        group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
+                        filter_gw = group.datetime.isin(GW.datetime)
+                        group = group.loc[filter_gw,:]
+                    else: 
+                        group = GW
+                    
+                    group   = group.hgs.filters.drop_nan
+                    tf      = group.hgs.dt.to_zero
+                    values  = group.value.values  
+                    # apply detrending and signal processing
+                    values  = Freq_domain.lin_window_ovrlp(tf, values)
+                    values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
+                    # calculate real Amplitude and Phase
+                    results = utils.complex_to_real(tf, values["complex"])
+                    results["comps"] = list(comps.keys())
+                    results.update(values)
+                    # slim data container
+                    data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
+                    # nested output dict with list for [results, data, info]
+                    out[name].update({ident:[results,data_group,None]})
+        
+        if not len(out[name]):
+            raise Exception("Please use at least one valid location for '{}'!".format(name))
         
         if update:
-            utils.dict_update(self.results,out)
+            utils.dict_update(self.results, out)
             
         return out
 
     #%%
-    def GW_correct(self, lag_h=24, et_method:str = "ts", fqs=None, update=False):
+    def GW_correct(self, lag_h=24, et_method:str="ts", fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
         # print(name)
         sig     = inspect.signature(getattr(Processing,name))
