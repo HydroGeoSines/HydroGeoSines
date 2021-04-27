@@ -10,7 +10,15 @@ Developed by:
 * Chris Turnadge - CSIRO (Australia)
 * Todd Rasmussen - University of Georgia (USA)
 
-### Note that HGS is currently under development. Expected release of the first version is at the end of April 2021.
+### Example notebooks
+
+[Groundwater head correction from Earth tides and atmospheric pressure](examples/Notebooks/Groundwater_head_correction.ipynb)
+
+[Estimating hydraulic conductivity (K), specific storage (Ss) and barometric efficiency (BE)](examples/Notebooks/Estimation_of_K_Ss_BE)
+
+### Please note that HGS is currently under development!
+
+If you want to help out, plese contact [Gabriel Rau](https://hydrogeo.science)
 
 **Funding**: This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement No 835852.
 
