@@ -9,18 +9,17 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-class Visualize(object):
+class Plot(object):
     #add attributes specific to Visualize here
 
     def __init__(self, results_obj):
-        self._validate(results_obj)
         self.data = results_obj
     
-    @staticmethod
-    def _validate(obj):
-        # check if object is of type dict
-        if not isinstance(obj,dict):
-            raise AttributeError("Must be a dictionary!") 
+    #@staticmethod
+    #def _validate(obj):
+    #    # check if object is of type dict
+    #    if not isinstance(obj,dict):
+    #        raise AttributeError("Must be a dictionary!") 
         #TODO!: check if object contains valid method keys
     
     @staticmethod    
@@ -32,8 +31,10 @@ class Visualize(object):
         ax.grid(which='minor', axis='both', c=(194./255., 194./255., 194./255.),
             ls='-', lw=0.5)
     
-    def BE_time_plot(data,method):
+    def plot_BE_time(data,method):
         pass
+    
+    def plot_HALS(self)
     
     def plot_linear_regression(X, Y, slope, intercept):
         '''
