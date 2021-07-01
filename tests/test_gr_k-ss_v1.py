@@ -29,3 +29,7 @@ hyd_prop  = process.K_Ss_estimate(loc='BLM-2', scr_len=10, case_rad=0.127, scr_r
 #%% quantify BE using the frequency domain approach
 be_freq_2  = process.BE_freq(method="rau", freq_method='hals')
 # print(be_freq_2)
+
+# output = hgs.Output(process)
+# output.view(): HALS as Plot (Y: Amplitude, X: Phase)
+# output.export(): HALS as CSV

@@ -154,10 +154,8 @@ class Visualize(object):
         f,s = plt.subplots(1, 1, figsize=[7.00/2.54, 7.00/2.54])
         s.plot(csd_f, np.abs(csd_p)/psd_p, '-', c='SteelBlue', lw=1.0,
                alpha=0.75)
-        s.plot(csd_f, np.mean(np.abs(csd_p)/psd_p)*np.ones(len(csd_f)), 'k-',
-               lw=1.0)
-        s.text(0.1, 0.1, 'ratio = '+str('%.3f'% result), transform=s.transAxes,
-               ha='left')
+        s.plot(csd_f, np.mean(np.abs(csd_p)/psd_p)*np.ones(len(csd_f)), 'k-', lw=1.0)
+        s.text(0.1, 0.1, 'ratio = '+str('%.3f'% result), transform=s.transAxes, ha='left')
         s.set_xlabel('Frequency (cpd)')
         s.set_ylabel('Amplitude (m)')
         s.set_ylim(-0.05, 1.05)
