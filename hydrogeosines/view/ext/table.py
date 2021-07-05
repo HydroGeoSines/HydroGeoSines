@@ -10,13 +10,12 @@ import numpy as np
 
 #from ..utils.tools import Tools
 
-class Tables(object):
+class Table(object):
     
     def __init__(self, *args, **kwargs):
         pass  
     
     def summary_freq(comp,freq, var):
-        table = pd.DataFrame()
         return pd.DataFrame([freq],index=comp,columns=["freq"])
     
     

@@ -5,7 +5,7 @@ import collections.abc
 
 
 def check_affiliation(values,valid):
-        if not all(x in valid for x in np.array([values]).flatten()):
+        if not all(x in valid for x in np.array(values).flatten()):
             raise ValueError("%r is not in %r." % (values,valid))                 
 
                           
