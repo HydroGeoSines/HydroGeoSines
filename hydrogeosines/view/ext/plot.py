@@ -29,9 +29,9 @@ class Plot(object):
     @staticmethod
     def plot_HALS(loc, results, data):  
         fig = plt.figure()
-        sns.scatterplot(x= results["phs"],y= results["amp"], hue = results["comps"])
-        plt.xlabel("phs")
-        plt.ylabel("amp")
+        sns.scatterplot(x = results["phs"],y = results["amp"], hue = results["comps"])
+        plt.xlabel("Phase [rad]")
+        plt.ylabel("Amplitude []")
         plt.title(loc)
     
     @staticmethod

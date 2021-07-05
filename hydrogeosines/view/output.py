@@ -43,9 +43,9 @@ class Output(Export,Plot,Table):
         analysis_method = analysis_method.lower()
         # select plotting method based on first key of dict (e.g. HALS, BE_time, BE_freq, etc)
         method_list = utils.method_list(Plot, ID="plot")  
-        method_dict = dict(zip([i.replace("plot_", "").lower() for i in method_list],method_list))
+        method_dict = dict(zip([i.replace("plot_", "").lower() for i in method_list], method_list))
 
-        #check for non valid plotting method
+        # check for non valid plotting method
         utils.check_affiliation(list(self.results.keys()), method_dict.keys()) #self.results.keys()
         
         # select method            
