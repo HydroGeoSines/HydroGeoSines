@@ -42,7 +42,6 @@ be_freq_results  = process_acworth.BE_freq(method="rau", freq_method='hals', upd
 #%% Output
 csiro_output  = hgs.Output(hals_results) # process.results container or results
 
-csiro_output2 = hgs.Output(process_acworth)
 # for visualization
 csiro_output.plot() # possible different plotting style methods, e.g. simple, report, etc
 #csiro_output.plot(method="all",style="simple",loc="all") # possible different plotting style methods, e.g. simple, report, etc
@@ -52,4 +51,8 @@ csiro_output.plot() # possible different plotting style methods, e.g. simple, re
 
 # for returning a formated table of the results
 #csiro_output.table()
+
+#%%
+csiro_output2 = hgs.Output(process_acworth)
+csiro_output2.plot()
 
