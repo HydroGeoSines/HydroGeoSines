@@ -25,6 +25,7 @@ class Processing(object):
         self._validate(site_obj)
         self._obj       = site_obj
         self.data       = site_obj.data.copy()
+        self.utc_offset = site_obj.utc_offset
         self.results    = {}
     
     @staticmethod
@@ -98,7 +99,7 @@ class Processing(object):
             
             # aggregate data for results container
             data_group = pd.DataFrame(data = {"GW":GW,"BP":BP},index=datetime,columns=["GW","BP"])
-            info = {"derivative": derivative}
+            info = {"derivative": derivative, 'unit': '-', 'utc_offset': self.utc_offset[gw_loc[0]]}
 
             # select method            
             if method.lower() == 'all':
@@ -113,18 +114,17 @@ class Processing(object):
                 results = {method:getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW)} 
             
             # add results to the out dictionary  
-            out[name].update({gw_loc:[results,data_group,info]})
+            out[name].update({gw_loc:[results, data_group, info]})
             print("Successfully calculated using method '{}' on GW data from '{}'!".format(method,str(gw_loc)))
 
         if update:
             utils.dict_update(self.results, out)
             
         return out
-
+    
     #%%
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
-        name = (inspect.currentframe().f_code.co_name).lower() 
-        info = method.lower()
+        name = (inspect.currentframe().f_code.co_name).lower()
         print("-------------------------------------------------")
         print("Method: {}".format(name))
         
@@ -144,7 +144,7 @@ class Processing(object):
         
         # output dict
         out = {name:{}}
-
+        
         # !!! check if method results already exist to save time. 
         # Problematic if results was previously calculated without ET -> update can be buggy
         try:
@@ -171,6 +171,7 @@ class Processing(object):
         for group, val in grouped:
             print("-------------------------------------------------")
             print('Location: {}, Part: {}'.format(group[0], group[1]))
+            info = {'method': method, 'unit': '-', 'utc_offset': self.utc_offset[group[0]]}
             # print(group)
             complex_dict = {}
             for cat in val.category.unique():
@@ -205,7 +206,7 @@ class Processing(object):
                                             complex_dict["GW_m2"], 
                                             complex_dict["GW_s2"], amp_ratio=amp_ratio)
                 
-                out[name].update({group:[results,data,info]})
+                out[name].update({group:[results, data, info]})
         
             #%% BE method by Acworth et al. (2016)
             elif method.lower() == 'acworth':
@@ -215,7 +216,7 @@ class Processing(object):
                                             complex_dict["GW_m2"], 
                                             complex_dict["GW_s2"],)
                 
-                out[name].update({group:[results,data,info]})
+                out[name].update({group:[results, data, info]})
                 
             else:
                 raise Exception("The BE method '{}' is not implemented!".format(method.lower()))
@@ -224,7 +225,7 @@ class Processing(object):
             utils.dict_update(self.results, out)
         
         return out
-
+    
     #%%
     def K_Ss_estimate(self, loc:str, method:str=None, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
@@ -315,7 +316,6 @@ class Processing(object):
             
             #%% Negative phase shift: K and Ss estimation by Hsieh et al. (1987)          
             if (method == 'hsieh') or (phase_shift <= 0):
-                info = 'hsieh'
                 if (scr_len <=0):
                     raise Exception("For method '{}' the screen length (scr_len) must have a valid value!".format(method.lower()))
                 if (case_rad <=0):
@@ -324,16 +324,17 @@ class Processing(object):
                     raise Exception("For method '{}' the screen radius (scr_rad) must have a valid value!".format(method.lower()))
                     
                 results = Freq_domain.K_Ss_Hsieh(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_len, case_rad, scr_rad)
-                out[name].update({group:[results,data,info]})
+                info = {'method': 'Hsieh', 'unit': 'm/s', 'utc_offset': self.utc_offset[group[0]]}
+                out[name].update({group:[results, data, info]})
                 pass
             
             #%% Positive phase shift: K and Ss estimation by Wang (2000)          
             if (method == 'wang') or (phase_shift > 0):
-                info = 'wang'
                 if (scr_depth <=0):
                     raise Exception("For method '{}' the screen depth (scr_depth) must have a valid value!".format(method.lower()))
                 
                 results = Freq_domain.K_Ss_Wang(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_depth)
+                info = {'method': 'Wang', 'unit': 'm/s', 'utc_offset': self.utc_offset[group[0]]}
                 out[name].update({group:[results,data,info]})
                 
         if update:
@@ -342,7 +343,7 @@ class Processing(object):
         return out
     
     #%%
-    def fft(self, loc:list=None, update=False):
+    def fft(self, loc:list=None, detrend=True, update=False):
         #TODO! NOT adviced to use on site.data with non-aligned ET 
         # !!! check for data gaps?
         name = (inspect.currentframe().f_code.co_name).lower()
@@ -366,12 +367,12 @@ class Processing(object):
                 print('Calculating FFT for location: {}'.format(gw_loc[0]))
                 # loop through categories
                 for cat in categories:
-                    ident = (*gw_loc,cat)
+                    ident = (*gw_loc, cat)
                     # print(ident)
                     #ET = ET, GW = {ET, AT}, BP = AT 
                     comps = Site.comp_select(cat)
                     if cat != "GW":                                                        
-                        group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
+                        group = getattr(data.hgs.filters, utils.join_tuple_string(("get", cat.lower(), "data")))
                         filter_gw = group.datetime.isin(GW.datetime)
                         group = group.loc[filter_gw,:]
                     else: 
@@ -381,7 +382,8 @@ class Processing(object):
                     tf      = group.hgs.dt.to_zero
                     values  = group.value.values
                     # apply detrending and signal processing
-                    values  = Freq_domain.lin_window_ovrlp(tf, values)
+                    if detrend:
+                        values  = Freq_domain.lin_window_ovrlp(tf, values)
                     values  = Freq_domain.fft_comp(tf, values)            
                     # calculate real Amplitude and Phase
                     results = utils.complex_to_real(tf, values["complex"])
@@ -390,18 +392,19 @@ class Processing(object):
                     #slim data container
                     data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
-                    out[name].update({ident:[results,data_group,None]})
+                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'utc_offset': self.utc_offset[gw_loc[0]]}
+                    out[name].update({ident: [results, data_group, info]})
 
         if not len(out[name]):
             raise Exception("Please use at least one valid location for '{}'!".format(name))
             
         if update:
-            utils.dict_update(self.results,out)
+            utils.dict_update(self.results, out)
         
         return out
-
+    
     #%%
-    def hals(self, loc:list=None, update=False):
+    def hals(self, loc:list=None, detrend=True, update=False):
         #!!! ALLOW DATA GAPS HERE !!!!
         name = (inspect.currentframe().f_code.co_name).lower()
         print("-------------------------------------------------")
@@ -420,13 +423,13 @@ class Processing(object):
                 print('Calculating HALS for location: {}'.format(gw_loc[0]))
                 # loop through categories
                 for cat in categories:
-                    ident = (*gw_loc,cat)
+                    ident = (*gw_loc, cat)
                     # print(ident)
                     #ET = ET, GW = {ET, AT}, BP = AT 
                     comps = Site.comp_select(cat)
                     freqs = [i["freq"] for i in comps.values()]
                     if cat != "GW":                                                        
-                        group = getattr(data.hgs.filters, utils.join_tuple_string(("get",cat.lower(),"data")))
+                        group = getattr(data.hgs.filters, utils.join_tuple_string(("get", cat.lower(), "data")))
                         filter_gw = group.datetime.isin(GW.datetime)
                         group = group.loc[filter_gw,:]
                     else: 
@@ -434,10 +437,11 @@ class Processing(object):
                     
                     group   = group.hgs.filters.drop_nan
                     tf      = group.hgs.dt.to_zero
-                    values  = group.value.values  
+                    values  = group.value.values
                     # apply detrending and signal processing
-                    values  = Freq_domain.lin_window_ovrlp(tf, values)
-                    values  = Freq_domain.harmonic_lsqr(tf, values, freqs)            
+                    if detrend:
+                        values  = Freq_domain.lin_window_ovrlp(tf, values)
+                    values  = Freq_domain.harmonic_lsqr(tf, values, freqs)  
                     # calculate real Amplitude and Phase
                     results = utils.complex_to_real(tf, values["complex"])
                     results["comps"] = list(comps.keys())
@@ -445,7 +449,9 @@ class Processing(object):
                     # slim data container
                     data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
-                    out[name].update({ident:[results,data_group,None]})
+                    # print(cat)
+                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'utc_offset': self.utc_offset[gw_loc[0]]}
+                    out[name].update({ident: [results, data_group, info]})
         
         if not len(out[name]):
             raise Exception("Please use at least one valid location for '{}'!".format(name))
@@ -459,12 +465,12 @@ class Processing(object):
     def GW_correct(self, lag_h=24, et_method:str="ts", fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
         # print(name)
-        sig     = inspect.signature(getattr(Processing,name))
-        info    = sig.parameters
+        sig     = inspect.signature(getattr(Processing, name))
         #info = {lag_h}
         #print(sig,info)
         #TODO!: define dictionary with valid et_methods to use the utils.check_affiliation() method
         # output dict
+        name = name.lower()
         out = {name:{}}
         
         # make GW data regular and align it with BP
@@ -493,7 +499,7 @@ class Processing(object):
 
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
         for gw_loc, GW in grouped:   
-            print(gw_loc)            
+            # print(gw_loc)            
             tf = GW.hgs.dt.to_zero # same results as delta function with utc offset = None
             datetime = GW.datetime
             filter_gw = bp_data.datetime.isin(datetime)           
@@ -515,7 +521,8 @@ class Processing(object):
             results["WLc"] = WLc
             # add results to the out dictionary  
             data_group = pd.DataFrame(data = {"GW":GW,"BP":BP,"ET":ET},index=datetime,columns=["GW","BP","ET"])
-            out[name].update({gw_loc:[results,data_group,info]})
+            info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'utc_offset': self.utc_offset[gw_loc[0]]}
+            out[name].update({gw_loc:[results, data_group, info]})
             
         if update:
             utils.dict_update(self.results,out) 

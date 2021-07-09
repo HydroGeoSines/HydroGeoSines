@@ -6,7 +6,7 @@ import collections.abc
 
 def check_affiliation(values,valid):
         if not all(x in valid for x in np.array(values).flatten()):
-            raise ValueError("%r is not in %r." % (values,valid))                 
+            raise ValueError("%r is not in %r." % (values, valid))                 
 
                           
 def zip_formatter(arg1,*args):
@@ -45,7 +45,7 @@ def pi_range(value):
 
          
 def complex_to_real(n_samples, z):
-    amp = 2/len(n_samples)*abs(z)
+    amp = np.abs(z)
     phs = np.angle(z)
     return {"amp":amp, "phs":phs}
         

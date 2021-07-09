@@ -52,15 +52,15 @@ class HgsAccessor(object):
        
     @property
     def check_duplicates(self):
-        # search for duplicates (in rows)
+        # search for dublicates (in rows)
         if any(self._obj.duplicated(subset=None, keep='first')):                
             print("Dublicate entries detected and deleted")            
             return self._obj.drop_duplicates(subset=None, keep='first', ignore_index=True)
         else:
-            print("No duplicates found ...")
+            print("No dublicates found ...")
             return self._obj
     
-    def check_alignment(self, cat:str="BP"):
+    def check_alignment(self,cat:str="BP"):
         df = self._obj
         # mask possible other categories values
         df = df[df["category"].isin(["GW",cat])]
@@ -74,25 +74,17 @@ class HgsAccessor(object):
             return False
         
     @staticmethod
-    def unit_converter_vec(df, unit_dict:dict):  
+    def unit_converter_vec(df,unit_dict : dict):  
         # adjust values based on a unit conversion factor dictionary
         return df.value*np.vectorize(unit_dict.__getitem__)(df.unit.str.lower())
     
-    # ????
-    def get_loc_unit(self, cat='GW'):  
-        unit = self._obj.loc[(self._obj['category'] == cat), 'unit']
-        if unit.empty:
-            return False
-        else:
-            return unit.iloc[0]
-    
-    def pucf_converter_vec(self, unit_dict:dict): # using vectorization        
+    def pucf_converter_vec(self,unit_dict : dict): # using vectorization        
         # convert pressure units for GW and BP into SI unit meter    
         df = self._obj
         idx     = df.category.isin(["GW","BP"]) & (df.unit != "m")
         if len(df[idx]) > 0:
-            df.loc[idx, "value"] = self.unit_converter_vec(df[idx], unit_dict) 
-            df.loc[:, "unit"]    = np.where(idx, "m", df.unit) 
+            df.loc[idx,"value"] = self.unit_converter_vec(df[idx],unit_dict) 
+            df.loc[:,"unit"]    = np.where(idx, "m", df.unit) 
         return df
     
     def pucf_converter(self, row): # loop based
@@ -100,7 +92,7 @@ class HgsAccessor(object):
         if row["category"] in ("GW", "BP") and row["unit"] != "m":
             return row["value"] * self.const['_pucf'][row["unit"].lower()], "m"
         else:
-            return row["value"], "m"
+            return row["value"], "m" 
     
     #TODO: add upsampling method with interpolation based on time() ffill() and/or pad()
     def upsample(self, method = "time"):

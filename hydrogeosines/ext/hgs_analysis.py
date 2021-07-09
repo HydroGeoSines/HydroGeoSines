@@ -4,7 +4,6 @@ Created on Wed Sep 23 16:14:12 2020
 
 @author: Daniel
 """
-
 import os,sys
 import pandas as pd
 import numpy as np
@@ -262,7 +261,7 @@ class Time_domain(object):
         if (len(tf) != len(GW) != len(BP)):
             raise Exception("Error: All input arrays must have the same length!")
 
-        print("Reference: Method by Rasmussen and Crawford (1997) [doi:10.1111/j.1745-6584.1997.tb00111.x]")
+        print("Reference: Method by Rasmussen and Crawford (1997) [https://doi.org/10.1111/j.1745-6584.1997.tb00111.x]")
 
         # decite if Earth tides are included or not
         if (et_method == 'hals'):
@@ -562,7 +561,7 @@ class Freq_domain(object):
         '''
         # !!! find a criteria for which a dataset can be analysed
         if ((tf.max() - tf.min()) < 20):
-            raise Exception("To use FFT, the duration must be >=20 days!")
+            raise Exception("To use HALS, the duration must be >=20 days!")
         
         N = data.shape[0]
         f = np.array(freqs)*2*np.pi
@@ -652,7 +651,7 @@ class Freq_domain(object):
         GW_ET_s2 = (GW_m2 / ET_m2) * ET_s2
         GW_AT_s2 = GW_s2 - GW_ET_s2
         BE = (1/amp_ratio)*np.abs(GW_AT_s2 / BP_s2)
-        print("Reference: Method by Rau et al. (2020) [doi:10.5194/hess-24-6033-2020]")
+        print("Reference: Method by Rau et al. (2020) [https://doi.org/10.5194/hess-24-6033-2020]")
         print("Barometric efficiency (BE): {:.3f} [-]".format(BE))
         
         # a phase check ...
@@ -690,7 +689,7 @@ class Freq_domain(object):
         """
         # Calculate BE values
         BE = (np.abs(GW_s2)  + np.abs(ET_s2) * np.cos(np.angle(BP_s2) - np.angle(ET_s2)) * (np.abs(GW_m2) / np.abs(ET_m2))) / np.abs(BP_s2)
-        print("Reference: Method by Acworth et al. (2016) [doi:10.1002/2016GL071328]")
+        print("Reference: Method by Acworth et al. (2016) [https://doi.org/10.1002/2016GL071328]")
         print("Barometric efficiency (BE): {:.3f} [-]".format(BE))
         
         # provide a user warning ...
@@ -757,7 +756,7 @@ class Freq_domain(object):
             # print(error)
             return error
 
-        print("Reference: Method by Hsie et al. (1987) [doi:10.1029/WR023i010p01824]")
+        print("Reference: Method by Hsie et al. (1987) [https://doi.org/10.1029/WR023i010p01824]")
         # least squares fitting
         fit =  least_squares(fit_amp_phase, [1e-4*24*3600, 1e-4], args=(amp_resp, phase_shift, case_rad, scr_rad, scr_len, f_m2), method='lm')
         # print(fit)

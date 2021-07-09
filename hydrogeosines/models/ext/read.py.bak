@@ -21,7 +21,7 @@ class Read(object):
         #add attributes specific to Load here
         #self.attribute = variable
 
-    def import_csv(self, filepath, input_category, utc_offset:float, unit = "m", how: str="add", loc_names=None, header = 0, check_duplicates=False):
+    def import_csv(self, filepath, input_category, utc_offset: float, unit = "m", how: str="add", loc_names=None, header = 0, check_dublicates=False):
 
         #check for non valid categories
         utils.check_affiliation(input_category, self.VALID_CATEGORY)
@@ -95,5 +95,5 @@ class Read(object):
         # no dublicate indices
         self.data.reset_index(inplace=True, drop=True)
         # no dublicate entries
-        if check_duplicates == True:
-            self.data = self.data.hgs.check_duplicates
+        if check_dublicates == True:
+            self.data = self.data.hgs.check_dublicates

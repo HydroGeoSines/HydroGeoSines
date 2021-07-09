@@ -91,7 +91,7 @@ pivot = regular.hgs.pivot
 mcf = data2.copy()
 mcf = mcf.hgs.filters.drop_nan # used within hgs processing workflows
 
-#TODO: replace non_valid entries? duplicates already handled at import
+#TODO: replace non_valid entries? Dublicates already handled at import
 # Sample frequency for each group
 spl_freqs = mcf.hgs.spl_freq_groupby
 

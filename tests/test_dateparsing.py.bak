@@ -46,7 +46,7 @@ def import_csv(filepath,input_type: str, utc_offset: int, unit: str = "m", metho
     data["value"] = data.value*pconv
     data["unit"] = str("m") # always set to SI unit meter
     
-    # sort the data in a standard way for easier identification of duplicates
+    # sort the data in a standard way for easier identification of dublicates
     data.sort_values(by=["location", "dtype","datetime"], inplace = True)
     
     if method == "add":

@@ -24,8 +24,6 @@ class ET(object):
         #self.attribute = variable            
     
     def add_ET(self, et_comp='pot', et_cat=8, waves=None):
-        print("Adding Earth tides using the inbuilt PyGTide package.")
-        print("Warning: This may take some time ...")
         if (et_comp == 'pot'):
             et_comp_i = -1
         elif(et_comp == 'g'):
@@ -93,7 +91,7 @@ class ET(object):
             self.data = self.data.sort_values(by=["category","location"])
             # no dublicate indices
             self.data = self.data.reset_index(drop=True)
-            # self.data = self.data.hgs.check_duplicates
+            # self.data = self.data.hgs.check_dublicates
             print("Earth tide time series were calculated and added ...")
             
             # !!!!!!!!!!!!!!!!!

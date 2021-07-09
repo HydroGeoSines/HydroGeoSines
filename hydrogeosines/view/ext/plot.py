@@ -7,6 +7,7 @@ Created on Wed Sep 23 16:13:00 2020
 
 import pandas as pd
 import numpy as np
+import pytz
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -19,31 +20,63 @@ class Plot(object):
         #self.attribute = variable
     
     @staticmethod
-    def plot_BE_time(loc, results, data):
+    def plot_BE_time(loc, results, data, info=None):
         pass
     
     @staticmethod
-    def plot_BE_freq(loc, results, data):
+    def plot_BE_freq(loc, results, data, info=None):
         pass
     
     @staticmethod
-    def plot_HALS(loc, results, data):  
-        fig = plt.figure()
-        sns.scatterplot(x = results["phs"],y = results["amp"], hue = results["comps"])
-        plt.xlabel("Phase [rad]")
-        plt.ylabel("Amplitude []")
-        plt.title(loc)
+    def plot_HALS(loc, results, data, info=None):
+        fig, ax = plt.subplots()
+        for x, y, z in zip(results["phs"], results["amp"], results["comps"]):
+            ax.scatter(x, y, s=10, label=z)
+        ax.set_xlabel("Phase [rad]")
+        unit = '?'
+        if 'unit' in info:
+            unit = info['unit']
+        ax.set_ylabel("Amplitude [" + unit + "]")
+        ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.set_xlim([-np.pi, np.pi])
+        ax.legend()
     
     @staticmethod
-    def plot_FFT(loc, results, data):
-        pass
-    
-    @staticmethod
-    def plot_GW_correct(loc, results, data):
-        pass
-    
-    
-    
+    def plot_FFT(loc, results, data, info=None, **kwargs):
+        fig, ax = plt.subplots()            
+        ax.plot(results["freq"], results["amp"])
+        ax.set_xlabel("Frequency [cpd]")
+        unit = '?'
+        if 'unit' in info:
+            unit = info['unit']
+        ax.set_ylabel("Amplitude [" + unit + "]")
+        ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.legend()
         
+        if 'xlim' in kwargs:
+            ax.set_xlim(kwargs['xlim'])
         
- 
+        if 'file' in kwargs:
+            plt.savefig(kwargs['file'])
+    
+    @staticmethod
+    def plot_GW_correct(loc, results, data, info=None, **kwargs):
+        if 'utc_offset' in info:
+            datetime = data.index.tz_convert(tz=pytz.FixedOffset(int(60*info['utc_offset']))).tz_localize(None)
+            utc_offset = info['utc_offset']
+        else:
+            datetime = data.index.tz_localize(None)
+            utc_offset = 0
+        unit = '?'
+        if 'unit' in info:
+            unit = info['unit']
+        
+        fig, ax = plt.subplots()
+        ax.plot(datetime, data.GW, c=[0.7,0.7,0.7], lw=0.5, label='Measured')
+        ax.plot(datetime, results['WLc'], c='k', lw=0.5, label='Corrected')
+        ax.set_xlim([datetime[0], datetime[-1]])
+        plt.title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.set_ylabel("Head [" + unit + "]")
+        ax.set_xlabel('Datetime [UTC{:+.2f}]'.format(utc_offset))
+        ax.legend()
+        

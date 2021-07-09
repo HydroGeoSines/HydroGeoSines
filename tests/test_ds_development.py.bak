@@ -486,7 +486,7 @@ align_out  = BP_align(beta2, inter_max = 3600, method = "backfill", inter_max_to
 # Most common frequency (MCF)
 mcf = test.copy()
 mcf = mcf.hgs.filters.drop_nan # only needed for test data due to the ignore_index in append
-#TODO: replace non_valid entries? duplicates already handled at import
+#TODO: replace non_valid entries? Dublicates already handled at import
 spl_freqs = mcf.hgs.spl_freq_groupby
 mcf = mcf.hgs.resample_by_group(spl_freqs)
 

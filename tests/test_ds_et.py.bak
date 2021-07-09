@@ -18,12 +18,12 @@ csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_GW_short.csv',
                         input_category=["GW"]*3, 
                         utc_offset=10, unit=["m"]*3, 
                         loc_names = ["Loc_A","Loc_B","Loc_C"],
-                        how="add", check_duplicates=True) 
+                        how="add", check_dublicates=True) 
 
 csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv', 
                         input_category="BP", 
                         utc_offset=10, unit="mbar", loc_names = "Baro",
-                        how="add", check_duplicates=True) 
+                        how="add", check_dublicates=True) 
 
 data = csiro_site.data
 
@@ -43,7 +43,7 @@ acworth_site = hgs.Site('acworth', geoloc=[141.762065, -31.065781, 160])
 
 acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv',
                         input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"],
-                        loc_names = ["Site_A","Baro","Site_C"], how="add", check_duplicates=True)
+                        loc_names = ["Site_A","Baro","Site_C"], how="add", check_dublicates=True)
 
 data_ac = acworth_site.data     
 
@@ -74,7 +74,7 @@ acworth_site = hgs.Site('acworth', geoloc=[141.762065, -31.065781, 160])
 
 acworth_site.import_csv('tests/data/fowlers_gap/acworth_gw.csv',
                         input_category=["GW","BP","GW"], utc_offset=10, unit=["Cm","mm","M"],
-                        loc_names = ["Site_A","Baro","Site_C"], how="add", check_duplicates=True)
+                        loc_names = ["Site_A","Baro","Site_C"], how="add", check_dublicates=True)
 
 process_acworth = hgs.Processing(acworth_site)
 process_acworth.ET_calc()

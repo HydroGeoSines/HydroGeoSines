@@ -10,12 +10,12 @@ csiro_site = hgs.Site('csiro', geoloc=[141.762065, -31.065781, 160])
 csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_GW_short.csv', 
                         input_category=["GW"]*3, 
                         utc_offset=10, unit=["m"]*3, loc_names = ["Loc_A","Loc_B","Loc_C"],
-                        how="add", check_duplicates=True) 
+                        how="add", check_dublicates=True) 
 
 csiro_site.import_csv('tests/data/csiro/test_sample/CSIRO_BP_short.csv', 
                         input_category="BP", 
                         utc_offset=10, unit="mbar", loc_names = "Baro",
-                        how="add", check_duplicates=True) 
+                        how="add", check_dublicates=True) 
 
 #%%
 csiro_site.add_ET(et_comp='g', et_cat=4)

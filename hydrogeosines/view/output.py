@@ -39,7 +39,7 @@ class Output(Export,Plot,Table):
         ## add checks here
     
     
-    def plot(self, analysis_method="all"):
+    def plot(self, analysis_method="all", **kwargs):
         analysis_method = analysis_method.lower()
         # select plotting method based on first key of dict (e.g. HALS, BE_time, BE_freq, etc)
         method_list = utils.method_list(Plot, ID="plot")  
@@ -56,19 +56,20 @@ class Output(Export,Plot,Table):
                     # extract data for each location
                     results = results_list[0]
                     data    = results_list[1]
+                    info    = results_list[2]
                     #info    = results_list[2] #not in use for most methods
                     # use the propper printing function
-                    getattr(Plot, plot_method)(loc,results,data)        
+                    getattr(Plot, plot_method)(loc, results, data, info=info, **kwargs)        
         
         else:
-            #check for non valid method 
+            # check for non valid method 
             utils.check_affiliation(analysis_method, method_dict.keys()) 
             plot_method = method_dict[analysis_method]
             for loc, results_list in self.results[analysis_method].items():
                 results = results_list[0]
                 data    = results_list[1]
-                getattr(Plot, plot_method)(loc,results,data) 
-                
+                info    = results_list[2]
+                getattr(Plot, plot_method)(loc, results, data, info=info, **kwargs) 
                             
     def export(self):
         # select export method
@@ -77,5 +78,3 @@ class Output(Export,Plot,Table):
     def table(self):
         # select table format
         pass
-
-               
