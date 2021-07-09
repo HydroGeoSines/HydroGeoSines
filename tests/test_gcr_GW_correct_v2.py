@@ -11,8 +11,8 @@ import pandas as pd
 
 #%%  Testing MVC principal
 ## Model
-fowlers = hgs.Site('csiro', geoloc=[141.762065, -31.065781, 160])
-# read data
+fowlers = hgs.Site('csiro', geoloc=[141.73099, -31.2934, 160])
+
 fowlers.import_csv('tests/data/fowlers_gap/acworth_short.csv', 
                         input_category=['BP', 'GW', 'GW', 'GW', 'ET'], 
                         utc_offset = 10, 
@@ -21,7 +21,6 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_short.csv',
                         how="add", check_duplicates=True)
 
 #%%
-# add et
 process = hgs.Processing(fowlers)
 
 #%% test gw_correct

@@ -51,7 +51,6 @@ class Plot(object):
             unit = info['unit']
         ax.set_ylabel("Amplitude [" + unit + "]")
         ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
-        ax.legend()
         
         if 'xlim' in kwargs:
             ax.set_xlim(kwargs['xlim'])
