@@ -49,7 +49,7 @@ class Plot(object):
         unit = '?'
         if 'unit' in info:
             unit = info['unit']
-        ax.set_ylabel("Amplitude [$" + unit + "$]")
+        ax.set_ylabel("Amplitude [$" + unit.replace('**', '^') + "$]")
         ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
         
         if 'xlim' in kwargs:
