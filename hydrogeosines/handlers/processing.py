@@ -482,7 +482,7 @@ class Processing(object):
                 
         ## check integrity of ET data
         # ET data is already present and needed
-        if ((et_method not in(None,"hals")) and ('ET' in self.data["category"].unique())): 
+        if ((et_method not in(None, "hals")) and ('ET' in self.data["category"].unique())): 
             ## check if et is aligned
             if data.hgs.check_alignment(cat="ET"):                
                 et_data = data.hgs.filters.get_et_data
@@ -492,7 +492,7 @@ class Processing(object):
         else:
             et_data = None
             #et_data = etides.calc_ET_align(data,geoloc=self._obj.geoloc)
-                        
+        
         # extract data categories
         gw_data = data.hgs.filters.get_gw_data
         bp_data = data.hgs.filters.get_bp_data

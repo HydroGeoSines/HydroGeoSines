@@ -55,9 +55,11 @@ class Plot(object):
         
         if 'xlim' in kwargs:
             ax.set_xlim(kwargs['xlim'])
-        
+        else:
+            ax.set_xlim([.5, 2.5])
+            
         if 'file' in kwargs:
-            plt.savefig(kwargs['file'])
+            plt.savefig(kwargs['file'], dpi=200)
     
     @staticmethod
     def plot_GW_correct(loc, results, data, info=None, **kwargs):
@@ -71,12 +73,29 @@ class Plot(object):
         if 'unit' in info:
             unit = info['unit']
         
+        # plot the correted heads
         fig, ax = plt.subplots()
         ax.plot(datetime, data.GW, c=[0.7,0.7,0.7], lw=0.5, label='Measured')
         ax.plot(datetime, results['WLc'], c='k', lw=0.5, label='Corrected')
         ax.set_xlim([datetime[0], datetime[-1]])
-        plt.title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.set_title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
         ax.set_ylabel("Head [" + unit + "]")
         ax.set_xlabel('Datetime [UTC{:+.2f}]'.format(utc_offset))
         ax.legend()
         
+        # and the response functions
+        fig, ax = plt.subplots()
+        ax1 = ax.twinx()
+        
+        #l1, = ax1.plot(results['brf']['lag'], results['brf']['irf'], ls='None', marker='.', ms=5, c=[.6,.6,.6], label='IRC')
+        l1 = ax1.scatter(results['brf']['lag'], results['brf']['irf'], c='k', s=5, label='IRC')
+        l2, = ax.plot(results['brf']['lag'], results['brf']['crf'], lw=1, c='k', label='BRF')
+        
+        ax.set_xlabel('Lag time [hours]')
+        
+        ax.set_title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
+
+        ax.set_ylabel("BRF")
+        ax1.set_ylabel("IRC")
+        
+        ax.legend(handles=[l1,l2], loc='best')
