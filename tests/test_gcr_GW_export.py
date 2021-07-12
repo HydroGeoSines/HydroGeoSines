@@ -26,6 +26,6 @@ process = hgs.Processing(fowlers)
 #%% test gw_correct
 gw_correct_results  = process.GW_correct(lag_h=24, et_method='hals')
 
-correct_output  = hgs.Output(gw_correct_results)
+export  = hgs.Output(gw_correct_results).export(folder="export")
 
-correct_output.plot()
+correct_output  = hgs.Output(gw_correct_results).plot(folder="export")

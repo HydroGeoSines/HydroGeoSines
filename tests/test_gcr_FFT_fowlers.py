@@ -27,8 +27,10 @@ process = hgs.Processing(fowlers)
 fft_results  = process.fft(update=True)
 
 #%% Output
-csiro_output  = hgs.Output(fft_results) # process.results container or results
+csiro_output  = hgs.Output(fft_results)
 
 # for visualization
-csiro_output.plot(xlim=[0.5, 5], file='fft.png') # possible different plotting style methods, e.g. simple, report, etc
+csiro_output.plot(folder='export')
 
+#%%
+csiro_output.export(folder='export')

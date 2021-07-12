@@ -40,6 +40,7 @@ class Output(Export,Plot,Table):
     
     
     def plot(self, analysis_method="all", **kwargs):
+        print("-------------------------------------------------")
         analysis_method = analysis_method.lower()
         # select plotting method based on first key of dict (e.g. HALS, BE_time, BE_freq, etc)
         method_list = utils.method_list(Plot, ID="plot")  
@@ -70,10 +71,41 @@ class Output(Export,Plot,Table):
                 data    = results_list[1]
                 info    = results_list[2]
                 getattr(Plot, plot_method)(loc, results, data, info=info, **kwargs) 
-                            
-    def export(self):
-        # select export method
-        pass
+
+
+    def export(self, analysis_method="all", folder=None, **kwargs):
+        print("-------------------------------------------------")
+        analysis_method = analysis_method.lower()
+        # select plotting method based on first key of dict (e.g. HALS, BE_time, BE_freq, etc)
+        method_list = utils.method_list(Export, ID="export")  
+        method_dict = dict(zip([i.replace("export_", "").lower() for i in method_list], method_list))
+        
+        # check for non valid plotting method
+        utils.check_affiliation(list(self.results.keys()), method_dict.keys()) #self.results.keys()
+        
+        # select method            
+        if analysis_method.lower() == 'all':
+            for method, location in self.results.items():
+                export_method = method_dict[method]
+                for loc, results_list in location.items():
+                    # extract data for each location
+                    results = results_list[0]
+                    data    = results_list[1]
+                    info    = results_list[2]
+                    #info    = results_list[2] #not in use for most methods
+                    # use the propper printing function
+                    getattr(Export, export_method)(loc, results, data, folder, info=info, **kwargs)        
+        
+        else:
+            # check for non valid method 
+            utils.check_affiliation(analysis_method, method_dict.keys()) 
+            export_method = method_dict[analysis_method]
+            for loc, results_list in self.results[analysis_method].items():
+                results = results_list[0]
+                data    = results_list[1]
+                info    = results_list[2]
+                getattr(Plot, export_method)(loc, results, data, folder=None, info=info, **kwargs) 
+    
     
     def table(self):
         # select table format

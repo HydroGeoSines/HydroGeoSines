@@ -20,8 +20,10 @@ death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
 process = hgs.Processing(death_valley)
 
 #%% test gw_correct
-gw_correct_results  = process.GW_correct(lag_h=24)
+gw_correct_results  = process.GW_correct(lag_h=8)
 
 correct_output  = hgs.Output(gw_correct_results)
 
-correct_output.plot()
+#%%
+correct_output.export(folder='export')
+correct_output.plot(folder='export')

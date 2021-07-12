@@ -8,7 +8,6 @@ def check_affiliation(values,valid):
         if not all(x in valid for x in np.array(values).flatten()):
             raise ValueError("%r is not in %r." % (values, valid))                 
 
-                          
 def zip_formatter(arg1,*args):
     args = list(args)
     valid = (str,float,int)
@@ -56,7 +55,6 @@ def method_list(myClass, ID:str = None):
     if ID != None:
         method_list = [s for s in method_list if ID in s]
     return method_list
-
 
 def join_tuple_string(str_tuple) -> str:
     if isinstance(str_tuple,tuple):    

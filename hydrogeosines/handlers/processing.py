@@ -465,6 +465,8 @@ class Processing(object):
     def GW_correct(self, lag_h=24, et_method:str="ts", fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
         # print(name)
+        print("-------------------------------------------------")
+        print("Method: {}".format(name))
         sig     = inspect.signature(getattr(Processing, name))
         #info = {lag_h}
         #print(sig,info)
@@ -498,7 +500,9 @@ class Processing(object):
         bp_data = data.hgs.filters.get_bp_data
 
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
-        for gw_loc, GW in grouped:   
+        for gw_loc, GW in grouped:
+            print("-------------------------------------------------")
+            print('> Correcting GW for location: {}'.format(gw_loc[0]))
             # print(gw_loc)            
             tf = GW.hgs.dt.to_zero # same results as delta function with utc offset = None
             datetime = GW.datetime
@@ -521,7 +525,7 @@ class Processing(object):
             results["WLc"] = WLc
             # add results to the out dictionary  
             data_group = pd.DataFrame(data = {"GW":GW,"BP":BP,"ET":ET},index=datetime,columns=["GW","BP","ET"])
-            info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'utc_offset': self.utc_offset[gw_loc[0]]}
+            info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': data.hgs.get_loc_unit(cat='ET'), 'utc_offset': self.utc_offset[gw_loc[0]]}
             out[name].update({gw_loc:[results, data_group, info]})
             
         if update:

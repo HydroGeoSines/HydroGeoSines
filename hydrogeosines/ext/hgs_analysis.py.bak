@@ -349,7 +349,7 @@ class Time_domain(object):
             #    print(covatl)
                 cbrf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
             cbrf_stdev = np.sqrt(cbrf_var)
-            params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'brf': cbrf, 'crf_stdev': cbrf_stdev}}
+            params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'crf': cbrf, 'crf_stdev': cbrf_stdev}}
 
             # consider ET if desired ...
             if et:
@@ -365,7 +365,7 @@ class Time_domain(object):
                         names.append(darwin_name[idx])
                     else:
                         names.append('')
-                params.update({'erf': {'freq': fqs, 'complex': trf, 'components': names}})
+                params.update({'erf': {'freq': fqs, 'comp': trf, 'name': names}})
             # return the method results
             return WLc, params
 
@@ -460,7 +460,7 @@ class Time_domain(object):
             #    print(covatl)
                 cbrf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
             cbrf_stdev = np.sqrt(cbrf_var)
-            params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'brf': cbrf, 'crf_stdev': cbrf_stdev}}
+            params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'crf': cbrf, 'crf_stdev': cbrf_stdev}}
 
             if et:
                 erf = c[nm+1:2*nm+1]
@@ -477,7 +477,7 @@ class Time_domain(object):
                 #    print(covatl)
                     cerf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
                 cerf_stdev = np.sqrt(cerf_var)
-                params.update({'erf': {'lag': lag_t, 'irc': erf, 'irc_stdev': erf_stdev, 'brf': cerf, 'crf_stdev': cerf_stdev}})
+                params.update({'erf': {'lag': lag_t, 'irc': erf, 'irc_stdev': erf_stdev, 'crf': cerf, 'crf_stdev': cerf_stdev}})
 
             return WLc, params
         else:
