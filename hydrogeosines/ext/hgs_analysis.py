@@ -7,7 +7,6 @@ Created on Wed Sep 23 16:14:12 2020
 import os,sys
 import pandas as pd
 import numpy as np
-import warnings
 from scipy.optimize import curve_fit, least_squares
 from scipy.linalg import svdvals
 from scipy.stats import linregress
@@ -216,8 +215,6 @@ class Time_domain(object):
     @staticmethod
     def BE_Rojstaczer(X, Y, fs:float = 1.0, nperseg:int = None, noverlap:int = None):
         '''        
-
-
         Parameters
         ----------
         X : N x 1 numpy array
@@ -320,7 +317,7 @@ class Time_domain(object):
             condnum = np.max(sgl) / np.min(sgl)
             # print('>> Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
-                warnings.warn('The solution is ill-conditioned (condition number {}!'.format(condnum))
+                raise Warning('The solution is ill-conditioned (condition number {}!'.format(condnum))
 
             # ----------------------------------------------
             nc = len(c)
@@ -431,7 +428,7 @@ class Time_domain(object):
             condnum = np.max(sgl) / np.min(sgl)
             # print('>> Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
-                warnings.warn('The solution is ill-conditioned (condition number {}!'.format(condnum))
+                raise Warning('Attention: The solution is ill-conditioned (condition number {}!'.format(condnum))
 
             #%% determine the results
             nc = len(c)
@@ -595,7 +592,7 @@ class Freq_domain(object):
         condnum = np.max(singular) / np.min(singular)
         # print('>> Conditioning number: {:,.0f}'.format(condnum))
         if (condnum > 1e6):
-            warnings.warn('The solution is ill-conditioned!')
+            raise Warning('Attention: The solution is ill-conditioned!')
         # 	print(Phi)
         y_model = Phi@theta
         # the DC component
@@ -670,7 +667,7 @@ class Freq_domain(object):
         # a phase check ...
         GW_ET_m2_dphi = np.angle(GW_m2 / ET_m2)
         if ((amp_ratio == 1) and (np.abs(GW_ET_m2_dphi) > 5)):
-            warnings.warn("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
+            raise Warning("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
             
         return BE
     
@@ -707,7 +704,7 @@ class Freq_domain(object):
         
         # provide a user warning ...
         if (np.abs(GW_m2) > np.abs(GW_s2)):
-            warnings.warn("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
+            raise Warning("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
             
         return BE
     

@@ -32,8 +32,8 @@ class Output(Export,Plot):
         if not isinstance(obj,(Processing,dict)):
             raise AttributeError("Object must either be of Class Processing or Dictonary!")   
             #print(id(Processing)) # test id of class location to compare across package
-        # check if entries in results dict exist    
-        ## add checks here  
+        # check if entries in results dict exist
+        ## add checks here
         # check for non valid method entries
         ## add checks here
     
@@ -61,8 +61,6 @@ class Output(Export,Plot):
                     #info    = results_list[2] #not in use for most methods
                     # use the propper printing function
                     figure[loc] = getattr(Plot, plot_method)(loc, results, data, folder=folder, info=info, **kwargs)
-            
-            return figure
         
         else:
             # check for non valid method 
@@ -73,8 +71,9 @@ class Output(Export,Plot):
                 data    = results_list[1]
                 info    = results_list[2]
                 figure[loc] = getattr(Plot, plot_method)(loc, results, data, folder=folder, info=info, **kwargs)
-            
-            return figure
+        
+        # return the figure strcúcture ...
+        return figure
 
     #%%
     def export(self, analysis_method="all", folder=False, **kwargs):
@@ -100,8 +99,6 @@ class Output(Export,Plot):
                     #info    = results_list[2] #not in use for most methods
                     # use the propper printing function
                     export[loc] = getattr(Export, export_method)(loc, results, data, folder=folder, info=info, **kwargs)   
-            
-            return export
         
         else:
             export = {}
@@ -113,5 +110,6 @@ class Output(Export,Plot):
                 data    = results_list[1]
                 info    = results_list[2]
                 export[loc] = getattr(Export, export_method)(loc, results, data, folder=folder, info=info, **kwargs) 
-            
-            return export
+        
+        # return the export strcúcture ...
+        return export

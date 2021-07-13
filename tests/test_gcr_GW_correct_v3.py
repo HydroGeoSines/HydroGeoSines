@@ -10,11 +10,11 @@ import numpy as np
 import pandas as pd
 
 #%%  Testing MVC principal
-site = hgs.Site('Porto Alegre', geoloc=[-30.03778731400043, -51.19534763292897, 40])
+site = hgs.Site('Porto Alegre', geoloc=[-30.03779, -51.19535, 40])
 site.import_csv('tests/data/brasil/Brito.csv',
-                        input_category=["GW","BP","ET"], 
+                        input_category=["GW", "BP", "ET"], 
                         utc_offset=-3, 
-                        unit=["m","m","nm/s**2"],
+                        unit=["m", "m", "nm/s**2"],
                         loc_names = ["GW", "Baro", "ET"],
                         how="add", check_duplicates=True)
 

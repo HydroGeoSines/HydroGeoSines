@@ -100,7 +100,7 @@ class Export(object):
             dt_format = kwargs['dt_format']
         else:
             dt_format = '%d/%m/%Y %H:%M:%S'
-
+            
         # prepare the filename ...
         if isinstance(folder, str):
             filename = folder + "/"
@@ -117,7 +117,7 @@ class Export(object):
             filename = folder + "/"
             filename += "GW_correct_BRF_" + loc[0] + "_(" + str(loc[1]) + ").csv"
             file2.to_csv(filename, index=False)
-    
+            
         # earth tide response function ...        
         if 'erf' in results:
             # which one ...
@@ -136,7 +136,7 @@ class Export(object):
                      'Components': results['erf']['components'],
                      'Amplitude [{:s}]'.format(et_unit): np.abs(results['erf']['complex']),
                      'Phase [rad]': np.angle(results['erf']['complex']), })
-
+                
                 if isinstance(folder, str):
                     filename = folder + "/"
                     filename += "GW_correct_ERF_" + loc[0] + "_(" + str(loc[1]) + ").csv"

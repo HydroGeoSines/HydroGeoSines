@@ -23,7 +23,7 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_short.csv',
 process = hgs.Processing(fowlers)
 
 #%% test gw_correct
-gw_correct_results  = process.GW_correct(lag_h=24, et_method='hals')
+gw_correct_results  = process.GW_correct(lag_h=24, et_method=None)
 
 #%%
 export = hgs.Output(gw_correct_results).export(folder='export')

@@ -6,6 +6,7 @@ Created on Wed Sep 23 16:13:00 2020
 """
 
 import pandas as pd
+import pytz
 import numpy as np
 import inspect
 import warnings
@@ -31,7 +32,7 @@ class Processing(object):
     @staticmethod
     def _validate(obj):
         # check if object is of class Site
-        if not isinstance(obj,Site):
+        if not isinstance(obj, Site):
             raise AttributeError("Must be a 'Site' object!")                       
             #print(id(Site)) # test id of class location to compare across package
         # check if both BP and GW exist    
@@ -39,10 +40,10 @@ class Processing(object):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
         # check for non valid categories
         utils.check_affiliation(obj.data["category"].unique(), obj.VALID_CATEGORY)
-               
+    
     #TODO!: The method changes the site_obj itself. Maybe add_ET should return a new DataFrame, not self
-    def ET_calc(self):
-        self._obj.add_ET(et_comp='g')
+    def ET_calc(self, et_comp:str='g'):
+        self._obj.add_ET(et_comp=et_comp)
         self.data = self._obj.data.copy()
     
     #%%
@@ -53,18 +54,48 @@ class Processing(object):
         data.hgs.check_alignment() # check integrity
         self.data_regular = data
         return self
+    
+    #%% these methods actually modify the site data permanently
+    # because then methods can be chained together
+    def by_dates(self, start=None, stop=None, utc_offset=None):
+        print("Filter dataset by dates ...")
+
+        # determine the UTC offset ...
+        if utc_offset is None:
+            utc_offset = np.min(np.array(list(self.utc_offset.values())))
         
-    #%%
+        # convert to UTC ...
+        if start is None:
+            start = self._obj.data["datetime"].min()
+        else: 
+            start = pd.to_datetime(start).tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)
+            
+        if stop is None:
+            stop = self._obj.data["datetime"].max()
+        else:
+            stop = pd.to_datetime(stop).tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)
+        
+        # test criteria ...
+        if stop <= start:
+            raise Exception("Error: Stop date must be after the start date!")
+        
+        # extract sub-dataset ...
+        pos = (self._obj.data["datetime"] >= start) & (self._obj.data["datetime"] <= stop)
+        # drop all GW locations, but the selected ones
+        self.data = self._obj.data[pos].copy()
+        return self
+    
     def by_gwloc(self, gw_loc):
+        print("Filter dataset by location ...")
         # get idx to subset GW locations
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
         if pos.eq(False).all():
             raise Exception("Error: Non of the specified locations are present in the GW data!")
         pos_cat = self._obj.data["category"] == "GW"
         # drop all GW locations, but the selected ones
-        self.data =  self._obj.data[~(pos_cat & (~pos))].copy()
+        self.data = self._obj.data[~(pos_cat & (~pos))].copy()
         return self
-
+    
     #%% 
     def BE_time(self, method:str="all", derivative=True, update=False):
         print("Processing BE_time method...")
@@ -100,7 +131,7 @@ class Processing(object):
                datetime = datetime[1:]
             
             # aggregate data for results container
-            data_group = pd.DataFrame(data = {"GW":GW,"BP":BP},index=datetime,columns=["GW","BP"])
+            data_group = pd.DataFrame(data = {"GW": GW, "BP": BP}, index=datetime, columns=["GW", "BP"])
             info = {"derivative": derivative, 'unit': '-', 'utc_offset': self.utc_offset[gw_loc[0]]}
 
             # select method            
@@ -209,7 +240,7 @@ class Processing(object):
                                             complex_dict["GW_s2"], amp_ratio=amp_ratio)
                 
                 out[name].update({group:[results, data, info]})
-        
+            
             #%% BE method by Acworth et al. (2016)
             elif method.lower() == 'acworth':
                 results = Freq_domain.BE_Acworth(complex_dict["BP_s2"],
@@ -425,7 +456,8 @@ class Processing(object):
         for gw_loc, GW in grouped:
             # filter by location, if required
             if (loc is None) or (gw_loc[0] in loc):
-                print('Calculating HALS for location: {}'.format(gw_loc[0]))
+                print("-------------------------------------------------")
+                print('> Calculating HALS for location: {}'.format(gw_loc[0]))
                 # loop through categories
                 for cat in categories:
                     print('Data category: {}'.format(cat))

@@ -10,6 +10,7 @@ import numpy as np
 import pytz
 import matplotlib.pyplot as plt
 import seaborn as sns
+from ...models import const
 
 class Plot(object):
     #add attributes specific to Visualize here
@@ -62,6 +63,17 @@ class Plot(object):
             fig, ax = plt.subplots()
             
         ax.plot(results["freq"], results["amp"])
+        
+        # if loc[2] in ('GW', 'ET'):
+        #     components = const.const['_etfqs']
+        # else:
+        #     components = const.const['_atfqs']
+            
+        # for comp, freq in components.items():
+        #     idx1 = np.argmin(np.abs(freq - results["freq"]))
+        #     idx2 = np.argmax(results["amp"][idx1-3:idx1+3])
+        #     ax.plot(results["freq"][idx1-3+idx2], results["amp"][idx1-3+idx2], '.r')
+        
         ax.set_xlabel("Frequency [cpd]")
         unit = '?'
         if 'unit' in info:
