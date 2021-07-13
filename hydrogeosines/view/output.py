@@ -11,9 +11,8 @@ from .. import utils
 # import additional functionalities
 from .ext.export import Export
 from .ext.plot import Plot
-from .ext.table import Table
 
-class Output(Export,Plot,Table):
+class Output(Export,Plot):
     # define all class attributes here 
     #attr = attr
     
@@ -38,8 +37,8 @@ class Output(Export,Plot,Table):
         # check for non valid method entries
         ## add checks here
     
-    
-    def plot(self, analysis_method="all", **kwargs):
+    #%%
+    def plot(self, analysis_method="all", folder=False, **kwargs):
         print("-------------------------------------------------")
         analysis_method = analysis_method.lower()
         # select plotting method based on first key of dict (e.g. HALS, BE_time, BE_freq, etc)
@@ -49,7 +48,8 @@ class Output(Export,Plot,Table):
         # check for non valid plotting method
         utils.check_affiliation(list(self.results.keys()), method_dict.keys()) #self.results.keys()
         
-        # select method            
+        # select method
+        figure = {}
         if analysis_method.lower() == 'all':
             for method, location in self.results.items():
                 plot_method = method_dict[method]
@@ -60,7 +60,9 @@ class Output(Export,Plot,Table):
                     info    = results_list[2]
                     #info    = results_list[2] #not in use for most methods
                     # use the propper printing function
-                    getattr(Plot, plot_method)(loc, results, data, info=info, **kwargs)        
+                    figure[loc] = getattr(Plot, plot_method)(loc, results, data, folder=folder, info=info, **kwargs)
+            
+            return figure
         
         else:
             # check for non valid method 
@@ -70,10 +72,12 @@ class Output(Export,Plot,Table):
                 results = results_list[0]
                 data    = results_list[1]
                 info    = results_list[2]
-                getattr(Plot, plot_method)(loc, results, data, info=info, **kwargs) 
+                figure[loc] = getattr(Plot, plot_method)(loc, results, data, folder=folder, info=info, **kwargs)
+            
+            return figure
 
-
-    def export(self, analysis_method="all", folder=None, **kwargs):
+    #%%
+    def export(self, analysis_method="all", folder=False, **kwargs):
         print("-------------------------------------------------")
         analysis_method = analysis_method.lower()
         # select plotting method based on first key of dict (e.g. HALS, BE_time, BE_freq, etc)
@@ -85,6 +89,7 @@ class Output(Export,Plot,Table):
         
         # select method            
         if analysis_method.lower() == 'all':
+            export = {}
             for method, location in self.results.items():
                 export_method = method_dict[method]
                 for loc, results_list in location.items():
@@ -94,9 +99,12 @@ class Output(Export,Plot,Table):
                     info    = results_list[2]
                     #info    = results_list[2] #not in use for most methods
                     # use the propper printing function
-                    getattr(Export, export_method)(loc, results, data, folder, info=info, **kwargs)        
+                    export[loc] = getattr(Export, export_method)(loc, results, data, folder=folder, info=info, **kwargs)   
+            
+            return export
         
         else:
+            export = {}
             # check for non valid method 
             utils.check_affiliation(analysis_method, method_dict.keys()) 
             export_method = method_dict[analysis_method]
@@ -104,9 +112,6 @@ class Output(Export,Plot,Table):
                 results = results_list[0]
                 data    = results_list[1]
                 info    = results_list[2]
-                getattr(Plot, export_method)(loc, results, data, folder=None, info=info, **kwargs) 
-    
-    
-    def table(self):
-        # select table format
-        pass
+                export[loc] = getattr(Export, export_method)(loc, results, data, folder=folder, info=info, **kwargs) 
+            
+            return export

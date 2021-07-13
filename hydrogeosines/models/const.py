@@ -12,5 +12,3 @@ const['_etunit'] = ['m**2/s**2', 'm/s**2', 'nm/s**2', 'str', 'nstr']
 const['_etfqs'] = {'Q1': 0.893244, 'O1': 0.929536, 'M1': 0.966446, 'P1': 0.997262, 'S1': 1.0, 'K1': 1.002738, 'N2': 1.895982, 'M2': 1.932274, 'S2': 2.0, 'K2': 2.005476}
 # the most common atmospheric tide frequencies (McMillan et al., 2019)
 const['_atfqs'] = {'P1': 0.997262, 'S1': 1.0, 'K1': 1.002738, 'S2': 2.0, 'K2': 2.005476}
-
-# Check if this is BE_Method state in DS_Development_V2    

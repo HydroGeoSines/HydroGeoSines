@@ -25,12 +25,9 @@ process = hgs.Processing(death_valley)
 # test hals method
 hals_results  = process.hals()
 
-# test hals method
-fft_results  = process.fft(update=True)
-
 #%% Output
 csiro_output  = hgs.Output(hals_results) # process.results container or results
 
 # for visualization
-csiro_output.plot() # possible different plotting style methods, e.g. simple, report, etc
-
+csiro_output.plot(folder='export') # possible different plotting style methods, e.g. simple, report, etc
+csiro_output.export(folder='export') # possible different plotting style methods, e.g. simple, report, etc

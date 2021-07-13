@@ -45,6 +45,7 @@ class Processing(object):
         self._obj.add_ET(et_comp='g')
         self.data = self._obj.data.copy()
     
+    #%%
     def make_regular(self):
         data = self.data
         data = data.hgs.make_regular()
@@ -52,7 +53,8 @@ class Processing(object):
         data.hgs.check_alignment() # check integrity
         self.data_regular = data
         return self
-    
+        
+    #%%
     def by_gwloc(self, gw_loc):
         # get idx to subset GW locations
         pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
@@ -367,6 +369,7 @@ class Processing(object):
                 print('Calculating FFT for location: {}'.format(gw_loc[0]))
                 # loop through categories
                 for cat in categories:
+                    print('Data category: {}'.format(cat))
                     ident = (*gw_loc, cat)
                     # print(ident)
                     #ET = ET, GW = {ET, AT}, BP = AT 
@@ -392,7 +395,9 @@ class Processing(object):
                     #slim data container
                     data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
-                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'utc_offset': self.utc_offset[gw_loc[0]]}
+                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
+                            'utc_offset': self.utc_offset[gw_loc[0]]}
+                    
                     out[name].update({ident: [results, data_group, info]})
 
         if not len(out[name]):
@@ -423,6 +428,7 @@ class Processing(object):
                 print('Calculating HALS for location: {}'.format(gw_loc[0]))
                 # loop through categories
                 for cat in categories:
+                    print('Data category: {}'.format(cat))
                     ident = (*gw_loc, cat)
                     # print(ident)
                     #ET = ET, GW = {ET, AT}, BP = AT 
@@ -444,13 +450,14 @@ class Processing(object):
                     values  = Freq_domain.harmonic_lsqr(tf, values, freqs)  
                     # calculate real Amplitude and Phase
                     results = utils.complex_to_real(tf, values["complex"])
-                    results["comps"] = list(comps.keys())
+                    results["component"] = list(comps.keys())
                     results.update(values)
                     # slim data container
                     data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
                     # print(cat)
-                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'utc_offset': self.utc_offset[gw_loc[0]]}
+                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'), 
+                            'utc_offset': self.utc_offset[gw_loc[0]]}
                     out[name].update({ident: [results, data_group, info]})
         
         if not len(out[name]):
@@ -478,18 +485,19 @@ class Processing(object):
         # make GW data regular and align it with BP
         try:
             data = self.data_regular
-        except AttributeError:   
+        except AttributeError:
             data = self.make_regular().data_regular            
             data.hgs.check_alignment(cat="BP")
-                
+        
         ## check integrity of ET data
         # ET data is already present and needed
-        if ((et_method not in(None, "hals")) and ('ET' in self.data["category"].unique())): 
+        if ((et_method not in (None, "hals")) and ('ET' in self.data["category"].unique())): 
             ## check if et is aligned
-            if data.hgs.check_alignment(cat="ET"):                
+            if data.hgs.check_alignment(cat="ET"):
                 et_data = data.hgs.filters.get_et_data
-            else:                   
-                et_data = etides.calc_ET_align(data,geoloc=self._obj.geoloc)
+            else:
+                # there's something going on here ...                  
+                et_data = etides.calc_ET_align(data, geoloc=self._obj.geoloc)
                 print("ET was recalculated and aligned")
         else:
             et_data = None
@@ -512,7 +520,7 @@ class Processing(object):
                 ET = None
             elif et_method == 'ts':
                 if et_data is None:
-                    ET = etides.calc_ET_align(GW,geoloc=self._obj.geoloc)
+                    ET = etides.calc_ET_align(GW, geoloc=self._obj.geoloc)
                     ET = ET.value.values
                 else:   
                     filter_gw = et_data.datetime.isin(datetime)

@@ -34,8 +34,6 @@ class Plot(object):
     def plot_BE_time(data,method):
         pass
     
-    def plot_HALS(self)
-    
     def plot_linear_regression(X, Y, slope, intercept):
         '''
             Plot scatterplot of barometric and groundwater pressure data (or derivatives), as well as line of best fit.

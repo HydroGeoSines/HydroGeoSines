@@ -37,7 +37,7 @@ class Plot(object):
         else:
             fig, ax = plt.subplots()
             
-        for x, y, z in zip(results["phs"], results["amp"], results["comps"]):
+        for x, y, z in zip(results["phs"], results["amp"], results["component"]):
             ax.scatter(x, y, s=10, label=z)
         ax.set_xlabel("Phase [rad]")
         unit = '?'
@@ -47,9 +47,11 @@ class Plot(object):
         ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
         ax.set_xlim([-np.pi, np.pi])
         ax.legend()
-        if 'folder' != None:
+        if isinstance(folder, str):
             filename = folder + '/FFT_' + loc[0] + '_(' + loc[1] + ').png'
             plt.savefig(filename, dpi=200, bbox_inches='tight')
+            
+        return fig
     
     #%%
     @staticmethod
@@ -72,9 +74,11 @@ class Plot(object):
         else:
             ax.set_xlim([.5, 2.5])
             
-        if 'folder' != None:
+        if isinstance(folder, str):
             filename = folder + '/FFT_' + loc[0] + '_(' + loc[2] + "," + loc[1] + ').png'
             plt.savefig(filename, dpi=200, bbox_inches='tight')
+        
+        return fig
     
     #%%
     @staticmethod
@@ -92,9 +96,9 @@ class Plot(object):
         
         # plot the correted heads
         if 'figsize' in kwargs:
-            fig, ax = plt.subplots(figsize=kwargs['figsize'])
+            fig1, ax = plt.subplots(figsize=kwargs['figsize'])
         else:
-            fig, ax = plt.subplots()
+            fig1, ax = plt.subplots()
             
         ax.plot(datetime, data.GW, c=[0.7,0.7,0.7], lw=0.5, label='Measured')
         ax.plot(datetime, results['WLc'], c='k', lw=0.5, label='Corrected')
@@ -104,15 +108,15 @@ class Plot(object):
         ax.set_xlabel('Datetime [UTC{:+.2f}]'.format(utc_offset))
         ax.legend()
         
-        if folder != None:
+        if isinstance(folder, str):
             filename = folder + '/GW_correct_' + loc[0] + '_(' + loc[1] + ').png'
             plt.savefig(filename, dpi=200, bbox_inches='tight')
             
         # and the response functions
         if 'figsize' in kwargs:
-            fig, ax = plt.subplots(figsize=kwargs['figsize'])
+            fig2, ax = plt.subplots(figsize=kwargs['figsize'])
         else:
-            fig, ax = plt.subplots()
+            fig2, ax = plt.subplots()
         ax1 = ax.twinx()
         
         #l1, = ax1.plot(results['brf']['lag'], results['brf']['irc'], ls='None', marker='.', ms=5, c=[.6,.6,.6], label='IRC')
@@ -123,13 +127,14 @@ class Plot(object):
         
         ax.set_title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
 
-        ax.set_ylabel("BRF")
+        ax.set_ylabel("BRF [-]")
         ax.set_ylim([-0.05, 1.1])
-        ax1.set_ylabel("IRC")
+        ax1.set_ylabel("IRC [-]")
         
         ax.legend(handles=[l1,l2], loc='best')
         
-        if folder != None:
+        if isinstance(folder, str):
             filename = folder + '/GW_correct_BRF_' + loc[0] + '_(' + loc[1] + ').png'
             plt.savefig(filename, dpi=200, bbox_inches='tight')
-            
+        
+        return fig1, fig2
