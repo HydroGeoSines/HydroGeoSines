@@ -82,7 +82,7 @@ class Processing(object):
         # extract sub-dataset ...
         pos = (self._obj.data["datetime"] >= start) & (self._obj.data["datetime"] <= stop)
         # drop all GW locations, but the selected ones
-        self.data = self._obj.data[pos].copy()
+        self.data = self._obj.data = self._obj.data[pos].copy()
         return self
     
     def by_gwloc(self, gw_loc):
@@ -93,7 +93,7 @@ class Processing(object):
             raise Exception("Error: Non of the specified locations are present in the GW data!")
         pos_cat = self._obj.data["category"] == "GW"
         # drop all GW locations, but the selected ones
-        self.data = self._obj.data[~(pos_cat & (~pos))].copy()
+        self.data = self._obj.data = self._obj.data[~(pos_cat & (~pos))].copy()
         return self
     
     #%% 
