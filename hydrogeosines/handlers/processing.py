@@ -10,6 +10,7 @@ import pytz
 import numpy as np
 import inspect
 import warnings
+from copy import deepcopy
 
 from ..ext.hgs_analysis import Time_domain, Freq_domain
 from ..models.site import Site
@@ -24,9 +25,8 @@ class Processing(object):
     
     def __init__(self, site_obj):
         self._validate(site_obj)
-        self._obj       = site_obj
-        self.data       = site_obj.data.copy()
-        self.utc_offset = site_obj.utc_offset
+        self.site       = deepcopy(site_obj)
+        self.data_orig  = site_obj.data.copy()
         self.results    = {}
     
     @staticmethod
@@ -40,38 +40,37 @@ class Processing(object):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
         # check for non valid categories
         utils.check_affiliation(obj.data["category"].unique(), obj.VALID_CATEGORY)
-    
+            
     #TODO!: The method changes the site_obj itself. Maybe add_ET should return a new DataFrame, not self
     def ET_calc(self, et_comp:str='g'):
-        self._obj.add_ET(et_comp=et_comp)
-        self.data = self._obj.data.copy()
+        self.site.add_ET(et_comp=et_comp)
+        #self.data = self._obj.data.copy()
     
     #%%
     def make_regular(self):
-        data = self.data
+        data = self.site.data
         data = data.hgs.make_regular()
         data = data.hgs.BP_align()
         data.hgs.check_alignment() # check integrity
         self.data_regular = data
         return self
     
-    #%% these methods actually modify the site data permanently
-    # because then methods can be chained together
+    #%% the "by_something" methods permanently modify the site data and with this methods can be chained together
     def by_dates(self, start=None, stop=None, utc_offset=None):
         print("Filter dataset by dates ...")
 
         # determine the UTC offset ...
         if utc_offset is None:
-            utc_offset = np.min(np.array(list(self.utc_offset.values())))
+            utc_offset = np.min(np.array(list(self.site.utc_offset.values())))
         
         # convert to UTC ...
         if start is None:
-            start = self._obj.data["datetime"].min()
+            start = self.site.data["datetime"].min()
         else: 
             start = pd.to_datetime(start).tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)
             
         if stop is None:
-            stop = self._obj.data["datetime"].max()
+            stop = self.site.data["datetime"].max()
         else:
             stop = pd.to_datetime(stop).tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)
         
@@ -80,20 +79,20 @@ class Processing(object):
             raise Exception("Error: Stop date must be after the start date!")
         
         # extract sub-dataset ...
-        pos = (self._obj.data["datetime"] >= start) & (self._obj.data["datetime"] <= stop)
-        # drop all GW locations, but the selected ones
-        self.data = self._obj.data[pos].copy()
+        pos = (self.site.data["datetime"] >= start) & (self.site.data["datetime"] <= stop)
+        # only keep the selected dates for GW, BP and ET
+        self.site.data = self.site.data[pos]
         return self
     
     def by_gwloc(self, gw_loc):
         print("Filter dataset by location ...")
         # get idx to subset GW locations
-        pos = self._obj.data["location"].isin(np.array(gw_loc).flatten())
+        pos = self.site.data["location"].isin(np.array(gw_loc).flatten())
         if pos.eq(False).all():
             raise Exception("Error: Non of the specified locations are present in the GW data!")
-        pos_cat = self._obj.data["category"] == "GW"
+        pos_cat = self.site.data["category"] == "GW"
         # drop all GW locations, but the selected ones
-        self.data = self._obj.data[~(pos_cat & (~pos))].copy()
+        self.site.data = self.site.data[~(pos_cat & (~pos))]
         return self
     
     #%% 
@@ -132,7 +131,7 @@ class Processing(object):
             
             # aggregate data for results container
             data_group = pd.DataFrame(data = {"GW": GW, "BP": BP}, index=datetime, columns=["GW", "BP"])
-            info = {"derivative": derivative, 'unit': '-', 'utc_offset': self.utc_offset[gw_loc[0]]}
+            info = {"derivative": derivative, 'unit': '-', 'utc_offset': self.site.utc_offset[gw_loc[0]]}
 
             # select method            
             if method.lower() == 'all':
@@ -164,14 +163,14 @@ class Processing(object):
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
         
-        if "ET" not in self.data["category"].unique():            
+        if "ET" not in self.site.data["category"].unique():            
             raise Exception('Error: ET data is required but not found in the dataset!')    
                 
         # this method relies on the distinct frequency components
         # M2 and S2
         freqs = {}
-        freqs["m2"] = self._obj.const['_etfqs']['M2']
-        freqs["s2"] = self._obj.const['_etfqs']['S2']
+        freqs["m2"] = self.site.const['_etfqs']['M2']
+        freqs["s2"] = self.site.const['_etfqs']['S2']
         max_freq_diff = {"hals": 1e-6, "fft": (freqs["s2"] - freqs["m2"]) / 3}
         mfd = max_freq_diff[freq_method.lower()]
         
@@ -204,7 +203,7 @@ class Processing(object):
         for group, val in grouped:
             print("-------------------------------------------------")
             print('Location: {}, Part: {}'.format(group[0], group[1]))
-            info = {'method': method, 'unit': '-', 'utc_offset': self.utc_offset[group[0]]}
+            info = {'method': method, 'unit': '-', 'utc_offset': self.site.utc_offset[group[0]]}
             # print(group)
             complex_dict = {}
             for cat in val.category.unique():
@@ -268,11 +267,11 @@ class Processing(object):
         if freq_method not in ("hals","fft"):
             raise Exception("Frequency method '{}' is not implemented!".format(freq_method))
         
-        if "ET" not in self.data["category"].unique():            
+        if "ET" not in self.site.data["category"].unique():            
             raise Exception('Error: ET data is required but not found in the dataset!')    
         else:
             # print('unit check')
-            unit = self.data.loc[self.data["category"] == 'ET', 'unit'].unique()
+            unit = self.site.data.loc[self.site.data["category"] == 'ET', 'unit'].unique()
             # print(unit)
             if 'nstr' not in unit:
                 raise Exception('Error: Strain units are required for ET data!')
@@ -280,8 +279,8 @@ class Processing(object):
         # this method relies on the distinct frequency components
         # M2 and S2
         freqs = {}
-        freqs["m2"] = self._obj.const['_etfqs']['M2']
-        freqs["s2"] = self._obj.const['_etfqs']['S2']
+        freqs["m2"] = self.site.const['_etfqs']['M2']
+        freqs["s2"] = self.site.const['_etfqs']['S2']
         max_freq_diff = {"hals": 1e-6, "fft": (freqs["s2"] - freqs["m2"]) / 3}
         mfd = max_freq_diff[freq_method.lower()]
         
@@ -357,7 +356,7 @@ class Processing(object):
                     raise Exception("For method '{}' the screen radius (scr_rad) must have a valid value!".format(method.lower()))
                     
                 results = Freq_domain.K_Ss_Hsieh(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_len, case_rad, scr_rad)
-                info = {'method': 'Hsieh', 'unit': 'm/s', 'utc_offset': self.utc_offset[group[0]]}
+                info = {'method': 'Hsieh', 'unit': 'm/s', 'utc_offset': self.site.utc_offset[group[0]]}
                 out[name].update({group:[results, data, info]})
                 pass
             
@@ -367,7 +366,7 @@ class Processing(object):
                     raise Exception("For method '{}' the screen depth (scr_depth) must have a valid value!".format(method.lower()))
                 
                 results = Freq_domain.K_Ss_Wang(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_depth)
-                info = {'method': 'Wang', 'unit': 'm/s', 'utc_offset': self.utc_offset[group[0]]}
+                info = {'method': 'Wang', 'unit': 'm/s', 'utc_offset': self.site.utc_offset[group[0]]}
                 out[name].update({group:[results,data,info]})
                 
         if update:
@@ -427,7 +426,7 @@ class Processing(object):
                     data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
                     info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
-                            'utc_offset': self.utc_offset[gw_loc[0]]}
+                            'utc_offset': self.site.utc_offset[gw_loc[0]]}
                     
                     out[name].update({ident: [results, data_group, info]})
 
@@ -448,7 +447,7 @@ class Processing(object):
         # output dict
         out = {name:{}}
         # data                
-        data        = self.data
+        data        = self.site.data
         gw_data     = data.hgs.filters.get_gw_data         
         categories  = data.category.unique()
         # grouping by location and parts (loc_part)
@@ -489,7 +488,7 @@ class Processing(object):
                     # nested output dict with list for [results, data, info]
                     # print(cat)
                     info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'), 
-                            'utc_offset': self.utc_offset[gw_loc[0]]}
+                            'utc_offset': self.site.utc_offset[gw_loc[0]]}
                     out[name].update({ident: [results, data_group, info]})
         
         if not len(out[name]):
@@ -523,17 +522,17 @@ class Processing(object):
         
         ## check integrity of ET data
         # ET data is already present and needed
-        if ((et_method not in (None, "hals")) and ('ET' in self.data["category"].unique())): 
+        if ((et_method not in (None, "hals")) and ('ET' in self.site.data["category"].unique())): 
             ## check if et is aligned
             if data.hgs.check_alignment(cat="ET"):
                 et_data = data.hgs.filters.get_et_data
             else:
                 # there's something going on here ...                  
-                et_data = etides.calc_ET_align(data, geoloc=self._obj.geoloc)
+                et_data = etides.calc_ET_align(data, geoloc=self.site.geoloc)
                 print("ET was recalculated and aligned")
         else:
             et_data = None
-            #et_data = etides.calc_ET_align(data,geoloc=self._obj.geoloc)
+            #et_data = etides.calc_ET_align(data,geoloc=self.site.geoloc)
         
         # extract data categories
         gw_data = data.hgs.filters.get_gw_data
@@ -552,7 +551,7 @@ class Processing(object):
                 ET = None
             elif et_method == 'ts':
                 if et_data is None:
-                    ET = etides.calc_ET_align(GW, geoloc=self._obj.geoloc)
+                    ET = etides.calc_ET_align(GW, geoloc=self.site.geoloc)
                     ET = ET.value.values
                 else:   
                     filter_gw = et_data.datetime.isin(datetime)
@@ -565,7 +564,7 @@ class Processing(object):
             results["WLc"] = WLc
             # add results to the out dictionary  
             data_group = pd.DataFrame(data = {"GW":GW,"BP":BP,"ET":ET},index=datetime,columns=["GW","BP","ET"])
-            info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': data.hgs.get_loc_unit(cat='ET'), 'utc_offset': self.utc_offset[gw_loc[0]]}
+            info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': data.hgs.get_loc_unit(cat='ET'), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
             out[name].update({gw_loc:[results, data_group, info]})
             
         if update:
