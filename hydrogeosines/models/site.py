@@ -34,7 +34,7 @@ class Site(Read, ET):
     ## setting the geoloc property
     @property
     def geoloc(self):
-        return self.__geoloc # property of self
+        return self._geoloc # property of self
 
     @geoloc.setter
     def geoloc(self, geoloc):
@@ -43,19 +43,19 @@ class Site(Read, ET):
                 raise Exception("Error: Input 'geoloc' must be a list with 3 values: Longitude, latitude, height in WGS84!")
             if (geoloc[0] < -180) or (geoloc[0] > 180) or (geoloc[1] < -90) or (geoloc[1] > 90) or (geoloc[2] < -1000) or (geoloc[2] > 8500):
                 raise Exception("Error: Input 'geoloc' must contain valid geo-coordinates in WGS84!")
-            self.__geoloc = geoloc
+            self._geoloc = geoloc
         else:
-            self.__geoloc = None
+            self._geoloc = None
 
     ## setting the data property
     @property
     def data(self):
-        return self.__data
+        return self._data
 
     @data.setter
     def data(self,data):
         if data is None:
-            self.__data = pd.DataFrame({"datetime": pd.Series([], dtype="datetime64[ns]"),
+            self._data = pd.DataFrame({"datetime": pd.Series([], dtype="datetime64[ns]"),
                                         "category": pd.Series([], dtype='object'),
                                         "location": pd.Series([], dtype='object'), 
                                         "part": pd.Series([], dtype='object'), 
@@ -66,7 +66,7 @@ class Site(Read, ET):
            # verify the required hgs columns exist and that they are properly formated
            # TODO: add unit test/ automatic conversion and datetime check -> best include in hgs._validate
            data.hgs._validate(data)
-           self.__data = data
+           self._data = data
         else:
            raise Exception("Error: Input 'data' must be a pd.DataFrame")
 
