@@ -109,8 +109,47 @@ class Processing(object):
             self.site.data = self.site.data.hgs.resample(freq)
             return self
     
+    def info(self):
+        data = self.site.data
+        print(np.any(data.value.isnull()))
+        print("-------------------------------------------------")
+        print("Summary of dataset:")
+        for cat in ('GW', 'BP', 'ET'):
+            
+            locs = pd.unique(data.loc[data.category == cat, 'location'])
+            for loc in locs:
+                print("Category / Location: {} / {}".format(cat, loc))
+                start = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].min()
+                print("Start: {}".format(start.strftime('%d/%m/%Y %H:%M:%S')))
+                stop = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].max()
+                print("Stop:  {}".format(stop.strftime('%d/%m/%Y %H:%M:%S')))
+                # sampling frequency ...
+                subdata = data.loc[(data.category == cat) & (data.location == loc), 'datetime']
+                subdata_null = data.loc[(data.category == cat) & (data.location == loc) & ~data.value.isnull(), 'datetime']
+                diff = subdata_null.diff()
+                spl_min, spl_med, spl_max = diff.min(), diff.median(), diff.max()
+                idx = ~(diff.iloc[1:] == spl_min)
+                # print(idx)
+                #print(data.loc[(data.category == cat) & (data.location == loc), 'datetime'].diff()[1:])
+                #print(idx)
+                if spl_min == spl_med:
+                    if np.any(idx):
+                        print("Sampling period: {:.0f}m {:.0f}s (regular, with {:d} gaps)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60, np.sum(idx)))
+                    else:
+                        print("Sampling period: {:.0f}m {:.0f}s (regular)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60))
+                        
+                else:
+                    print("Sampling period: {:.0f}-{:.0f} sec (irregular)".format(spl_min.total_seconds(), spl_max.total_seconds()))
+                
+                print("Total values: {:d} ({:d} empty)".format(len(subdata), len(subdata) - len(subdata_null)))
+                print("-------------------------------------------------")
+            
+            print("-------------------------------------------------")
+        pass
+        
     #%%
     def BE_time(self, method:str="all", derivative=True, update=False):
+        print("-------------------------------------------------")
         print("Processing BE_time method ...")
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
@@ -118,9 +157,7 @@ class Processing(object):
         # get BE Time domain methods
         method_list = utils.method_list(Time_domain, ID="BE")
         method_dict = dict(zip(method_list,[i.replace("BE_", "").lower() for i in method_list]))
-
-        print("-------------------------------------------------")
-
+        
         # make GW data regular and align it with BP
         try:
             data = self.data_regular
@@ -146,26 +183,26 @@ class Processing(object):
             # aggregate data for results container
             data_group = pd.DataFrame(data = {"GW": GW, "BP": BP}, index=datetime, columns=["GW", "BP"])
             info = {"derivative": derivative, 'unit': '-', 'utc_offset': self.site.utc_offset[gw_loc[0]]}
-
+            
             # select method
             if method.lower() == 'all':
                 results = dict.fromkeys(method_dict.values())
                 for key, val in method_dict.items():
                     results[val] = getattr(Time_domain, key)(BP, GW)
-
+                    
             else:
                 #check for non valid method
                 utils.check_affiliation(method, method_dict.values())
                 # pass the data to the right method in Time_domain using the method_dict
                 results = {method: getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW)}
-
+                
             # add results to the out dictionary
             out[name].update({gw_loc:[results, data_group, info]})
             print("Successfully calculated using method '{}' on GW data from '{}'!".format(method,str(gw_loc)))
-
+            
         if update:
             utils.dict_update(self.results, out)
-
+            
         return out
     
     #%%
