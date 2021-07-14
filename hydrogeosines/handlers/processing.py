@@ -112,17 +112,18 @@ class Processing(object):
     def info(self):
         data = self.site.data
         print(np.any(data.value.isnull()))
-        print("-------------------------------------------------")
+        
         print("Summary of dataset:")
         for cat in ('GW', 'BP', 'ET'):
-            
             locs = pd.unique(data.loc[data.category == cat, 'location'])
             for loc in locs:
+                print("-------------------------------------------------")
                 print("Category / Location: {} / {}".format(cat, loc))
                 start = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].min()
-                print("Start: {}".format(start.strftime('%d/%m/%Y %H:%M:%S')))
+                print("Start: {} UTC".format(start.strftime('%d/%m/%Y %H:%M:%S')))
                 stop = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].max()
-                print("Stop:  {}".format(stop.strftime('%d/%m/%Y %H:%M:%S')))
+                print("Stop:  {} UTC".format(stop.strftime('%d/%m/%Y %H:%M:%S')))
+                print("UTC offset: {:+.2f} h".format(self.site.utc_offset[loc]))
                 # sampling frequency ...
                 subdata = data.loc[(data.category == cat) & (data.location == loc), 'datetime']
                 subdata_null = data.loc[(data.category == cat) & (data.location == loc) & ~data.value.isnull(), 'datetime']
@@ -134,15 +135,15 @@ class Processing(object):
                 #print(idx)
                 if spl_min == spl_med:
                     if np.any(idx):
-                        print("Sampling period: {:.0f}m {:.0f}s (regular, with {:d} gaps)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60, np.sum(idx)))
+                        print("Sampling: {:.0f}m {:.0f}s (regular, with {:d} gaps)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60, np.sum(idx)))
                     else:
-                        print("Sampling period: {:.0f}m {:.0f}s (regular)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60))
+                        print("Sampling: {:.0f}m {:.0f}s (regular)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60))
                         
                 else:
-                    print("Sampling period: {:.0f}-{:.0f} sec (irregular)".format(spl_min.total_seconds(), spl_max.total_seconds()))
+                    print("Sampling: {:.0f}-{:.0f} sec (irregular)".format(spl_min.total_seconds(), spl_max.total_seconds()))
                 
-                print("Total values: {:d} ({:d} empty)".format(len(subdata), len(subdata) - len(subdata_null)))
-                print("-------------------------------------------------")
+                print("Values: {:,d} ({:,d} empty)".format(len(subdata), len(subdata) - len(subdata_null)))
+                print("Unit: {:s}".format(data.loc[(data.category == cat) & (data.location == loc), 'unit'].values[0]))
             
             print("-------------------------------------------------")
         pass
