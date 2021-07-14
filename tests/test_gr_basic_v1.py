@@ -28,16 +28,13 @@ process_csiro = hgs.Processing(csiro_site)
 locations = ["Loc_A","Loc_B"]
 process_csiro_SiteA_B = hgs.Processing(csiro_site).by_gwloc(locations)
 
-results = process_csiro_SiteA_B.BE_freq(method="acworth", freq_method='hals', update=True)
-print(results)
-
 #%%
 # add a regularly sampled data container to the processing object 
 # it is automatically reused in some of the methods, reducing computation times
 process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).make_regular()
 
 # test hals method
-hals_results  = process_csiro.hals()
+# hals_results  = process_csiro.hals()
 
 # test be method
 be_results  = process_csiro.BE_time(method="all")

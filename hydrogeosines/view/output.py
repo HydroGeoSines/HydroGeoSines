@@ -74,7 +74,7 @@ class Output(Export,Plot):
         
         # return the figure strcúcture ...
         return figure
-
+    
     #%%
     def export(self, analysis_method="all", folder=False, **kwargs):
         print("-------------------------------------------------")
@@ -113,3 +113,4 @@ class Output(Export,Plot):
         
         # return the export strcúcture ...
         return export
+    

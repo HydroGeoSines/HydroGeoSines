@@ -28,7 +28,7 @@ class Processing(object):
         self.site       = deepcopy(site_obj)
         self.data_orig  = site_obj.data.copy()
         self.results    = {}
-
+        
     @staticmethod
     def _validate(obj):
         # check if object is of class Site
@@ -40,12 +40,12 @@ class Processing(object):
             raise Exception('Error: Both BP and GW data is required but not found in the dataset!')
         # check for non valid categories
         utils.check_affiliation(obj.data["category"].unique(), obj.VALID_CATEGORY)
-
+        
     #TODO!: The method changes the site_obj itself. Maybe add_ET should return a new DataFrame, not self
     def ET_calc(self, et_comp:str='g'):
         self.site.add_ET(et_comp=et_comp)
         #self.data = self._obj.data.copy()
-
+        
     #%%
     def make_regular(self):
         data = self.site.data
@@ -54,7 +54,7 @@ class Processing(object):
         data.hgs.check_alignment() # check integrity
         self.data_regular = data
         return self
-
+    
     #%% the "by_something" methods permanently modify the site data and with this methods can be chained together
     def by_dates(self, start=None, stop=None, utc_offset=None):
         print("Filter dataset by dates ...")
@@ -94,10 +94,10 @@ class Processing(object):
         # drop all GW locations, but the selected ones
         self.site.data = self.site.data[~(pos_cat & (~pos))]
         return self
-
+    
     #%%
     def BE_time(self, method:str="all", derivative=True, update=False):
-        print("Processing BE_time method...")
+        print("Processing BE_time method ...")
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
         out = {name:{}}
@@ -137,13 +137,13 @@ class Processing(object):
             if method.lower() == 'all':
                 results = dict.fromkeys(method_dict.values())
                 for key, val in method_dict.items():
-                    results[val] = getattr(Time_domain, key)(BP,GW)
+                    results[val] = getattr(Time_domain, key)(BP, GW)
 
             else:
                 #check for non valid method
                 utils.check_affiliation(method, method_dict.values())
                 # pass the data to the right method in Time_domain using the method_dict
-                results = {method:getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW)}
+                results = {method: getattr(Time_domain, list(method_dict.keys())[list(method_dict.values()).index(method)])(BP,GW)}
 
             # add results to the out dictionary
             out[name].update({gw_loc:[results, data_group, info]})
@@ -153,7 +153,7 @@ class Processing(object):
             utils.dict_update(self.results, out)
 
         return out
-
+    
     #%%
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
@@ -257,7 +257,7 @@ class Processing(object):
             utils.dict_update(self.results, out)
 
         return out
-
+    
     #%%
     def K_Ss_estimate(self, loc:str, method:str=None, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
@@ -373,7 +373,7 @@ class Processing(object):
             utils.dict_update(self.results, out)
 
         return out
-
+    
     #%%
     def fft(self, loc:list=None, detrend=True, update=False):
         #TODO! NOT adviced to use on site.data with non-aligned ET
@@ -410,7 +410,7 @@ class Processing(object):
                         group = group.loc[filter_gw,:]
                     else:
                         group = GW
-
+                    
                     group   = group.hgs.filters.drop_nan
                     tf      = group.hgs.dt.to_zero
                     values  = group.value.values
@@ -427,17 +427,17 @@ class Processing(object):
                     # nested output dict with list for [results, data, info]
                     info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
                             'utc_offset': self.site.utc_offset[gw_loc[0]]}
-
+                    
                     out[name].update({ident: [results, data_group, info]})
-
+                    
         if not len(out[name]):
             raise Exception("Please use at least one valid location for '{}'!".format(name))
-
+            
         if update:
             utils.dict_update(self.results, out)
-
+            
         return out
-
+    
     #%%
     def hals(self, loc:list=None, detrend=True, update=False):
         #!!! ALLOW DATA GAPS HERE !!!!
@@ -471,7 +471,7 @@ class Processing(object):
                         group = group.loc[filter_gw,:]
                     else:
                         group = GW
-
+                        
                     group   = group.hgs.filters.drop_nan
                     tf      = group.hgs.dt.to_zero
                     values  = group.value.values
@@ -490,15 +490,15 @@ class Processing(object):
                     info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
                             'utc_offset': self.site.utc_offset[gw_loc[0]]}
                     out[name].update({ident: [results, data_group, info]})
-
+                    
         if not len(out[name]):
             raise Exception("Please use at least one valid location for '{}'!".format(name))
-
+            
         if update:
             utils.dict_update(self.results, out)
-
+            
         return out
-
+    
     #%%
     def GW_correct(self, lag_h=24, et_method:str="ts", fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
@@ -512,14 +512,14 @@ class Processing(object):
         # output dict
         name = name.lower()
         out = {name:{}}
-
+        
         # make GW data regular and align it with BP
         try:
             data = self.data_regular
         except AttributeError:
             data = self.make_regular().data_regular
             data.hgs.check_alignment(cat="BP")
-
+            
         ## check integrity of ET data
         # ET data is already present and needed
         if ((et_method not in (None, "hals")) and ('ET' in self.site.data["category"].unique())):
@@ -533,7 +533,7 @@ class Processing(object):
         else:
             et_data = None
             #et_data = etides.calc_ET_align(data,geoloc=self.site.geoloc)
-
+            
         # extract data categories
         gw_data = data.hgs.filters.get_gw_data
         bp_data = data.hgs.filters.get_bp_data
@@ -558,7 +558,7 @@ class Processing(object):
                     ET = et_data.loc[filter_gw,:].value.values
             else:
                 raise Exception("Error: Specified 'et_method' is not available!")
-
+                
             GW = GW.value.values
             WLc, results = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
             results["WLc"] = WLc
@@ -566,8 +566,9 @@ class Processing(object):
             data_group = pd.DataFrame(data = {"GW":GW,"BP":BP,"ET":ET},index=datetime,columns=["GW","BP","ET"])
             info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': data.hgs.get_loc_unit(cat='ET'), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
             out[name].update({gw_loc:[results, data_group, info]})
-
+            
         if update:
             utils.dict_update(self.results,out)
-
+            
         return out
+    

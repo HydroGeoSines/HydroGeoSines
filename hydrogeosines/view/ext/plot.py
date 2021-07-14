@@ -40,6 +40,7 @@ class Plot(object):
             
         for x, y, z in zip(results["phs"], results["amp"], results["component"]):
             ax.scatter(x, y, s=10, label=z)
+            
         ax.set_xlabel("Phase [rad]")
         unit = '?'
         if 'unit' in info:

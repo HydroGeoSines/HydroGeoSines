@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 
 #%%  Testing MVC principal
-## Model
 fowlers = hgs.Site('Fowlers Gap', geoloc=[141.73099, -31.2934, 160])
 
 fowlers.import_csv('tests/data/fowlers_gap/acworth_all.csv', 
@@ -20,11 +19,17 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_all.csv',
                         how="add", check_duplicates=True)
 
 #%%
-process = hgs.Processing(fowlers).by_dates(start='2015-11-01', stop='2016-02-01').by_gwloc("FG822-2")
+process = hgs.Processing(fowlers).by_dates(start='2015-11-01', stop='2016-02-01') #.by_gwloc("FG822-2")
 
 #%% test gw_correct
 gw_correct_results  = process.GW_correct(lag_h=36, et_method='hals')
 
+#%%
+be_results  = process.BE_time(method="all")
+
+#%%
 correct_output  = hgs.Output(gw_correct_results)
 
-correct_output.plot()
+fig = correct_output.plot(folder="export")
+
+data = correct_output.export(folder="export")
