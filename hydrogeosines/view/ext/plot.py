@@ -33,6 +33,7 @@ class Plot(object):
     #%%
     @staticmethod
     def plot_HALS(loc, results, data, info=None, folder=None, **kwargs):
+        print("Plotting location: {:s}".format(loc[0]))
         if 'figsize' in kwargs:
             fig, ax = plt.subplots(figsize=kwargs['figsize'])
         else:
@@ -59,6 +60,7 @@ class Plot(object):
     #%%
     @staticmethod
     def plot_FFT(loc, results, data, info=None, folder=None, **kwargs):
+        print("Plotting location: {:s}".format(loc[0]))
         if 'figsize' in kwargs:
             fig, ax = plt.subplots(figsize=kwargs['figsize'])
         else:

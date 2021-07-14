@@ -111,8 +111,7 @@ class Processing(object):
     
     def info(self):
         data = self.site.data
-        print(np.any(data.value.isnull()))
-        
+        print("-------------------------------------------------")
         print("Summary of dataset:")
         for cat in ('GW', 'BP', 'ET'):
             locs = pd.unique(data.loc[data.category == cat, 'location'])

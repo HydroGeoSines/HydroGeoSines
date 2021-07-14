@@ -37,8 +37,8 @@ class Export(object):
     
         # write a file?
         if isinstance(folder, str):
-            filename = folder + "/"
-            filename += "FFT_" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ").csv"
+            print(">> Writing file(s) to folder: {}".format(folder))
+            filename = folder + "/" + "FFT_" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ").csv"
             file.to_csv(filename, index=False)
         
         return file.copy()
@@ -65,8 +65,8 @@ class Export(object):
                  'Phase [rad]': np.angle(results['complex']), })
         
         if isinstance(folder, str):
-            filename = folder + "/"
-            filename += "HALS_" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ").csv"
+            print(">> Writing file(s) to folder: {}".format(folder))
+            filename = folder + "/" + "HALS_" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ").csv"
             file.to_csv(filename, index=False)
         
         return file.copy()
