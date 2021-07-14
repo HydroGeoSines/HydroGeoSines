@@ -19,7 +19,7 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_all.csv',
                         how="add", check_duplicates=True)
 
 #%%
-process = hgs.Processing(fowlers).decimate(3).by_dates(start='2015-11-01', stop='2016-02-01').by_gwloc("FG822-2")
+process = hgs.Processing(fowlers).decimate(2).by_dates(start='2015-11-01', stop='2016-02-01').by_gwloc("FG822-2")
 
 #%% test gw_correct
 gw_correct_results  = process.GW_correct(lag_h=24, et_method='hals')

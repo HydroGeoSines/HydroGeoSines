@@ -94,7 +94,7 @@ class Processing(object):
         # drop all GW locations, but the selected ones
         self.site.data = self.site.data[~(pos_cat & (~pos))]
         return self
-
+    
     def decimate(self, factor:int=2):
         if factor <= 1:
             raise Warning("Decimation with factor 1 is not necessary!")

@@ -21,7 +21,7 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_all.csv',
 
 #%% Processing
 # create Instance of Processing with csiro_site
-process = hgs.Processing(fowlers).by_gwloc(['FG822-2', 'Smith']).by_dates('2015-11-01', '2016-02-01')
+process = hgs.Processing(fowlers).by_gwloc(['FG822-2', 'Smith'])
 
 # test hals method
 fft_results  = process.fft(update=True)
