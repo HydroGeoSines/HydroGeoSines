@@ -101,12 +101,6 @@ class Export(object):
         else:
             dt_format = '%d/%m/%Y %H:%M:%S'
             
-        # prepare the filename ...
-        if isinstance(folder, str):
-            filename = folder + "/"
-            filename += "GW_correct_" + loc[0] + "_(" + str(loc[1]) + ").csv"
-            file1.to_csv(filename, index=False, date_format=dt_format)
-        
         #%% export the additional data ...
         # barometric response function ...
         file2 = pd.DataFrame({'Lag [hours]': results['brf']['lag'],
@@ -114,10 +108,13 @@ class Export(object):
                              'BRF [-]': results['brf']['brf'], })
         
         if isinstance(folder, str):
-            filename = folder + "/"
-            filename += "GW_correct_BRF_" + loc[0] + "_(" + str(loc[1]) + ").csv"
-            file2.to_csv(filename, index=False)
+            print(">> Writing file(s) to folder: {}".format(folder))
+            filename = folder + "/" + "GW_correct_" + loc[0] + "_(" + str(loc[1]) + ").csv"
+            file1.to_csv(filename, index=False, date_format=dt_format)
             
+            filename = folder + "/" + "GW_correct_BRF_" + loc[0] + "_(" + str(loc[1]) + ").csv"
+            file2.to_csv(filename, index=False)
+                
         # earth tide response function ...        
         if 'erf' in results:
             # which one ...
@@ -144,7 +141,8 @@ class Export(object):
             else:
                 
                 raise Warning("Earth tide results could not be exported!")
-                
+                    # prepare the filename ...
+            
             return file1, file2, file3
         
         else:

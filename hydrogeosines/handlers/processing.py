@@ -94,6 +94,20 @@ class Processing(object):
         # drop all GW locations, but the selected ones
         self.site.data = self.site.data[~(pos_cat & (~pos))]
         return self
+
+    def decimate(self, factor:int=2):
+        if factor <= 1:
+            raise Warning("Decimation with factor 1 is not necessary!")
+        else:
+            print("Decimate dataset by factor {:d} ...".format(factor))
+            spl_freq = self.site.data.hgs.spl_freq_groupby
+            freq = factor*int(np.median(spl_freq['GW'].values))
+            print(">> New sampling period is {:.0f} seconds.".format(freq))
+            # print(spl_freq)
+            # print(spl_freq.index)
+            # print(spl_freq['GW'].values)
+            self.site.data = self.site.data.hgs.resample(freq)
+            return self
     
     #%%
     def BE_time(self, method:str="all", derivative=True, update=False):

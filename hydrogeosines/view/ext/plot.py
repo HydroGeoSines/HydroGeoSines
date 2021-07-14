@@ -50,6 +50,7 @@ class Plot(object):
         ax.set_xlim([-np.pi, np.pi])
         ax.legend()
         if isinstance(folder, str):
+            print(">> Writing files to folder: {}".format(folder))
             filename = folder + '/FFT_' + loc[0] + '_(' + loc[1] + ').png'
             plt.savefig(filename, dpi=200, bbox_inches='tight')
             
@@ -88,6 +89,7 @@ class Plot(object):
             ax.set_xlim([.5, 2.5])
             
         if isinstance(folder, str):
+            print(">> Writing files to folder: {}".format(folder))
             filename = folder + '/FFT_' + loc[0] + '_(' + loc[2] + "," + loc[1] + ').png'
             plt.savefig(filename, dpi=200, bbox_inches='tight')
         
@@ -120,10 +122,6 @@ class Plot(object):
         ax.set_ylabel("Head [" + unit + "]")
         ax.set_xlabel('Datetime [UTC{:+.2f}]'.format(utc_offset))
         ax.legend()
-        
-        if isinstance(folder, str):
-            filename = folder + '/GW_correct_' + loc[0] + '_(' + loc[1] + ').png'
-            plt.savefig(filename, dpi=200, bbox_inches='tight')
             
         # and the response functions
         if 'figsize' in kwargs:
@@ -147,7 +145,12 @@ class Plot(object):
         ax.legend(handles=[l1,l2], loc='best')
         
         if isinstance(folder, str):
+            print(">> Writing files to folder: {}".format(folder))
+            
+            filename = folder + '/GW_correct_' + loc[0] + '_(' + loc[1] + ').png'
+            fig1.savefig(filename, dpi=200, bbox_inches='tight')
+            
             filename = folder + '/GW_correct_BRF_' + loc[0] + '_(' + loc[1] + ').png'
-            plt.savefig(filename, dpi=200, bbox_inches='tight')
+            fig2.savefig(filename, dpi=200, bbox_inches='tight')
         
         return fig1, fig2
