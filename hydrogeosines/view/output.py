@@ -29,7 +29,7 @@ class Output(Export,Plot):
     @staticmethod
     def _validate(obj):
         # check if object is of class Processing or a dictionary
-        if not isinstance(obj,(Processing,dict)):
+        if not isinstance(obj, (Processing,dict)):
             raise AttributeError("Object must either be of Class Processing or Dictonary!")   
             #print(id(Processing)) # test id of class location to compare across package
         # check if entries in results dict exist

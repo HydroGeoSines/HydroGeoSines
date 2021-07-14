@@ -243,7 +243,7 @@ class Time_domain(object):
         psd_f, psd_p = csd(X, X, fs=fs, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
         result = np.mean(np.abs(csd_p)/psd_p)
         return result
-
+    
     @staticmethod
     def regress_deconv(tf, GW, BP, ET=None, lag_h=24, et_method=None, fqs=None):
         print('>> Applying regression deconvolution ...')
@@ -303,14 +303,14 @@ class Time_domain(object):
                 X = np.hstack([v])
             # perform regression ...
             Z = np.hstack([np.ones([n,1]), X])
-
+            
             #%% perform least squares fitting
             # ----------------------------------------------
             # c  = np.linalg.lstsq(Z, dWL, rcond=None)[0]
             # ----------------------------------------------            
             c = 0.5*np.ones(Z.shape[1])
             c, covar = curve_fit(brf_total(Z), t, dWL, p0=c)
-
+            
             #%% compute the singular values
             sgl = svdvals(Z)
             # 'singular value' is important: 1 is perfect,
@@ -319,7 +319,7 @@ class Time_domain(object):
             # print('>> Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
                 raise Warning('The solution is ill-conditioned (condition number {}!'.format(condnum))
-
+                
             # ----------------------------------------------
             nc = len(c)
             # calculate the head corrections
@@ -328,7 +328,7 @@ class Time_domain(object):
             WLc = GW - np.concatenate([[0], dWLc])
             # set the corrected heads
             WLc += (np.nanmean(GW) - np.nanmean(WLc))
-
+            
             # adjust for mean offset
             # trend  = c[0]
             lag_t = np.linspace(0, lag_h, int((lag_h/24)*spd) + 1, endpoint=True)
@@ -348,7 +348,7 @@ class Time_domain(object):
                 cbrf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
             cbrf_stdev = np.sqrt(cbrf_var)
             params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'brf': cbrf, 'crf_stdev': cbrf_stdev}}
-
+            
             # consider ET if desired ...
             if et:
                 k = np.arange(nm+1, NP+nm+1)
@@ -366,7 +366,7 @@ class Time_domain(object):
                 params.update({'erf': {'freq': fqs, 'complex': trf, 'components': names}})
             # return the method results
             return WLc, params
-
+        
         # this method uses Earth tide time series
         elif(et_method == 'ts'):
             print('>> Using Earth tide time series in the regression ...')
@@ -382,7 +382,7 @@ class Time_domain(object):
             dt = t[1] - t[0]
             # the data
             WL = GW
-
+            
             #%% temporal derivatives
             spd = int(np.round(1/dt))
             #dt = 1./24.
@@ -390,7 +390,7 @@ class Time_domain(object):
             dWL = np.diff(WL)/dt
             if et:
                 dET = np.diff(ET)/dt
-
+                
             #%% prepare matrices ...
             lag = range(int((lag_h/24)*spd) + 1)
             n   = len(dBP)
@@ -402,7 +402,7 @@ class Time_domain(object):
                 k = np.arange(n-j)
                 ### need negative?
                 V[j+k, i] = -dBP[k]
-
+                
             #%%
             if et:
                 nm = len(lag)
@@ -417,11 +417,11 @@ class Time_domain(object):
                 XY = V
             # stack the matrices
             Z = np.hstack([np.ones([n,1]), XY])
-
+            
             #%% perform least squares fitting
             c = 0.5*np.ones(Z.shape[1])
             c, covar = curve_fit(brf_total(Z), t, dWL, p0=c)
-
+            
             #%% compute the singular values
             sgl = svdvals(Z)
             # 'singular value' is important: 1 is perfect,
@@ -430,7 +430,7 @@ class Time_domain(object):
             # print('>> Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
                 raise Warning('Attention: The solution is ill-conditioned (condition number {}!'.format(condnum))
-
+                
             #%% determine the results
             nc = len(c)
             # calculate the head corrections
@@ -439,7 +439,7 @@ class Time_domain(object):
             WLc = GW - np.concatenate([[0], dWLc])
             # set the corrected heads
             WLc += (np.nanmean(GW) - np.nanmean(WLc))
-
+            
             #%% components
             # trend = c[0]
             lag_t = np.linspace(0, lag_h, int((lag_h/24)*spd) + 1, endpoint=True)
@@ -459,7 +459,7 @@ class Time_domain(object):
                 cbrf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
             cbrf_stdev = np.sqrt(cbrf_var)
             params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'brf': cbrf, 'crf_stdev': cbrf_stdev}}
-
+            
             if et:
                 erf = c[nm+1:2*nm+1]
                 erf_covar = covar[nm+1:2*nm+1,nm+1:2*nm+1]
@@ -476,7 +476,7 @@ class Time_domain(object):
                     cerf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
                 cerf_stdev = np.sqrt(cerf_var)
                 params.update({'erf': {'lag': lag_t, 'irc': erf, 'irc_stdev': erf_stdev, 'brf': cerf, 'crf_stdev': cerf_stdev}})
-
+                
             return WLc, params
         else:
             raise Exception("Error: Please only use available Earth tide methods!")

@@ -22,7 +22,7 @@ from .. import utils
 class Processing(object):
     # define all class attributes here
     #attr = attr
-
+    
     def __init__(self, site_obj):
         self._validate(site_obj)
         self.site       = deepcopy(site_obj)
@@ -58,32 +58,32 @@ class Processing(object):
     #%% the "by_something" methods permanently modify the site data and with this methods can be chained together
     def by_dates(self, start=None, stop=None, utc_offset=None):
         print("Filter dataset by dates ...")
-
+        
         # determine the UTC offset ...
         if utc_offset is None:
             utc_offset = np.min(np.array(list(self.site.utc_offset.values())))
-
+            
         # convert to UTC ...
         if start is None:
             start = self.site.data["datetime"].min()
         else:
             start = pd.to_datetime(start).tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)
-
+            
         if stop is None:
             stop = self.site.data["datetime"].max()
         else:
             stop = pd.to_datetime(stop).tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc)
-
+            
         # test criteria ...
         if stop <= start:
             raise Exception("Error: Stop date must be after the start date!")
-
+            
         # extract sub-dataset ...
         pos = (self.site.data["datetime"] >= start) & (self.site.data["datetime"] <= stop)
         # only keep the selected dates for GW, BP and ET
         self.site.data = self.site.data[pos]
         return self
-
+    
     def by_gwloc(self, gw_loc):
         print("Filter dataset by location ...")
         # get idx to subset GW locations

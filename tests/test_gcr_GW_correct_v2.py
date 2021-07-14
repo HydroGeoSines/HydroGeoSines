@@ -22,7 +22,7 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_all.csv',
 process = hgs.Processing(fowlers).by_dates(start='2015-11-01', stop='2016-02-01') #.by_gwloc("FG822-2")
 
 #%% test gw_correct
-gw_correct_results  = process.GW_correct(lag_h=36, et_method='hals')
+gw_correct_results  = process.GW_correct(lag_h=24, et_method='hals')
 
 #%%
 be_results  = process.BE_time(method="all")
