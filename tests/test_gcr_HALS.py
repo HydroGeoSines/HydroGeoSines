@@ -23,6 +23,7 @@ death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
 process = hgs.Processing(death_valley)
 process.info()
 
+#%%
 # test hals method
 hals_results  = process.hals()
 

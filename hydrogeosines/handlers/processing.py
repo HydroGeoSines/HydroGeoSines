@@ -117,7 +117,7 @@ class Processing(object):
             locs = pd.unique(data.loc[data.category == cat, 'location'])
             for loc in locs:
                 print("-------------------------------------------------")
-                print("Category / Location: {} / {}".format(cat, loc))
+                print("Category: {}, Location: {}".format(cat, loc))
                 start = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].min()
                 print("Start: {} UTC".format(start.strftime('%d/%m/%Y %H:%M:%S')))
                 stop = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].max()
@@ -134,9 +134,9 @@ class Processing(object):
                 #print(idx)
                 if spl_min == spl_med:
                     if np.any(idx):
-                        print("Sampling: {:.0f}m {:.0f}s (regular, with {:d} gaps)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60, np.sum(idx)))
+                        print("Sampling: {:02.0f}:{:02.0f}:{:02.0f} (regular, with {:d} gaps)".format(spl_min.total_seconds()/3600, spl_min.total_seconds() % 3600 / 60, spl_min.total_seconds() % 3600 % 60, np.sum(idx)))
                     else:
-                        print("Sampling: {:.0f}m {:.0f}s (regular)".format(spl_min.total_seconds()/60, spl_min.total_seconds() % 60))
+                        print("Sampling: {:02.0f}:{:02.0f}:{:02.0f} (regular)".format(spl_min.total_seconds()/3600, spl_min.total_seconds() % 3600 / 60, spl_min.total_seconds() % 3600 % 60))
                         
                 else:
                     print("Sampling: {:.0f}-{:.0f} sec (irregular)".format(spl_min.total_seconds(), spl_max.total_seconds()))
@@ -145,7 +145,6 @@ class Processing(object):
                 print("Unit: {:s}".format(data.loc[(data.category == cat) & (data.location == loc), 'unit'].values[0]))
             
             print("-------------------------------------------------")
-        pass
         
     #%%
     def BE_time(self, method:str="all", derivative=True, update=False):
