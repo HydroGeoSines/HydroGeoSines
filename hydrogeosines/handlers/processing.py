@@ -45,10 +45,17 @@ class Processing(object):
         self._obj.add_ET(et_comp='g')
         self.data = self._obj.data.copy()
     
-    def make_regular(self):
+    def RegularAndAligned(self, **kwargs):
+        # only pass kwargs as arguments that acutally exist in BP_align
+        BPalign_args = kwargs.copy()
+        sig = inspect.signature(self.data.hgs.BP_align)    
+        for key in kwargs.keys():
+            if key not in sig.parameters.keys():
+                del BPalign_args[key]     
+                
         data = self.data
-        data = data.hgs.make_regular()
-        data = data.hgs.BP_align()
+        data = data.hgs.make_regular(**kwargs)
+        data = data.hgs.BP_align(**BPalign_args)
         data.hgs.check_alignment() # check integrity
         self.data_regular = data
         return self
@@ -79,7 +86,7 @@ class Processing(object):
         try:
             data = self.data_regular
         except AttributeError:   
-            data = self.make_regular().data_regular
+            data = self.RegularAndAligned().data_regular
 
         # extract data categories
         gw_data = data.hgs.filters.get_gw_data
@@ -356,7 +363,7 @@ class Processing(object):
         try:
             data = self.data_regular
         except AttributeError:   
-            data = self.make_regular().data_regular
+            data = self.RegularAndAligned().data_regular
             
         gw_data     = data.hgs.filters.get_gw_data         
         categories  = data.category.unique()
@@ -477,7 +484,7 @@ class Processing(object):
         try:
             data = self.data_regular
         except AttributeError:   
-            data = self.make_regular().data_regular            
+            data = self.RegularAndAligned().data_regular            
             data.hgs.check_alignment(cat="BP")
                 
         ## check integrity of ET data
