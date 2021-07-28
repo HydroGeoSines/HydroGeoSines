@@ -10,6 +10,7 @@ import numpy as np
 import pytz
 import matplotlib.pyplot as plt
 import seaborn as sns
+from ...models import const
 
 class Plot(object):
     #add attributes specific to Visualize here
@@ -19,19 +20,28 @@ class Plot(object):
         #add attributes specific to Load here
         #self.attribute = variable
     
+    #%%
     @staticmethod
     def plot_BE_time(loc, results, data, info=None):
         pass
     
+    #%%
     @staticmethod
     def plot_BE_freq(loc, results, data, info=None):
         pass
     
+    #%%
     @staticmethod
-    def plot_HALS(loc, results, data, info=None):
-        fig, ax = plt.subplots()
-        for x, y, z in zip(results["phs"], results["amp"], results["comps"]):
+    def plot_HALS(loc, results, data, info=None, folder=None, **kwargs):
+        print("Plotting location: {:s}".format(loc[0]))
+        if 'figsize' in kwargs:
+            fig, ax = plt.subplots(figsize=kwargs['figsize'])
+        else:
+            fig, ax = plt.subplots()
+            
+        for x, y, z in zip(results["phs"], results["amp"], results["component"]):
             ax.scatter(x, y, s=10, label=z)
+            
         ax.set_xlabel("Phase [rad]")
         unit = '?'
         if 'unit' in info:
@@ -40,11 +50,34 @@ class Plot(object):
         ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
         ax.set_xlim([-np.pi, np.pi])
         ax.legend()
+        if isinstance(folder, str):
+            print(">> Writing files to folder: {}".format(folder))
+            filename = folder + '/FFT_' + loc[0] + '_(' + loc[1] + ').png'
+            plt.savefig(filename, dpi=200, bbox_inches='tight')
+            
+        return fig
     
+    #%%
     @staticmethod
-    def plot_FFT(loc, results, data, info=None, **kwargs):
-        fig, ax = plt.subplots()            
+    def plot_FFT(loc, results, data, info=None, folder=None, **kwargs):
+        print("Plotting location: {:s}".format(loc[0]))
+        if 'figsize' in kwargs:
+            fig, ax = plt.subplots(figsize=kwargs['figsize'])
+        else:
+            fig, ax = plt.subplots()
+            
         ax.plot(results["freq"], results["amp"])
+        
+        # if loc[2] in ('GW', 'ET'):
+        #     components = const.const['_etfqs']
+        # else:
+        #     components = const.const['_atfqs']
+            
+        # for comp, freq in components.items():
+        #     idx1 = np.argmin(np.abs(freq - results["freq"]))
+        #     idx2 = np.argmax(results["amp"][idx1-3:idx1+3])
+        #     ax.plot(results["freq"][idx1-3+idx2], results["amp"][idx1-3+idx2], '.r')
+        
         ax.set_xlabel("Frequency [cpd]")
         unit = '?'
         if 'unit' in info:
@@ -57,11 +90,17 @@ class Plot(object):
         else:
             ax.set_xlim([.5, 2.5])
             
-        if 'file' in kwargs:
-            plt.savefig(kwargs['file'], dpi=200)
+        if isinstance(folder, str):
+            print(">> Writing files to folder: {}".format(folder))
+            filename = folder + '/FFT_' + loc[0] + '_(' + loc[2] + "," + loc[1] + ').png'
+            plt.savefig(filename, dpi=200, bbox_inches='tight')
+        
+        return fig
     
+    #%%
     @staticmethod
-    def plot_GW_correct(loc, results, data, info=None, **kwargs):
+    def plot_GW_correct(loc, results, data, info=None, folder=None, **kwargs):
+        print("Plotting location: {:s}".format(loc[0]))
         if 'utc_offset' in info:
             datetime = data.index.tz_convert(tz=pytz.FixedOffset(int(60*info['utc_offset']))).tz_localize(None)
             utc_offset = info['utc_offset']
@@ -73,7 +112,11 @@ class Plot(object):
             unit = info['unit']
         
         # plot the correted heads
-        fig, ax = plt.subplots()
+        if 'figsize' in kwargs:
+            fig1, ax = plt.subplots(figsize=kwargs['figsize'])
+        else:
+            fig1, ax = plt.subplots()
+            
         ax.plot(datetime, data.GW, c=[0.7,0.7,0.7], lw=0.5, label='Measured')
         ax.plot(datetime, results['WLc'], c='k', lw=0.5, label='Corrected')
         ax.set_xlim([datetime[0], datetime[-1]])
@@ -81,20 +124,35 @@ class Plot(object):
         ax.set_ylabel("Head [" + unit + "]")
         ax.set_xlabel('Datetime [UTC{:+.2f}]'.format(utc_offset))
         ax.legend()
-        
+            
         # and the response functions
-        fig, ax = plt.subplots()
+        if 'figsize' in kwargs:
+            fig2, ax = plt.subplots(figsize=kwargs['figsize'])
+        else:
+            fig2, ax = plt.subplots()
         ax1 = ax.twinx()
         
-        #l1, = ax1.plot(results['brf']['lag'], results['brf']['irf'], ls='None', marker='.', ms=5, c=[.6,.6,.6], label='IRC')
-        l1 = ax1.scatter(results['brf']['lag'], results['brf']['irf'], c='k', s=5, label='IRC')
-        l2, = ax.plot(results['brf']['lag'], results['brf']['crf'], lw=1, c='k', label='BRF')
+        #l1, = ax1.plot(results['brf']['lag'], results['brf']['irc'], ls='None', marker='.', ms=5, c=[.6,.6,.6], label='IRC')
+        l1 = ax1.scatter(results['brf']['lag'], results['brf']['irc'], c='k', s=5, label='IRC')
+        l2, = ax.plot(results['brf']['lag'], results['brf']['brf'], lw=1, c='k', label='BRF')
         
         ax.set_xlabel('Lag time [hours]')
         
         ax.set_title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
 
-        ax.set_ylabel("BRF")
-        ax1.set_ylabel("IRC")
+        ax.set_ylabel("BRF [-]")
+        ax.set_ylim([-0.05, 1.1])
+        ax1.set_ylabel("IRC [-]")
         
         ax.legend(handles=[l1,l2], loc='best')
+        
+        if isinstance(folder, str):
+            print(">> Writing files to folder: {}".format(folder))
+            
+            filename = folder + '/GW_correct_' + loc[0] + '_(' + loc[1] + ').png'
+            fig1.savefig(filename, dpi=200, bbox_inches='tight')
+            
+            filename = folder + '/GW_correct_BRF_' + loc[0] + '_(' + loc[1] + ').png'
+            fig2.savefig(filename, dpi=200, bbox_inches='tight')
+        
+        return fig1, fig2

@@ -27,21 +27,25 @@ class HgsAccessor(object):
         # verify there is a column datetime, location, category, unit and value        
         if not set(["datetime","category","location","part","unit","value"]).issubset(obj.columns):
             raise AttributeError("Must have 'datetime','category','location', 'part', 'unit' and 'value' columns.")               
-        
+    
+    #%%
     ## setting datetime as a property and extending it by the Time methods
     @property
     def dt(self):
         return Time(self._obj.datetime)
     
+    #%%
     ## setting filters as a property and extending it by the HgsFilters methods
     @property
     def filters(self):
         return HgsFilters(self._obj)
-
+    
+    #%%
     @property
     def pivot(self):
         return self._obj.pivot_table(index=self.dt._obj, columns=self.filters.obj_col, values="value")    
-       
+      
+    #%%
     @property
     def spl_freq_groupby(self):
         # returns most ofen found sampling frequency grouped by object-dtype columns, in seconds
@@ -49,21 +53,23 @@ class HgsAccessor(object):
         df = df.groupby(self.filters.obj_col, dropna=False)["datetime"].agg(lambda x: (x.diff(periods=1).dt.seconds).mode())
         #df = df.index.droplevel(3) # remove the zero index entry
         return df
-       
+      
+    #%%
     @property
     def check_duplicates(self):
         # search for duplicates (in rows)
         if any(self._obj.duplicated(subset=None, keep='first')):                
-            print("Dublicate entries detected and deleted")            
+            print("Duplicate entries were detected and deleted.")            
             return self._obj.drop_duplicates(subset=None, keep='first', ignore_index=True)
         else:
-            print("No duplicates found ...")
+            print("No duplicate entries were found.")
             return self._obj
     
+    #%%
     def check_alignment(self, cat:str="BP"):
         df = self._obj
         # mask possible other categories values
-        df = df[df["category"].isin(["GW",cat])]
+        df = df[df["category"].isin(["GW", cat])]
         df = df.hgs.pivot
         # check if any BP entry is null and if for any row all the GW entries are null        
         if (df[cat].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
@@ -72,12 +78,14 @@ class HgsAccessor(object):
         else:
             print("Your groundwater data is NOT aligned with {}. Please consider using the 'make_regular' and 'bp_align' methods!".format(cat))  
             return False
-        
+    
+    #%%
     @staticmethod
     def unit_converter_vec(df, unit_dict:dict):  
         # adjust values based on a unit conversion factor dictionary
         return df.value*np.vectorize(unit_dict.__getitem__)(df.unit.str.lower())
     
+    #%%
     # ????
     def get_loc_unit(self, cat='GW'):  
         unit = self._obj.loc[(self._obj['category'] == cat), 'unit']
@@ -86,6 +94,7 @@ class HgsAccessor(object):
         else:
             return unit.iloc[0]
     
+    #%%
     def pucf_converter_vec(self, unit_dict:dict): # using vectorization        
         # convert pressure units for GW and BP into SI unit meter    
         df = self._obj
@@ -95,6 +104,7 @@ class HgsAccessor(object):
             df.loc[:, "unit"]    = np.where(idx, "m", df.unit) 
         return df
     
+    #%%
     def pucf_converter(self, row): # loop based
         # convert pressure units for GW and BP into SI unit meter
         if row["category"] in ("GW", "BP") and row["unit"] != "m":
@@ -102,20 +112,23 @@ class HgsAccessor(object):
         else:
             return row["value"], "m"
     
+    #%%
     #TODO: add upsampling method with interpolation based on time() ffill() and/or pad()
     def upsample(self, method = "time"):
         out = self._obj.set_index("datetime")
         out = self._obj.interpolate(method=method).reset_index(drop=True)
         return out      
     
+    #%%
     def resample(self, freq):
         # resamples by group and by a given frequency in "seconds".
         # should be used on the (calculated) median frequency of the datetime
-        out = self._obj.groupby(self.filters.obj_col).resample(str(int(freq))+"S", on="datetime").mean()
+        out = self._obj.groupby(self.filters.obj_col).resample(str(int(freq))+"S", on="datetime", origin='start').mean()
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
         return out
     
+    #%%
     def resample_by_group(self, freq_groupby):
         #TODO: write validation logic for freq_groupby. It must be same length as number of groups, e.g. len(cat*loc*unit)
         # resample by median for each location and category individually
@@ -124,14 +137,15 @@ class HgsAccessor(object):
             # create mask for valid index
             a = self._obj.loc[:,self.filters.obj_col].isin(freq_groupby.index[i]).all(axis=1)  
             # resample                
-            temp = self._obj[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime").mean()
+            temp = self._obj[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime", origin='start').mean()
             temp.reset_index(inplace=True)
             out.append(temp) 
-        out = pd.concat(out,axis=0,ignore_index=True,join="inner",verify_integrity=True) 
+        out = pd.concat(out, axis=0, ignore_index=True, join="inner", verify_integrity=True) 
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
         return out  
     
+    #%%
     def location_splitter(self, part_size:int = 30, dt_threshold:int = 3600):
         """
         Split dataframe into multiple parts using a maximum timedelta threshold. 
@@ -178,6 +192,7 @@ class HgsAccessor(object):
             else:
                 return pd.concat(list_df,ignore_index=True,axis=0)
     
+    #%%
     def gap_routine(group, mcf:int = 300, inter_max:int = 3600, part_min: int = 20, method: str = "backfill", inter_max_total: int= 10, split_location=True):
         """
         A method that can be passed into a groupby apply function in order to upsample all data null value gaps that are smaller then a threshold timedelta.
@@ -247,12 +262,13 @@ class HgsAccessor(object):
             pass
         # check for remaining nan (should be none)
         if group.hgs.filters.is_nan:
-            print("Caution! Methods was not able to remove all NaN!")
+            print("Caution: Method was not able to remove all NaN!")
         else:
             pass
         return group     
     
-    def make_regular(self, inter_max: int = 3600, part_min: int = 20, method: str = "backfill", category = "GW", spl_freq: int = None, inter_max_total: int= 10):
+    #%%
+    def make_regular(self, inter_max:int = 3600, part_min:int = 20, method:str = "backfill", category = "GW", spl_freq: int = None, inter_max_total: int= 10):
         """
         Get a dataframe with a regular sampling by group and no NaN.
 
@@ -286,7 +302,7 @@ class HgsAccessor(object):
         if spl_freq is not None:
             # use predefined sampling frequency
             mcfs = df_reg.hgs.resample(spl_freq)
-        else:    
+        else:
             # find most common frequency (mcf)
             spl_freq = df_reg.hgs.spl_freq_groupby
             # resample to mcf
@@ -308,6 +324,7 @@ class HgsAccessor(object):
             regular = pd.concat([mcfs,df],ignore_index=True)
         return regular
     
+    #%%
     def BP_align(self, inter_max:int = 3600, method: str ="backfill", inter_max_total:int = 10):
         """
         Align barometric pressure with groundwater head data.

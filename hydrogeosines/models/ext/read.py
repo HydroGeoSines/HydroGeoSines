@@ -20,18 +20,19 @@ class Read(object):
         pass
         #add attributes specific to Load here
         #self.attribute = variable
-
+        
+    #%%
     def import_csv(self, filepath, input_category, utc_offset:float, unit = "m", how: str="add", loc_names=None, header = 0, check_duplicates=False):
 
-        #check for non valid categories
+        # check for non valid categories
         utils.check_affiliation(input_category, self.VALID_CATEGORY)
 
-        #check for non valid pressure units (cat: GW, BP)
+        # check for non valid pressure units (cat: GW, BP)
         if any(cat in input_category for cat in ("GW","BP")):
             idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e in ("GW","BP")]
             utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_pucf'].keys())
 
-        #check for non valid Earth tide units (cat: ET)
+        # check for non valid Earth tide units (cat: ET)
         if "ET" in input_category:
             idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e == "ET"]
             utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_etunit'])
@@ -51,7 +52,7 @@ class Read(object):
 
         # make sure the first column is a correctly identified datetime
         if not isinstance(data.index, pd.DatetimeIndex):
-            raise Exception("Error: First column must be a datetime column")
+            raise Exception("Error: First column must be a datetime column!")
 
         # Setting DateTime
         d = pd.to_datetime(data.index)
@@ -97,3 +98,4 @@ class Read(object):
         # no dublicate entries
         if check_duplicates == True:
             self.data = self.data.hgs.check_duplicates
+            

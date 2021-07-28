@@ -8,7 +8,7 @@ def check_affiliation(values,valid):
         if not all(x in valid for x in np.array(values).flatten()):
             raise ValueError("%r is not in %r." % (values, valid))                 
 
-                          
+
 def zip_formatter(arg1,*args):
     args = list(args)
     valid = (str,float,int)
@@ -25,15 +25,18 @@ def zip_formatter(arg1,*args):
         args_list = args
     return list(zip(arg1,*args_list)) 
 
+
 def find_nearest_idx(array, value):
     # find index nearest to value
     delta = np.abs(np.array(array-value))
     idx = np.argmin(delta).astype(int)
     return idx, delta[idx]
-                 
+
+
 def check_all_equal(arr):
     """ check if all values are equal to the first element """
     return print((arr[:] == arr[0]).all(axis=0))
+
 
 def pi_range(value):
     value = np.array(value)
@@ -63,7 +66,8 @@ def join_tuple_string(str_tuple) -> str:
         return '_'.join(str_tuple)
     elif isinstance(str_tuple, str):
         return str_tuple
-        
+
+
 def dict_update(d, u):
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
@@ -71,6 +75,7 @@ def dict_update(d, u):
         else:
             d[k] = v
     return d
+
 
 def gap_mask(s:pd.Series, maxgap:int):
     """

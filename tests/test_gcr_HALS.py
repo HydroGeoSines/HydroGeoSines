@@ -21,16 +21,15 @@ death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
 #%% Processing
 # create Instance of Processing with csiro_site
 process = hgs.Processing(death_valley)
+process.info()
 
+#%%
 # test hals method
 hals_results  = process.hals()
-
-# test hals method
-fft_results  = process.fft(update=True)
 
 #%% Output
 csiro_output  = hgs.Output(hals_results) # process.results container or results
 
 # for visualization
-csiro_output.plot() # possible different plotting style methods, e.g. simple, report, etc
-
+csiro_output.plot(folder='export') # possible different plotting style methods, e.g. simple, report, etc
+csiro_output.export(folder='export') # possible different plotting style methods, e.g. simple, report, etc

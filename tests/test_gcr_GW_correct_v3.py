@@ -10,17 +10,21 @@ import numpy as np
 import pandas as pd
 
 #%%  Testing MVC principal
-death_valley = hgs.Site('death valley', geoloc=[-116.471360, 36.408130, 688])
-death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
-                        input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","nstr"],
+site = hgs.Site('Porto Alegre', geoloc=[-30.03779, -51.19535, 40])
+site.import_csv('tests/data/brasil/Brito.csv',
+                        input_category=["GW", "BP", "ET"], 
+                        utc_offset=-3, 
+                        unit=["m", "m", "nm/s**2"],
+                        loc_names = ["GW", "Baro", "ET"],
                         how="add", check_duplicates=True)
 
 #%% Processing
 # create Instance of Processing with csiro_site
-process = hgs.Processing(death_valley)
+process = hgs.Processing(site)
+process.info()
 
 #%% test gw_correct
-gw_correct_results  = process.GW_correct(lag_h=8)
+gw_correct_results  = process.GW_correct(lag_h=8, et_method='hals')
 
 correct_output  = hgs.Output(gw_correct_results)
 

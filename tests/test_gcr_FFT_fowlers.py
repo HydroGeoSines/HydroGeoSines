@@ -21,14 +21,16 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_short.csv',
 
 #%% Processing
 # create Instance of Processing with csiro_site
-process = hgs.Processing(fowlers)
+process = hgs.Processing(fowlers).by_gwloc(['FG822-2'])
 
 # test hals method
 fft_results  = process.fft(update=True)
 
 #%% Output
-csiro_output  = hgs.Output(fft_results) # process.results container or results
+csiro_output  = hgs.Output(fft_results)
 
 # for visualization
-csiro_output.plot(xlim=[0.5, 5], file='fft.png') # possible different plotting style methods, e.g. simple, report, etc
+csiro_output.plot(folder='export')
 
+#%%
+test = csiro_output.export(folder='export')
