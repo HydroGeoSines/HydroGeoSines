@@ -120,16 +120,16 @@ class HgsAccessor(object):
         return out      
     
     #%%
-    def resample(self, freq):
+    def resample(self, freq,origin:str = "start_day"):
         # resamples by group and by a given frequency in "seconds".
         # should be used on the (calculated) median frequency of the datetime
-        out = self._obj.groupby(self.filters.obj_col).resample(str(int(freq))+"S", on="datetime", origin='start').mean()
+        out = self._obj.groupby(self.filters.obj_col).resample(str(int(freq))+"S", on="datetime", origin=origin).mean()
         # reorganize index and column structure to match original hgs dataframe
         out = out.reset_index()[self._obj.columns]
         return out
     
     #%%
-    def resample_by_group(self, freq_groupby):
+    def resample_by_group(self, freq_groupby, origin:str= "start_day"):
         #TODO: write validation logic for freq_groupby. It must be same length as number of groups, e.g. len(cat*loc*unit)
         # resample by median for each location and category individually
         out = []
@@ -137,7 +137,7 @@ class HgsAccessor(object):
             # create mask for valid index
             a = self._obj.loc[:,self.filters.obj_col].isin(freq_groupby.index[i]).all(axis=1)  
             # resample                
-            temp = self._obj[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime", origin='start').mean()
+            temp = self._obj[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime", origin='start_day').mean()
             temp.reset_index(inplace=True)
             out.append(temp) 
         out = pd.concat(out, axis=0, ignore_index=True, join="inner", verify_integrity=True) 

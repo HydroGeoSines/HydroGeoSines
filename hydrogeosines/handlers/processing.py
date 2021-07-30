@@ -48,12 +48,12 @@ class Processing(object):
     def RegularAndAligned(self, **kwargs):
         # only pass kwargs as arguments that acutally exist in BP_align
         BPalign_args = kwargs.copy()
-        sig = inspect.signature(self.data.hgs.BP_align)
+        sig = inspect.signature(self.site.data.hgs.BP_align)
         for key in kwargs.keys():
             if key not in sig.parameters.keys():
                 del BPalign_args[key]
 
-        data = self.data
+        data = self.site.data
         data = data.hgs.make_regular(**kwargs)
         data = data.hgs.BP_align(**BPalign_args)
         data.hgs.check_alignment() # check integrity

@@ -80,9 +80,9 @@ gw_locs = data.hgs.filters.get_gw_locs
 
 ## Make data regular and aligned 
 regular = data2.hgs.make_regular(spl_freq=1200, part_min = 15) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
-regular = regular.hgs.BP_align() # inter_max = 3600, method = "backfill", inter_max_total = 10
+regular = regular.hgs.BP_align(inter_max=3600,inter_max_total=10) # inter_max = 3600, method = "backfill", inter_max_total = 10
 # check integrity
-regular.hgs.check_BP_align
+regular.hgs.check_alignment()
 
 # pivot data to get multiindex by datetime. perfectly aligned now
 pivot = regular.hgs.pivot
@@ -109,7 +109,7 @@ process_csiro_SiteA = hgs.Processing(csiro_site).by_gwloc(locations)
 # add a regularly sampled data container to the processing object 
 # it is automatically reused in some of the methods, reducing computation times
 locations = ["Loc_A","Loc_B"]
-process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).make_regular()
+process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).RegularAndAligned()
 
 # test hals method
 hals_results  = process_csiro.hals()
