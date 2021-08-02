@@ -62,7 +62,7 @@ test3 = data.iloc[380000:-4].reset_index(drop = True)
 
 # Full data test set with gaps
 data2 = csiro_site.data.copy()
-data2.loc[12000:12500,"value"] = np.nan # BP value gap
+data2.loc[12000:15000,"value"] = np.nan # BP value gap
 data2.loc[30000:32000,"value"] = np.nan
 data2.loc[151000:155000,"value"] = np.nan
 data2.loc[300000:302000,"value"] = np.nan
@@ -134,7 +134,7 @@ test_structure =   {"hals": {("loc_A","1","BP"): {'amp': [0.0, 1.0, 5.0, 1.0, 0]
                                                 'freq': [0.997262, 1.0, 1.002738, 2.0, 2.005476]}
                                                 }}
 #%% recursion for nested dict to df
-user_dict = hals_results.copy()
+user_dict = test_structure.copy()
 def flatten(object):
     for item in object:
         if isinstance(item, (list, tuple, set)):
@@ -290,7 +290,7 @@ def location_splitter(df:pd.DataFrame, part_size:int = 30, dt_threshold:int = 36
         return pd.DataFrame(columns=df.columns)
     else:    
         # list of new data frames
-        list_df = [df.iloc[i,:] for i in blocks]
+        list_df = [df.iloc[i,:].copy() for i in blocks]
         # add new column for location "parts"
         for i, val in enumerate(list_df):
             if "part" not in val.columns: 
@@ -340,42 +340,44 @@ def gap_routine(group, mcf:int = 300, inter_max:int = 3600, part_min: int = 20, 
         HGS DataFrame with all gaps due to null values being removed.
 
     """
-    print(group.name)
+    #print(group.name)
     # get mcf for group
     if isinstance(mcf,int):
         mcf_group = mcf
     elif isinstance(mcf,pd.Series):    
         mcf_group = mcf.xs(group.name)
     else:
-        raise Exception("Error: Wrong format for mcf in gap_routine!")
+        raise Exception("Error: Wrong format of mcf variable in gap_routine!")
+    # maximum number of gaps    
     maxgap = inter_max/mcf_group
     # create mask for gaps
     s = group["value"]
     mask, counter = gap_mask(s,maxgap)
     # use count of masked values to check ratio
-    #TODO: raise exception
     if counter/len(s)*100 <= inter_max_total:
-        print("{:.2f} % of the '{}' data was interpolated due to gaps < {}s!".format((counter/len(s)*100),
-                                                                                     group["location"].unique()[0],inter_max))
+        if "part" in group.columns:
+            print("{:.2f} % of the '{}' data at '{}_{}' was interpolated due to gaps < {}s!".format((counter/len(s)*100), group.name[0], group.name[1], group.name[2],inter_max))
+        else:    
+            print("{:.2f} % of the '{}' data at '{}' was interpolated due to gaps < {}s!".format((counter/len(s)*100), group.name[0], group.name[1],inter_max))
     else:
-        raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!")
+        raise Exception("Error: Interpolation limit of {:.2f} % was exceeded!".format(inter_max_total))
     ## interpolate gaps smaller than maxgap
     # choose interpolation (runs on datetime index)
-    group = upsample(group[mask],method=method)
+    group = group[mask].hgs.upsample(method=method)
     if split_location:
         ## identify large gaps, split group and reassamble
         # get minimum part_size (n_entries)
         part_size = int(part_min/(mcf_group/(60*60*24)))
         # location splitter for "part" column
-        group = location_splitter(group,part_size=part_size, dt_threshold=inter_max)  
+        group = group.hgs.location_splitter(part_size=part_size, dt_threshold=inter_max)  
     else: 
         pass
     # check for remaining nan (should be none)
     if group.hgs.filters.is_nan:
-        print("Caution! Methods was not able to remove all NaN!")
+        print("Caution: Method was not able to remove all NaN!")
     else:
         pass
-    return group    
+    return group     
 
 #%% Make regular method for remove all gaps in data by upsampling and splitting of large junks
 def make_regular(df, inter_max: int = 3600, part_min: int = 20, method: str = "backfill", category = "GW", spl_freq: int = None, inter_max_total: int= 10):
@@ -467,7 +469,7 @@ def BP_align(df, inter_max:int = 3600, method: str ="backfill", inter_max_total:
         datetimes = bp_data.loc[np.isnan(bp_data["value"]),"datetime"]
         
         gw_data = gw_data[~gw_data.datetime.isin(datetimes)]
-            # resample to most common frequency
+        # resample to most common frequency
         spl_freqs_gw = gw_data.hgs.spl_freq_groupby
         gw_data = gw_data.hgs.resample_by_group(spl_freqs_gw)
         gw_data = gw_data.groupby(gw_data.hgs.filters.obj_col).apply(gap_routine, mcf=spl_freqs_gw, inter_max = inter_max, 
@@ -480,9 +482,137 @@ def BP_align(df, inter_max:int = 3600, method: str ="backfill", inter_max_total:
     return out
 
 align_out  = BP_align(beta2, inter_max = 3600, method = "backfill", inter_max_total = 10)
+#%%
+def resample_by_group(df, freq_groupby, origin= "start_day"):
+    #TODO: write validation logic for freq_groupby. It must be same length as number of groups, e.g. len(cat*loc*unit)
+    # resample by median for each location and category individually
+    out = []
+    for i in range(len(freq_groupby)):
+        # create mask for valid index
+        a = df.loc[:,df.hgs.filters.obj_col].isin(freq_groupby.index[i]).all(axis=1)  
+        # resample                
+        temp = df[a].groupby(df.hgs.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime", origin=origin).mean()
+        temp.reset_index(inplace=True)
+        out.append(temp) 
+    out = pd.concat(out, axis=0, ignore_index=True, join="inner", verify_integrity=True) 
+    # reorganize index and column structure to match original hgs dataframe
+    out = out.reset_index()[df.columns]
+    return out  
 
+#%% resample method
+def resample(df, freq,origin:str = "start_day"):
+        # resamples by group and by a given frequency in "seconds".
+        # should be used on the (calculated) median frequency of the datetime
+        out = df.groupby(df.hgs.filters.obj_col).resample(str(int(freq))+"S", on="datetime", origin=origin).mean()
+        # reorganize index and column structure to match original hgs dataframe
+        out = out.reset_index()[df.columns]
+        return out    
 #%% Method testing
+inter_max = 3600 
+method ="backfill"
+inter_max_total = 40
 
+## BP align bug search
+df_orig = data2.copy()
+df_orig = make_regular(df_orig,spl_freq=3000,inter_max_total=inter_max_total,part_min=20,inter_max=inter_max)
+#df = BP_align(df)
+#%%
+def BP_align(df, inter_max:int = 3600, method: str ="backfill", part_min: int = 20, inter_max_total:int = 10):
+    # get bp and gw categories and split from rest of the data
+    bp_data= df.hgs.filters.get_bp_data  
+    gw_data= df.hgs.filters.get_gw_data
+    df_rest = df[~df["category"].isin(["GW","BP"])]
+    # assign part label to bp_data
+    if "part" in bp_data.columns: 
+        bp_data["part"] = bp_data["part"].fillna("all")
+    
+    #TODO: Check for non-valid values, create function for this
+    
+    num = 0    
+    while bp_data.hgs.filters.is_nan or df.hgs.check_alignment(silent=True) == False:
+        num += 1
+        print("\nStart iteration No. {} ...".format(num))
+        dt_start = gw_data["datetime"].min()
+        dt_end   = gw_data["datetime"].max()        
+        # make sure all bp entries are sorted by date, ignoring parts:
+        bp_data = bp_data.sort_values(by=["datetime"], ascending=True).reset_index(drop=True)        
+        # resample GW adnd BP to most common frequency
+        spl_freqs_gw = gw_data.hgs.spl_freq_groupby
+        spl_freqs_bp = bp_data["datetime"].diff(periods=1).dt.seconds.mode().values
+        
+        # lists for iteration
+        bp_out = []
+        gw_out = []
+        # align BP data to each gw location separately
+        for name, group in gw_data.groupby(gw_data.hgs.filters.obj_col): 
+            dt_start = group["datetime"].min()
+            dt_end   = group["datetime"].max()
+            spl_freq = int(spl_freqs_gw[name]) 
+            # make sure a reasonable inter_max is chosen
+            if (inter_max < spl_freqs_gw.values).any():
+                raise Exception("Error: The selected parameter value of {} for 'inter_max' is too low for a sampling frequency of {} for {}.\nPlease reset!".format(inter_max,spl_freq,name))
+            
+            print("\n----- {}_{} -----".format(name[1],name[2]))
+            # correct for datatime offset and different sampling rate
+            # if all GW entries have a matching BP, use those directly
+            if (group.datetime.isin(bp_data.datetime)).all():                
+                filter_gw = bp_data.datetime.isin(group.datetime)
+                temp = bp_data.loc[filter_gw,:]
+            else:
+                print("BP record resampled to 1 sample per {}s.".format(spl_freq))
+                temp = resample(bp_data,spl_freqs_gw[name],origin=dt_start)        
+                # filter greater than the start date and smaller than the end date
+                mask = (temp["datetime"] >= dt_start) & (temp["datetime"] <= dt_end)
+                temp = temp.loc[mask]
+        
+            ## identify and upsample small gaps
+            if temp.hgs.filters.is_nan:
+                print("\nProcessing BP gaps ...")
+                # group by identifier columns of site data
+                temp = temp.groupby(temp.hgs.filters.obj_col).apply(hgs.ext.pandas_hgs.HgsAccessor.gap_routine, mcf=spl_freq, inter_max = inter_max, 
+                                          method = method, inter_max_total= inter_max_total, split_location=False).reset_index(drop=True)   
+                # resample to get gaps that are larger then max_gap
+                temp = temp.hgs.resample(spl_freq)
+                # return datetimes that can not be interpolated because gaps are too big
+                datetimes = temp.loc[np.isnan(temp["value"]),"datetime"]
+                if len(datetimes) != 0:
+                    print("... gaps between {} and {} too large for interpolation.".format(datetimes.min().strftime('%Y-%m-%d %H:%M'),datetimes.max().strftime('%Y-%m-%d %H:%M')))
+                    # drop GW entries for which BP gaps are too big
+                    print("\nProcessing GW gaps ...")  
+                    print("... dropping GW entries for which BP gaps are too big.")
+                    group = group[~group.datetime.isin(datetimes)]                    
+                    # resample GW data to most common frequency
+                    group = group.hgs.resample(spl_freq)            
+                    # identify and upsample or split gaps in gw data  
+                    group = make_regular(group,spl_freq=spl_freq,inter_max_total=inter_max_total,part_min=part_min,inter_max=inter_max).reset_index(drop=True) 
+                    #group = group.groupby(group.hgs.filters.obj_col).apply(hgs.ext.pandas_hgs.HgsAccessor.gap_routine
+                    #                                           , mcf=spl_freq, inter_max = inter_max, part_min = part_min,
+                    #                          method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True)              
+            else:
+                print("... all done!")
+            gw_out.append(group)
+            bp_out.append(temp)
+            
+        if bp_out:   
+            bp_data = pd.concat(bp_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+        if gw_out:    
+            gw_data = pd.concat(gw_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+        bp_data = bp_data.drop_duplicates(subset=None, keep='first', ignore_index=True)
+        df = pd.concat([gw_data, bp_data],axis=0,ignore_index=True)
+        if num > 6:
+            break
+    out = pd.concat([gw_data, bp_data, df_rest],axis=0,ignore_index=True)  
+
+    return out
+
+
+#%%    
+
+align_out  = BP_align(regular, inter_max = 3200, method = "backfill", inter_max_total = 40, part_min=10)
+align_pivot = align_out.hgs.pivot
+align_out.hgs.check_alignment()
+
+#%%
 # Most common frequency (MCF)
 mcf = test.copy()
 mcf = mcf.hgs.filters.drop_nan # only needed for test data due to the ignore_index in append

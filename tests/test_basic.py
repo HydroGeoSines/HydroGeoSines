@@ -79,8 +79,8 @@ bp_locs = data.hgs.filters.get_bp_locs
 gw_locs = data.hgs.filters.get_gw_locs
 
 ## Make data regular and aligned 
-regular = data2.hgs.make_regular(spl_freq=1200, part_min = 15) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
-regular = regular.hgs.BP_align(inter_max=3600,inter_max_total=10) # inter_max = 3600, method = "backfill", inter_max_total = 10
+regular = data2.hgs.make_regular(part_min = 15,spl_freq=1200) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
+regular = regular.hgs.BP_align(inter_max=3600,inter_max_total=40) # inter_max = 3600, method = "backfill", inter_max_total = 10
 # check integrity
 regular.hgs.check_alignment()
 
