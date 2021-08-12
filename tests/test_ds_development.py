@@ -508,9 +508,10 @@ def resample(df, freq,origin:str = "start_day"):
         out = out.reset_index()[df.columns]
         return out    
 #%% Method testing
-inter_max = 3600 
+inter_max = 5000 
 method ="backfill"
 inter_max_total = 40
+part_min=60
 
 ## BP align bug search
 df_orig = data2.copy()
@@ -544,6 +545,7 @@ def BP_align(df, inter_max:int = 3600, method: str ="backfill", part_min: int = 
         bp_out = []
         gw_out = []
         # align BP data to each gw location separately
+
         for name, group in gw_data.groupby(gw_data.hgs.filters.obj_col): 
             dt_start = group["datetime"].min()
             dt_end   = group["datetime"].max()
@@ -584,10 +586,11 @@ def BP_align(df, inter_max:int = 3600, method: str ="backfill", part_min: int = 
                     # resample GW data to most common frequency
                     group = group.hgs.resample(spl_freq)            
                     # identify and upsample or split gaps in gw data  
-                    group = make_regular(group,spl_freq=spl_freq,inter_max_total=inter_max_total,part_min=part_min,inter_max=inter_max).reset_index(drop=True) 
-                    #group = group.groupby(group.hgs.filters.obj_col).apply(hgs.ext.pandas_hgs.HgsAccessor.gap_routine
-                    #                                           , mcf=spl_freq, inter_max = inter_max, part_min = part_min,
-                    #                          method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True)              
+                    #group = make_regular(group,spl_freq=spl_freq,inter_max_total=inter_max_total,part_min=part_min,inter_max=inter_max).reset_index(drop=True) 
+                    group = group.groupby(group.hgs.filters.obj_col).apply(hgs.ext.pandas_hgs.HgsAccessor.gap_routine
+                                                               , mcf=spl_freq, inter_max = inter_max, part_min = part_min,
+                                              method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True) 
+
             else:
                 print("... all done!")
             gw_out.append(group)
@@ -595,11 +598,16 @@ def BP_align(df, inter_max:int = 3600, method: str ="backfill", part_min: int = 
             
         if bp_out:   
             bp_data = pd.concat(bp_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+        # is there any GW data left?    
         if gw_out:    
             gw_data = pd.concat(gw_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+        else:
+            print("Unfortunately, there is insufficient overlap between the BP and GW data, so they cannot be aligned. Try different minimum part_size and inter_max parameters.")
+            break
+        
         bp_data = bp_data.drop_duplicates(subset=None, keep='first', ignore_index=True)
         df = pd.concat([gw_data, bp_data],axis=0,ignore_index=True)
-        if num > 6:
+        if num > 5:
             break
     out = pd.concat([gw_data, bp_data, df_rest],axis=0,ignore_index=True)  
 
@@ -608,10 +616,31 @@ def BP_align(df, inter_max:int = 3600, method: str ="backfill", part_min: int = 
 
 #%%    
 
-align_out  = BP_align(regular, inter_max = 3200, method = "backfill", inter_max_total = 40, part_min=10)
+align_out  = BP_align(df_orig)
 align_pivot = align_out.hgs.pivot
 align_out.hgs.check_alignment()
 
+#%%
+example_site = hgs.Site('example', geoloc=[141.762065, -31.065781, 160])
+example_site.import_csv('tests/data/notebook/GW_record.csv', 
+                        input_category=["GW"]*3, 
+                        utc_offset=10, unit=["m"]*3, 
+                        loc_names = ["Loc_A","Loc_B","Loc_C"],
+                        header = None,
+                        how="add", check_duplicates=True)
+
+example_site.import_csv('tests/data/notebook/BP_record.csv', 
+                        input_category="BP", 
+                        utc_offset=10, unit="m", 
+                        loc_names = ["Baro"],
+                        header = None,
+                        how="add", check_duplicates=True) 
+#%%
+locations = ["Loc_A", "Loc_B"]
+process_loc_AB = hgs.Processing(example_site).by_gwloc(locations)
+regular = process_loc_AB.site.data.copy()
+regular = make_regular(regular,inter_max=5000, part_min=60,inter_max_total=40)
+BP_align_out = BP_align(regular,inter_max=5000, part_min=60,inter_max_total=40)
 #%%
 # Most common frequency (MCF)
 mcf = test.copy()

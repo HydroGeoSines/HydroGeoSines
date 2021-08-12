@@ -33,8 +33,8 @@ data2.loc[300000:302000,"value"] = np.nan # GW value large_gap3
 # add dummy category
 #data2.loc[302000:303000,"category"] = "ET" # add additional category for testing
 
-k = 0.10 # 5% missing values
-# get 5% of GW values
+k = 0.5 # 5% missing values
+# get 10% of GW values
 idx = random.sample(list(data2.loc[data2["category"]== "GW"].index), int(k*len(data2.loc[data2["category"]== "GW"])))
 data2.drop(labels=idx,inplace=True) 
 

@@ -115,10 +115,9 @@ class HgsAccessor(object):
             return row["value"], "m"
     
     #%%
-    #TODO: add upsampling method with interpolation based on time() ffill() and/or pad()
     def upsample(self, method = "time"):
         out = self._obj.set_index("datetime")
-        out = self._obj.interpolate(method=method).reset_index(drop=True)
+        out = out.interpolate(method=method).reset_index(drop=False)[self._obj.columns]
         return out      
     
     #%%
@@ -393,12 +392,11 @@ class HgsAccessor(object):
         bp_data= self.filters.get_bp_data  
         gw_data= self.filters.get_gw_data
         df_rest = self._obj[~self._obj["category"].isin(["GW","BP"])]
-        # assign part label to bp_data
+        # assign missing part label to bp_data
         if "part" in bp_data.columns: 
             bp_data["part"] = bp_data["part"].fillna("all")
         
         #TODO: Check for non-valid values, create function for this
-        
         num = 0    
         while bp_data.hgs.filters.is_nan or df.hgs.check_alignment(silent=True) == False:
             num += 1
@@ -416,6 +414,7 @@ class HgsAccessor(object):
             gw_out = []
             # align BP data to each gw location separately
             for name, group in gw_data.groupby(gw_data.hgs.filters.obj_col): 
+                print("\n----- {}_{} -----".format(name[1],name[2]))
                 dt_start = group["datetime"].min()
                 dt_end   = group["datetime"].max()
                 spl_freq = int(spl_freqs_gw[name]) 
@@ -423,7 +422,6 @@ class HgsAccessor(object):
                 if (inter_max < spl_freqs_gw.values).any():
                     raise Exception("Error: The selected parameter value of {} for 'inter_max' is too low for a sampling frequency of {} for {}.\nPlease reset!".format(inter_max,spl_freq,name))
                 
-                print("\n----- {}_{} -----".format(name[1],name[2]))
                 # correct for datatime offset and different sampling rate
                 # if all GW entries have a matching BP, use those directly
                 if (group.datetime.isin(bp_data.datetime)).all():                
@@ -456,7 +454,9 @@ class HgsAccessor(object):
                         # resample GW data to most common frequency
                         group = group.hgs.resample(spl_freq)            
                         # identify and upsample or split gaps in gw data  
-                        group = group.hgs.make_regular(spl_freq=spl_freq,inter_max_total=inter_max_total,part_min=part_min,inter_max=inter_max).reset_index(drop=True)
+                        #group = group.hgs.make_regular(spl_freq=spl_freq,inter_max_total=inter_max_total,part_min=part_min,inter_max=inter_max).reset_index(drop=True)
+                        group = group.groupby(group.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freq, inter_max = inter_max, part_min = part_min,
+                                              method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True) 
                              
                 else:
                     print("... all done!")
@@ -465,8 +465,13 @@ class HgsAccessor(object):
                 
             if bp_out:   
                 bp_data = pd.concat(bp_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+            # is there any GW data left after processing the gaps?    
             if gw_out:    
                 gw_data = pd.concat(gw_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+            else:
+                print("Unfortunately, there is insufficient overlap between the BP and GW data, so they cannot be aligned. Try different minimum part_size and inter_max parameters.")
+                break
+            
             bp_data = bp_data.drop_duplicates(subset=None, keep='first', ignore_index=True)
             df = pd.concat([gw_data, bp_data],axis=0,ignore_index=True)
     

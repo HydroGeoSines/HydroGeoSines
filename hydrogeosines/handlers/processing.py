@@ -115,6 +115,7 @@ class Processing(object):
             return self
 
     def info(self):
+        #TODO! use the groupby method to run through locations. Otherwise the information is missleading as differences in sampling of the location parts are not represented.
         data = self.site.data
         print("-------------------------------------------------")
         print("Summary of dataset:")
@@ -166,7 +167,8 @@ class Processing(object):
         try:
             data = self.data_regular
         except AttributeError:
-            data = self.RegularAndAligned().data_regular
+            self.RegularAndAligned()
+            data = self.data_regular
 
         # extract data categories
         gw_data = data.hgs.filters.get_gw_data
@@ -443,7 +445,8 @@ class Processing(object):
         try:
             data = self.data_regular
         except AttributeError:
-            data = self.RegularAndAligned().data_regular
+            self.RegularAndAligned()
+            data = self.data_regular
 
         gw_data     = data.hgs.filters.get_gw_data
         categories  = data.category.unique()
@@ -572,7 +575,8 @@ class Processing(object):
         try:
             data = self.data_regular
         except AttributeError:
-            data = self.RegularAndAligned().data_regular
+            self.RegularAndAligned()
+            data = self.data_regular
             data.hgs.check_alignment(cat="BP")
 
         ## check integrity of ET data
