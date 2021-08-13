@@ -27,19 +27,24 @@ data2 = csiro_site.data.copy()
 data2.loc[12000:12500,"value"] = np.nan # BP value gap
 #data2.loc[30000:30500,"value"] = np.nan # GW value large_gap1
 #data2.loc[72000:75000,"value"] = np.nan # GW value large_gap1
-data2.loc[151000:155000,"value"] = np.nan # GW value large_gap2
+data2.loc[151000:153000,"value"] = np.nan # GW value large_gap2
 data2.loc[300000:302000,"value"] = np.nan # GW value large_gap3
 #data2.loc[22000:22600,"value"] = np.nan # GW value small_gap1
+
 # add dummy category
 #data2.loc[302000:303000,"category"] = "ET" # add additional category for testing
 
-k = 0.5 # 5% missing values
+# remove location C because the BP data is insufficient for it
+idx_drop = data2.loc[data2.location == "Loc_C"].index
+data2.drop(idx_drop, inplace=True)
+
+k = 0.05 # 5% missing values
 # get 10% of GW values
 idx = random.sample(list(data2.loc[data2["category"]== "GW"].index), int(k*len(data2.loc[data2["category"]== "GW"])))
 data2.drop(labels=idx,inplace=True) 
 
-#data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
-#data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
+data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
+data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
 
 # check for gaps and outliers
 import matplotlib.pyplot as plt

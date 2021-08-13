@@ -204,7 +204,7 @@ def non_valid():
 #%% Upsampling method
 def upsample(df, method = "time"):
    df = df.set_index("datetime")
-   df = df.interpolate(method=method).reset_index(drop=True)
+   df = df.interpolate(method=method).reset_index(drop=False)
    return df
 
 #%% Testing apply function of groupby with multiple arguments
