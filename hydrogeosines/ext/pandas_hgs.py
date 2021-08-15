@@ -139,7 +139,7 @@ class HgsAccessor(object):
             a = self._obj.loc[:,self.filters.obj_col].isin(freq_groupby.index[i]).all(axis=1)  
             # resample                
             temp = self._obj[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime", origin=origin).mean()
-            temp.reset_index(inplace=True)
+            temp = temp.reset_index()
             out.append(temp) 
         out = pd.concat(out, axis=0, ignore_index=True, join="inner", verify_integrity=True) 
         # reorganize index and column structure to match original hgs dataframe

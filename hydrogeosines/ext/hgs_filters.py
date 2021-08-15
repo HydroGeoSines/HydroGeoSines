@@ -40,8 +40,7 @@ class HgsFilters(object):
     @property
     def loc_names_unique(self):
         names = list(zip(self._obj.location, self._obj.part))
-        names = list(set(names))
-        return dict(names)
+        return set(names)
     
     @property
     def is_nan(self):
