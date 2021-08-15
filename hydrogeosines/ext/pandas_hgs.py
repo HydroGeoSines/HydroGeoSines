@@ -323,12 +323,12 @@ class HgsAccessor(object):
         else:
             print("There were no gaps in the data after resampling!")
             regular = pd.concat([mcfs,df],ignore_index=True)
-        return regular
+        return regular 
     
-    #%% old BP_align version
-    def BP_align_old(self, inter_max:int = 3600, method: str ="backfill", inter_max_total:int = 10):
+    #%% BP_align
+    def BP_align(self, inter_max:int = 3600, method: str ="backfill", part_min: int = 20, inter_max_total:int = 10):
         """
-        Align barometric pressure with groundwater head data.
+        Align barometric pressure records with groundwater head data.
 
         Parameters
         ----------
@@ -336,8 +336,15 @@ class HgsAccessor(object):
             Maximum of interpolated time interval in seconds. The default is 3600.
         method : str, optional
             Interpolation method of Pandas to be used. The default is "backfill".
+        part_min : int, optional
+            Minimum record duration of the groundwater data in days. The default is 20.
         inter_max_total : int, optional
             Maximum percentage threshold of values to be interpolated. The default is 10.
+
+        Raises
+        ------
+        Exception
+            DESCRIPTION.
 
         Returns
         -------
@@ -345,48 +352,6 @@ class HgsAccessor(object):
             DESCRIPTION.
 
         """
-        bp_data= self.filters.get_bp_data  
-        gw_data= self.filters.get_gw_data
-        df = self._obj[~self._obj["category"].isin(["GW","BP"])]
-        # asign part label to bp_data, because np.nan values are difficult to handle
-        if "part" in bp_data.columns: 
-            bp_data["part"] = bp_data["part"].fillna("0")
-        # category drop function is available in hgs filters
-        #TODO: Check for non-valid values, create function for this
-        
-        # resample to most common frequency
-        spl_freqs = bp_data.hgs.spl_freq_groupby
-        bp_data = bp_data.hgs.resample_by_group(spl_freqs)
-        
-        # use GW datetimes as filter for required BP data
-        filter_gw = bp_data.datetime.isin(gw_data.datetime)
-        bp_data = bp_data.loc[filter_gw,:]
-        # check for np.nan
-        while bp_data.hgs.filters.is_nan:
-            ## identify small gaps
-            # group by identifier columns of site data
-            bp_data = bp_data.groupby(bp_data.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freqs, inter_max = inter_max, 
-                                      method = method, inter_max_total= inter_max_total, split_location=False).reset_index(drop=True)   
-            # resample to get gaps that are larger then max_gap
-            bp_data = bp_data.hgs.resample(spl_freqs)
-            # return datetimes that can not be interpolated because gaps are too big
-            datetimes = bp_data.loc[np.isnan(bp_data["value"]),"datetime"]
-            
-            gw_data = gw_data[~gw_data.datetime.isin(datetimes)]
-            # resample to most common frequency
-            spl_freqs_gw = gw_data.hgs.spl_freq_groupby
-            gw_data = gw_data.hgs.resample_by_group(spl_freqs_gw)
-            gw_data = gw_data.groupby(gw_data.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freqs_gw, inter_max = inter_max, 
-                                      method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True) 
-            
-            filter_gw = bp_data.datetime.isin(gw_data.datetime)
-            bp_data = bp_data.loc[filter_gw,:]
-        #gw_data = gw_data.hgs.resample_by_group(spl_freqs_gw) 
-        out = pd.concat([gw_data, bp_data, df],axis=0,ignore_index=True)
-        return out
-    
-    #%% BP_align
-    def BP_align(self, inter_max:int = 3600, method: str ="backfill", part_min: int = 20, inter_max_total:int = 10):
         # get bp and gw categories and split from rest of the data
         df = self._obj
         bp_data= self.filters.get_bp_data  
@@ -400,23 +365,21 @@ class HgsAccessor(object):
         num = 0    
         while bp_data.hgs.filters.is_nan or df.hgs.check_alignment(silent=True) == False:
             num += 1
-            print("\nStart iteration No. {} ...".format(num))
-            dt_start = gw_data["datetime"].min()
-            dt_end   = gw_data["datetime"].max()        
+            print("\nStart iteration No. {} ...".format(num))      
             # make sure all bp entries are sorted by date, ignoring parts:
             bp_data = bp_data.sort_values(by=["datetime"], ascending=True).reset_index(drop=True)        
-            # resample GW adnd BP to most common frequency
+            # get GW and BP most common frequencies
             spl_freqs_gw = gw_data.hgs.spl_freq_groupby
-            spl_freqs_bp = bp_data["datetime"].diff(periods=1).dt.seconds.mode().values
+            #spl_freqs_bp = bp_data["datetime"].diff(periods=1).dt.seconds.mode().values
             
             # lists for iteration
-            bp_out = []
-            gw_out = []
+            bp_temp = []
+            gw_temp = []
             # align BP data to each gw location separately
-            for name, group in gw_data.groupby(gw_data.hgs.filters.obj_col): 
+            for name, GW in gw_data.groupby(gw_data.hgs.filters.obj_col): 
                 print("\n----- {}_{} -----".format(name[1],name[2]))
-                dt_start = group["datetime"].min()
-                dt_end   = group["datetime"].max()
+                dt_start = GW["datetime"].min()
+                dt_end   = GW["datetime"].max()
                 spl_freq = int(spl_freqs_gw[name]) 
                 # make sure a reasonable inter_max is chosen
                 if (inter_max < spl_freqs_gw.values).any():
@@ -424,50 +387,50 @@ class HgsAccessor(object):
                 
                 # correct for datatime offset and different sampling rate
                 # if all GW entries have a matching BP, use those directly
-                if (group.datetime.isin(bp_data.datetime)).all():                
-                    filter_gw = bp_data.datetime.isin(group.datetime)
-                    temp = bp_data.loc[filter_gw,:]
+                if (GW.datetime.isin(bp_data.datetime)).all():                
+                    filter_gw = bp_data.datetime.isin(GW.datetime)
+                    BP = bp_data.loc[filter_gw,:]
                 else:
                     print("BP record resampled to 1 sample per {}s.".format(spl_freq))
-                    temp = bp_data.hgs.resample(spl_freqs_gw[name],origin=dt_start)        
+                    BP = bp_data.hgs.resample(spl_freqs_gw[name],origin=dt_start)        
                     # filter greater than the start date and smaller than the end date
-                    mask = (temp["datetime"] >= dt_start) & (temp["datetime"] <= dt_end)
-                    temp = temp.loc[mask]
-        
-            
+                    mask = (BP["datetime"] >= dt_start) & (BP["datetime"] <= dt_end)
+                    BP = BP.loc[mask]
+                    
                 ## identify and upsample small gaps
-                if temp.hgs.filters.is_nan:
+                if BP.hgs.filters.is_nan:
                     print("\nProcessing BP gaps ...")
-                    # group by identifier columns of site data
-                    temp = temp.groupby(temp.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freq, inter_max = inter_max, 
+                    # interpolate small gaps in BP data, and leave out bigger gaps
+                    BP = BP.groupby(BP.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freq, inter_max = inter_max, 
                                               method = method, inter_max_total= inter_max_total, split_location=False).reset_index(drop=True)   
                     # resample to get gaps that are larger then max_gap
-                    temp = temp.hgs.resample(spl_freq)
+                    BP = BP.hgs.resample(spl_freq)
                     # return datetimes that can not be interpolated because gaps are too big
-                    datetimes = temp.loc[np.isnan(temp["value"]),"datetime"]
+                    datetimes = BP.loc[np.isnan(BP["value"]),"datetime"]
                     if len(datetimes) != 0:
-                        print("... gaps between {} and {} too large for interpolation.".format(datetimes.min().strftime('%Y-%m-%d %H:%M'),datetimes.max().strftime('%Y-%m-%d %H:%M')))
+                        print("... record gaps between {} and {} too large for interpolation!".format(datetimes.min().strftime('%Y-%m-%d %H:%M'),datetimes.max().strftime('%Y-%m-%d %H:%M')))
                         # drop GW entries for which BP gaps are too big
                         print("\nProcessing GW gaps ...")  
-                        print("... dropping GW entries for which BP gaps are too big.")
-                        group = group[~group.datetime.isin(datetimes)]                    
+                        print("... dropping GW and BP entries for which BP record gaps are too big.")
+                        GW = GW[~GW.datetime.isin(datetimes)] 
+                        # and also drop them from the BP data again, as there won't be any matches for this location any more
+                        BP = BP[~BP.datetime.isin(datetimes)]
                         # resample GW data to most common frequency
-                        group = group.hgs.resample(spl_freq)            
+                        GW = GW.hgs.resample(spl_freq)            
                         # identify and upsample or split gaps in gw data  
-                        #group = group.hgs.make_regular(spl_freq=spl_freq,inter_max_total=inter_max_total,part_min=part_min,inter_max=inter_max).reset_index(drop=True)
-                        group = group.groupby(group.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freq, inter_max = inter_max, part_min = part_min,
-                                              method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True) 
-                             
+                        #GW = GW.hgs.make_regular(spl_freq=spl_freq,inter_max_total=inter_max_total,part_min=part_min,inter_max=inter_max).reset_index(drop=True)
+                        GW = GW.groupby(GW.hgs.filters.obj_col).apply(HgsAccessor.gap_routine, mcf=spl_freq, inter_max = inter_max, part_min = part_min,
+                                              method = method, inter_max_total= inter_max_total, split_location=True).reset_index(drop=True)                        
                 else:
                     print("... all done!")
-                gw_out.append(group)
-                bp_out.append(temp)
+                gw_temp.append(GW)
+                bp_temp.append(BP)
                 
-            if bp_out:   
-                bp_data = pd.concat(bp_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
-            # is there any GW data left after processing the gaps?    
-            if gw_out:    
-                gw_data = pd.concat(gw_out, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+            if bp_temp:   
+                bp_data = pd.concat(bp_temp, axis=0, ignore_index=True, join="inner", verify_integrity=True)
+            # is there any GW data left after processing the gaps (i.e. is the DataFrame empty)?    
+            if gw_temp:    
+                gw_data = pd.concat(gw_temp, axis=0, ignore_index=True, join="inner", verify_integrity=True)
             else:
                 print("Unfortunately, there is insufficient overlap between the BP and GW data, so they cannot be aligned. Try different minimum part_size and inter_max parameters.")
                 break

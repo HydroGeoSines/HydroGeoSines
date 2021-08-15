@@ -434,7 +434,7 @@ class Processing(object):
     #%%
     def fft(self, loc:list=None, detrend=True, update=False):
         #TODO! NOT adviced to use on site.data with non-aligned ET
-        # !!! check for data gaps?
+        # !!! Check for data gaps implemented. See try/except with data_regular attribute
         name = (inspect.currentframe().f_code.co_name).lower()
         print("-------------------------------------------------")
         print("Method: {}".format(name))
@@ -498,7 +498,7 @@ class Processing(object):
 
     #%%
     def hals(self, loc:list=None, detrend=True, update=False):
-        #!!! ALLOW DATA GAPS HERE !!!!
+        #!!! ALLOW DATA GAPS HERE !!!! -> they are allow as data_regular is not enforced as in fft
         name = (inspect.currentframe().f_code.co_name).lower()
         print("-------------------------------------------------")
         print("Method: {}".format(name))
