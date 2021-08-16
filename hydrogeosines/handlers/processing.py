@@ -152,7 +152,7 @@ class Processing(object):
 
             print("-------------------------------------------------")
 
-    #%%
+    #%% BE_time
     def BE_time(self, method:str="all", derivative=True, update=False):
         print("-------------------------------------------------")
         print("Processing BE_time method ...")
@@ -211,7 +211,7 @@ class Processing(object):
 
         return out
 
-    #%%
+    #%% BE_freq
     def BE_freq(self, method:str = "Rau", freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         print("-------------------------------------------------")
@@ -315,7 +315,7 @@ class Processing(object):
 
         return out
 
-    #%%
+    #%% K_Ss_estimate
     def K_Ss_estimate(self, loc:str, method:str=None, scr_len:float=0, case_rad:float=0, scr_rad:float=0, scr_depth:float=0, freq_method:str='hals', update=False):
         name = (inspect.currentframe().f_code.co_name).lower()
         print("-------------------------------------------------")
@@ -431,7 +431,7 @@ class Processing(object):
 
         return out
 
-    #%%
+    #%% fft
     def fft(self, loc:list=None, detrend=True, update=False):
         #TODO! NOT adviced to use on site.data with non-aligned ET
         # !!! Check for data gaps implemented. See try/except with data_regular attribute
@@ -496,7 +496,7 @@ class Processing(object):
 
         return out
 
-    #%%
+    #%% hals
     def hals(self, loc:list=None, detrend=True, update=False):
         #!!! ALLOW DATA GAPS HERE !!!! -> they are allow as data_regular is not enforced as in fft
         name = (inspect.currentframe().f_code.co_name).lower()
@@ -525,8 +525,15 @@ class Processing(object):
                     freqs = [i["freq"] for i in comps.values()]
                     if cat != "GW":
                         group = getattr(data.hgs.filters, utils.join_tuple_string(("get", cat.lower(), "data")))
-                        filter_gw = group.datetime.isin(GW.datetime)
-                        group = group.loc[filter_gw,:]
+                        if (GW.datetime.isin(group.datetime)).all():                             
+                            filter_gw = group.datetime.isin(GW.datetime)
+                            group = group.loc[filter_gw,:]
+                        else:
+                            # for irregularly sampled data that is also not aligned
+                            dt_start = GW["datetime"].min()
+                            dt_end = GW["datetime"].max()
+                            mask = (group["datetime"] >= dt_start) & (group["datetime"] <= dt_end)
+                            group = group.loc[mask]
                     else:
                         group = GW
 
@@ -557,7 +564,7 @@ class Processing(object):
 
         return out
 
-    #%%
+    #%% GW_correct
     def GW_correct(self, lag_h=24, et_method:str="ts", fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
         # print(name)
