@@ -513,9 +513,9 @@ class Freq_domain(object):
         -----
         A windowed linear detrend function with optional window overlap for pre-processing of non-uniformly sampled data.
         The reg_times array is extended by value of "length" in both directions to improve averaging and window overlap at boundaries. High overlap values in combination with high
-        The "stopper" values will cause reducion in window numbers at time array boundaries.   
+        The "stopper" values will cause reduction in window numbers at time array boundaries.   
         """
-        # !!! how to allow data gaps in here??
+        # !!! how to allow data gaps in here?? -> simply delete gaps from data (NaN values), but might even work correctly with NaN inside.
         x = np.array(tf).flatten()
         y = np.array(data).flatten()
         y_detr      = np.zeros(shape=(y.shape[0]))

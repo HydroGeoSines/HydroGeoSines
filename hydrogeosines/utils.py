@@ -113,6 +113,7 @@ def gap_mask(s:pd.Series, maxgap:int):
 
 @contextmanager
 def nullify_output(suppress_stdout=True, suppress_stderr=True):
+    " supress console output for a function"
     stdout = sys.stdout
     stderr = sys.stderr
     devnull = open(os.devnull, "w")

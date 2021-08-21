@@ -43,8 +43,8 @@ k = 0.05 # 5% missing values
 idx = random.sample(list(data2.loc[data2["category"]== "GW"].index), int(k*len(data2.loc[data2["category"]== "GW"])))
 data2.drop(labels=idx,inplace=True) 
 
-data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
-data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
+#data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
+#data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
 
 # check for gaps and outliers
 import matplotlib.pyplot as plt
