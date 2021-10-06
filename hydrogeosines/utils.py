@@ -2,6 +2,8 @@
 import numpy as np 
 import pandas as pd
 import collections.abc
+import os, sys
+from contextlib import contextmanager
 
 
 def check_affiliation(values,valid):
@@ -108,3 +110,20 @@ def gap_mask(s:pd.Series, maxgap:int):
         mask[gap] = len(gap)    
 
     return (mask < maxgap) | s.notnull().to_numpy(), np.count_nonzero(np.logical_and(mask > 0, mask < maxgap))
+
+@contextmanager
+def nullify_output(suppress_stdout=True, suppress_stderr=True):
+    stdout = sys.stdout
+    stderr = sys.stderr
+    devnull = open(os.devnull, "w")
+    try:
+        if suppress_stdout:
+            sys.stdout = devnull
+        if suppress_stderr:
+            sys.stderr = devnull
+        yield
+    finally:
+        if suppress_stdout:
+            sys.stdout = stdout
+        if suppress_stderr:
+            sys.stderr = stderr

@@ -27,19 +27,24 @@ data2 = csiro_site.data.copy()
 data2.loc[12000:12500,"value"] = np.nan # BP value gap
 #data2.loc[30000:30500,"value"] = np.nan # GW value large_gap1
 #data2.loc[72000:75000,"value"] = np.nan # GW value large_gap1
-data2.loc[151000:155000,"value"] = np.nan # GW value large_gap2
+data2.loc[151000:153000,"value"] = np.nan # GW value large_gap2
 data2.loc[300000:302000,"value"] = np.nan # GW value large_gap3
 #data2.loc[22000:22600,"value"] = np.nan # GW value small_gap1
+
 # add dummy category
 #data2.loc[302000:303000,"category"] = "ET" # add additional category for testing
 
-k = 0.10 # 5% missing values
-# get 5% of GW values
+# remove location C because the BP data is insufficient for it
+idx_drop = data2.loc[data2.location == "Loc_C"].index
+data2.drop(idx_drop, inplace=True)
+
+k = 0.05 # 5% missing values
+# get 10% of GW values
 idx = random.sample(list(data2.loc[data2["category"]== "GW"].index), int(k*len(data2.loc[data2["category"]== "GW"])))
 data2.drop(labels=idx,inplace=True) 
 
-#data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
-#data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
+data2.loc[data2["category"]== "GW"].hgs.pivot.to_csv('tests/data/notebook/GW_record.csv',sep=",",index=True,header=False)
+data2.loc[data2["category"]== "BP"].hgs.pivot.to_csv('tests/data/notebook/BP_record.csv',sep=",",index=True,header=False)
 
 # check for gaps and outliers
 import matplotlib.pyplot as plt
@@ -79,10 +84,10 @@ bp_locs = data.hgs.filters.get_bp_locs
 gw_locs = data.hgs.filters.get_gw_locs
 
 ## Make data regular and aligned 
-regular = data2.hgs.make_regular(spl_freq=1200, part_min = 15) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
-regular = regular.hgs.BP_align() # inter_max = 3600, method = "backfill", inter_max_total = 10
+regular = data2.hgs.make_regular(part_min = 15,spl_freq=1200) #inter_max = 3600,part_min=20,category="GW",spl_freq=1200
+regular = regular.hgs.BP_align(inter_max=3600,inter_max_total=40) # inter_max = 3600, method = "backfill", inter_max_total = 10
 # check integrity
-regular.hgs.check_BP_align
+regular.hgs.check_alignment()
 
 # pivot data to get multiindex by datetime. perfectly aligned now
 pivot = regular.hgs.pivot
@@ -109,7 +114,7 @@ process_csiro_SiteA = hgs.Processing(csiro_site).by_gwloc(locations)
 # add a regularly sampled data container to the processing object 
 # it is automatically reused in some of the methods, reducing computation times
 locations = ["Loc_A","Loc_B"]
-process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).make_regular()
+process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).RegularAndAligned()
 
 # test hals method
 hals_results  = process_csiro.hals()

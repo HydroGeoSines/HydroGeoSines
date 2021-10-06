@@ -92,7 +92,7 @@ class Read(object):
         # make sure the datetime is formated correctly for later use
         self.data["datetime"] = pd.to_datetime(self.data["datetime"])
         # sort data in a standard way -> easier to read
-        self.data.sort_values(by=["category","location","part","datetime"], inplace=True)
+        self.data.sort_values(by=["category","location","part"], inplace = True)
         # no dublicate indices
         self.data.reset_index(inplace=True, drop=True)
         # no dublicate entries
