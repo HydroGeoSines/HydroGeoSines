@@ -7,7 +7,6 @@ Created on Wed Sep 23 16:14:12 2020
 import os,sys
 import pandas as pd
 import numpy as np
-import scipy as sc
 from scipy.optimize import curve_fit, least_squares
 from scipy.linalg import svdvals
 from scipy.stats import linregress
@@ -38,32 +37,29 @@ class Time_domain(object):
         self.GW = GW
         
     @staticmethod
-    def BE_average_of_ratios(dBPdt, dGWdt):
-        """
-        Calculate an instantaneous barometric efficiency value using the average of ratios method.
+    def BE_average_of_ratios(X, Y):
+        '''
+        Calculate instantaneous barometric efficiency using the average of ratios method, a time domain solution.
 
         Parameters
         ----------
-        dBPdt : numpy array
-            Temporal derivatives of measured barometric pressure values.
-        dGWdt : numpy array
-            Temporal derivatives of measured groundwater pressure values.
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
         Returns
         -------
-        result : float
-            Instantaneous barometric efficiency value calculated as the mean ratio of temporal derivative values.
+        scalar
+            Instantaneous barometric efficiency calculated as the mean ratio of measured values or temporal derivatives.
 
         Notes
         -----
-        This calculation uses Equation 12 in Gonthier (2007), https://pubs.usgs.gov/sir/2007/5111/pdf/sir2007-5111.pdf
-            
-        ** Need to come up with a better way to avoid division by zero issues and similar
-        -> maybe this works: https://stackoverflow.com/questions/26248654/how-to-return-0-with-divide-by-zero
-        """
+            ** Need to come up with a better way to avoid division by zero issues and similar
+            -> maybe this works: https://stackoverflow.com/questions/26248654/how-to-return-0-with-divide-by-zero
+        '''
         #with np.errstate(divide='ignore', invalid='ignore'):
         #    result = np.mean(np.divide(Y, X)[np.isfinite(np.divide(Y, X))])
-        X, Y = dBPdt, dGWdt
         X,Y = np.round(X, 12), np.round(Y, 12)
         result = []
         for x,y in zip(X,Y):
@@ -72,80 +68,62 @@ class Time_domain(object):
         return np.mean(result)
 
     @staticmethod
-    def BE_median_of_ratios(dBPdt, dGWdt):
-        """
-        Calculate an instantaneous barometric efficiency value using the median of ratios method.
+    def BE_median_of_ratios(X, Y):
+        '''
+        Calculate instantaneous barometric efficiency using the median of ratios, a time domain solution.
 
-        Parameters
-        ----------
-        dBPdt : numpy array
-            Temporal derivatives of measured barometric pressure values.
-        dGWdt : numpy array
-            Temporal derivatives of measured groundwater pressure values.
+        Inputs:
+            X - barometric pressure data,  provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
+            Y - groundwater pressure data, provided as either measured values or as temporal derivatives. Should be an N x 1 numpy array.
 
-        Returns
-        -------
-        result : float
-            Instantaneous barometric efficiency value calculated as the median ratio of temporal derivative values.
-
-        Notes
-        -----
-        This calculation is based on Equation 12 in Gonthier (2007), https://pubs.usgs.gov/sir/2007/5111/pdf/sir2007-5111.pdf
-        """
-        X, Y = dBPdt, dGWdt
+        Outputs:
+            result - scalar. Instantaneous barometric efficiency calculated as the median ratio of measured values or temporal derivatives.
+        '''
         with np.errstate(divide='ignore', invalid='ignore'):
             result = np.median(np.divide(Y, X)[np.isfinite(np.divide(Y, X))])
         return result
 
     @staticmethod
-    def BE_linear_regression(dBPdt, dGWdt):
-        """
-        Calculate an instantaneous barometric efficiency value using the linear regression method.
+    def BE_linear_regression(X, Y):
+        '''
+        Calculate instantaneous barometric efficiency using linear regression, a time domain solution.
 
         Parameters
         ----------
-        dBPdt : numpy array
-            Temporal derivatives of measured barometric pressure values.
-        dGWdt : numpy array
-            Temporal derivatives of measured groundwater pressure values.
+        X : N x 1 numpy array
+            barometric pressure data, provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
         Returns
         -------
-        result : float
-            Instantaneous barometric efficiency value calculated from linear regression of temporal derivative values.
-
-        Notes
-        -----
-        This calculation uses Equation 23 in Gonthier (2007), https://pubs.usgs.gov/sir/2007/5111/pdf/sir2007-5111.pdf
-        """
-        X, Y = dBPdt, dGWdt
+        result : scalar
+            Instantaneous barometric efficiency calculated as a linear regression based on measured values or temporal derivatives.
+        '''
         result = linregress(Y, X)[0]
         return result
 
     @staticmethod
-    def BE_Clark(dBPdt, dGWdt):
-        """
-        Calculate an instantaneous barometric efficiency value using the Clark (1967) method.
+    def BE_Clark(X, Y):
+        '''
+        Calculate instantaneous barometric efficiency using the Clark (1967) method, a time domain solution.
 
         Parameters
         ----------
-        dBPdt : numpy array
-            Temporal derivatives of measured barometric pressure values.
-        dGWdt : numpy array
-            Temporal derivatives of measured groundwater pressure values.
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
         Returns
         -------
-        result : float
-            Instantaneous barometric efficiency value calculated using the Clark (1967) method.
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Clark (1967) method using measured values or temporal derivatives.
 
         Notes
         -----
-        This calculation was described by Clark (1967), https://doi.org/10.1061/JYCEAJ.0001669
-        
-        ** Need to check that Clark's rules are implemented the right way around
-        """
-        X, Y = dBPdt, dGWdt
+            ** Need to check that Clark's rules are implemented the right way around
+        '''
         sX, sY = [0.], [0.]
         for x,y in zip(X, Y):
             sX.append(sX[-1]+abs(x))
@@ -159,29 +137,26 @@ class Time_domain(object):
         return result
 
     @staticmethod
-    def BE_Davis_and_Rasmussen(dBPdt, dGWdt):
-        """
-        Calculate an instantaneous barometric efficiency value using the Davis and Rasmussen (1993) method.
+    def BE_Davis_and_Rasmussen(X, Y):
+        '''
+        Calculate instantaneous barometric efficiency using the Davis and Rasmussen (1993) method, a time domain solution.
 
         Parameters
         ----------
-        dBPdt : numpy array
-            Temporal derivatives of measured barometric pressure values.
-        dGWdt : numpy array
-            Temporal derivatives of measured groundwater pressure values.
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
         Returns
         -------
-        result : float
-            Instantaneous barometric efficiency value calculated using the Davis and Rasmussen (1993) method.
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Davis and Rasmussen (1993) method using measured values or temporal derivatives.
         
         Notes
         -----
-        This calculation was described by Davis and Rasmussen (1993), https://doi.org/10.1061/JYCEAJ.0001669
-
             ** Work in progress - just need to marry the D&R algorithm with the automated segmenting algorithm
-        """
-        X, Y = dBPdt, dGWdt
+        '''
         cSnum    = np.zeros(1)
         cSden    = np.zeros(1)
         cSabs_dB = np.zeros(1)
@@ -207,29 +182,26 @@ class Time_domain(object):
         return result
 
     @staticmethod
-    def BE_Rahi(dBPdt, dGWdt):
-        """
-        Calculate an instantaneous barometric efficiency value using the Rahi (2010) method method.
+    def BE_Rahi(X, Y):
+        '''
+        Calculate instantaneous barometric efficiency using the Clark (1967) method, a time domain solution.
 
         Parameters
         ----------
-        dBPdt : numpy array
-            Temporal derivatives of measured barometric pressure values.
-        dGWdt : numpy array
-            Temporal derivatives of measured groundwater pressure values.
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
 
         Returns
         -------
-        result : float
-            Instantaneous barometric efficiency value calculated using the Rahi (2010) method.
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Rahi (2010) method using measured values or temporal derivatives.
 
         Notes
         -----
-        This calculation was described by Rahi (2010), https://shareok.org/bitstream/handle/11244/6426/Boone%20Pickens%20School%20of%20Geology_02.pdf
-
             ** Need to check that Rahi's rules are implemented the right way around.
-        """
-        X, Y = dBPdt, dGWdt
+        '''
         sX, sY = [0.], [0.]
         for x,y in zip(X, Y):
             if (np.sign(x)!=np.sign(y)) & (abs(y)<abs(x)):
@@ -241,6 +213,36 @@ class Time_domain(object):
         result = linregress(sX, sY)[0]
         return result
 
+    @staticmethod
+    def BE_Rojstaczer(X, Y, fs:float = 1.0, nperseg:int = None, noverlap:int = None):
+        '''        
+        Parameters
+        ----------
+        X : N x 1 numpy array
+            barometric pressure data,  provided as either measured values or as temporal derivatives.
+        Y : N x 1 numpy array
+            groundwater pressure data, provided as either measured values or as temporal derivatives.
+        fs : float
+            The sampling frequency of interest.
+        nperseg : int
+            The number of data points per segment.
+        noverlap : int
+            The amount of overlap between data points used when calculating power and cross spectral density outputs.
+
+        Returns
+        -------
+        result : scalar
+            Instantaneous barometric efficiency calculated using the Quilty and Roeloffs (1991) method using measured values or temporal derivatives.
+
+        Notes
+        -----
+            ** Need to check that Rojstaczer's (or Q&R's) implementation was averaged over all frequencies
+        '''
+        # TODO: This methods also takes fs, nperseg + noverlap as parameters. Can only be used in overarching BE_method with default values. Can fs (sampling frequency) be calculated from GW data?    
+        csd_f, csd_p = csd(X, Y, fs=fs, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
+        psd_f, psd_p = csd(X, X, fs=fs, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
+        result = np.mean(np.abs(csd_p)/psd_p)
+        return result
     
     @staticmethod
     def regress_deconv(tf, GW, BP, ET=None, lag_h=24, et_method=None, fqs=None):
@@ -479,69 +481,6 @@ class Time_domain(object):
         else:
             raise Exception("Error: Please only use available Earth tide methods!")
             
-
-    #%%
-    @staticmethod
-    def autocorrelation(dataset):
-        """
-        Calculate the autocorrelation present in an input datasets as a function of time.
-
-        Parameters
-        ----------
-        dataset : numpy array
-            Input dataset as a function of uniform time steps
-        Returns
-        -------
-        results: numpy array
-            Normalised autocorrelation values as functions of time lag, with delta-t equal to the sampling period
-        ...           
-        Notes
-        -------
-            *** TBC ***
-        """
-        #results = sc.signal.correlate(dataset, dataset) # <<< scipy correlate function gives spurious results
-        x = dataset
-        xp = x-np.mean(x)
-        f = np.fft.fft(xp)
-        psd = f.conjugate()*f
-        results = np.fft.ifft(psd).real[:x.size//2]/np.sum(xp**2)        
-        #results = f.conjugate()*f.real[:x.size//2]/numpy.var(x)/len(x) # alternate formulation for normalising results
-        return results
-
-    # https://stackoverflow.com/questions/643699/how-can-i-use-numpy-correlate-to-do-autocorrelation
-
-    #%%
-    @staticmethod
-    def crosscorrelation(dataset1, dataset2):
-        """
-        Calculate the cross-correlation between two input datasets as a function of time.
-
-        Parameters
-        ----------
-        dataset1 : numpy array
-            Input dataset #1 as a function of uniform time steps
-        dataset2 : numpy array
-            Input dataset #2 as a function of uniform time steps
-        Returns
-        -------
-        results: numpy array
-            Normalised cross correlation values as functions of time lag, with delta-t equal to the sampling period
-        ...           
-        Notes
-        -------
-            *** TBC ***
-        """
-        #results = sc.signal.correlate(dataset1, dataset2) # <<< scipy correlate function gives spurious results
-        x,y = dataset1, dataset2
-        xp = x-np.mean(x)
-        yp = y-np.mean(y)
-        fx = np.fft.fft(xp)
-        fy = np.fft.fft(yp)
-        csd = fx.conjugate()*fy
-        results = np.fft.ifft(csd).real[:x.size//2]/np.sum(xp**2)        
-        #results = fx.conjugate()*fy.real[:x.size//2]/numpy.var(x)/len(x) # alternate formulation for normalising results
-        return results
-
             
 #%% Static Class for FREQUENCY DOMAIN METHODS #################################
 class Freq_domain(object):
@@ -666,8 +605,7 @@ class Freq_domain(object):
         print(">> DC component: {:.6f}".format(dc_comp))
         result = {'freq': np.array(freqs), 'complex': hals_comp, 'error_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
         return result
-   
-   
+    
     #%%
     @staticmethod
     def fft_comp(tf, data):
@@ -692,87 +630,6 @@ class Freq_domain(object):
         result = {'freq': fft_f, 'complex': fft, 'dc_comp': np.abs(fft[0])}
         return result
     
-    
-    #%%
-    @staticmethod
-    def BE_SISO(GW, BP, sampling_frequency, nperseg:int=None, noverlap:int=None):
-        '''        
-        Parameters
-        ----------
-        GW : N x 1 numpy array
-            groundwater pressure data, provided as either measured values or as temporal derivatives.
-        BP : N x 1 numpy array
-            barometric pressure data,  provided as either measured values or as temporal derivatives.
-        sampling_frequency : float
-            The sampling frequency of interest.
-        nperseg : int
-            The number of data points per segment.
-        noverlap : int
-            The amount of overlap between data points used when calculating power and cross spectral density outputs.
- 
-        Returns
-        -------
-        result : scalar
-            Instantaneous barometric efficiency calculated using a single input-single output (SISO) approach (Quilty and Roeloffs, 1991) using measured values or temporal derivatives.
- 
-        Notes
-        -----
-            ...
-        '''
-        # TODO: This methods also takes fs, nperseg + noverlap as parameters. Can only be used in overarching BE_method with default values. Can fs (sampling frequency) be calculated from GW data?    
-        f_csd, p_csd = csd(BP, GW, fs=sampling_frequency, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
-        f_psd, p_psd = csd(BP, BP, fs=sampling_frequency, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
-        BE = np.abs(p_csd)/p_psd
-        return f_csd, BE
-
-
-    #%%
-    @staticmethod
-    def BE_MISO(GW, BP, ET, sampling_frequency, nperseg:int=None, noverlap:int=None):
-        '''        
-        Parameters
-        ----------
-        GW : N x 1 numpy array
-            groundwater pressure data, provided as either measured values or as temporal derivatives.
-        BP : N x 1 numpy array
-            barometric pressure data,  provided as either measured values or as temporal derivatives.
-        ET : N x 1 numpy array
-            Earth tide data,  provided as either measured values or as temporal derivatives.
-        sampling_frequency : float
-            The sampling frequency of interest.
-        nperseg : int
-            The number of data points per segment.
-        noverlap : int
-            The amount of overlap between data points used when calculating power and cross spectral density outputs.
-
-        Returns
-        -------
-        result : scalar
-            Instantaneous barometric efficiency calculated using a mulitple input-single output (MISO) approach (Rojstaczer, 1988) using measured values or temporal derivatives.
-
-        Notes
-        -----
-            ...
-        '''
-        # TODO: This methods also takes fs, nperseg + noverlap as parameters. Can only be used in overarching BE_method with default values. Can fs (sampling frequency) be calculated from GW data?    
-        f, PSD_b = sc.signal.welch(BP, sampling_frequency)
-        f, PSD_e = sc.signal.welch(ET, sampling_frequency)
-        f, CSD_be = sc.signal.csd(BP, ET, sampling_frequency)
-        f, CSD_eb = sc.signal.csd(ET, BP, sampling_frequency)
-        f, CSD_bw = sc.signal.csd(BP, GW, sampling_frequency)
-        f, CSD_ew = sc.signal.csd(ET, GW, sampling_frequency)
-        def phi(H, PSD_b, PSD_e, CSD_be, CSD_eb, CSD_bw, CSD_ew):
-            Hb, He = H[:len(H)//2], H[len(H)//2:]
-            CSD_bw_hat = Hb*PSD_b + He*np.abs(CSD_be)
-            CSD_ew_hat = He*PSD_e + Hb*np.abs(CSD_eb)
-            return np.concatenate([CSD_bw_hat-np.abs(CSD_bw), CSD_ew_hat-np.abs(CSD_ew)])**2.
-        result = least_squares(phi, np.concatenate([0.5*np.ones(len(PSD_b)), 0.5*np.ones(len(PSD_e))]), 
-                               args=(PSD_b, PSD_e, CSD_be, CSD_eb, CSD_bw, CSD_ew), method='lm')
-        H = result.x
-        Hb, He = H[:len(H)//2], H[len(H)//2:]
-        return f, Hb, He
-
-
     #%%
     @staticmethod
     def BE_Rau(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, amp_ratio:float=1):
@@ -815,8 +672,7 @@ class Freq_domain(object):
             
         return BE
     
-   
-   #%%
+    #%%
     @staticmethod
     def BE_Acworth(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex):
         """
@@ -987,206 +843,5 @@ class Freq_domain(object):
             results = {}
 
         return results
-
-
-    #%%
-    @staticmethod
-    def D_BLHendry_amplitude(omega, z0, z1, a0, a1):
-        """
-        Calculate vertical hydraulic diffusivity as a function of the amplitude attenuation of a periodic (sinusoidal) signal.
-        
-        Parameters
-        ----------
-        omega : float
-            Angular frequency, in radians
-        z0 : float
-            Elevation or depth of signal source; e.g. top of aquitard, in length units
-        z1 : float
-            Elevation or depth of signal response; e.g. base or midpoint of aquitard, in length units
-        a0 : float
-            Amplitude of signal at elevation or depth z0, in length units
-        a1 : float
-            Amplitude of signal at elevation or depth z1, in length units
-        ...
-        Returns
-        -------
-        D  : float
-            Vertical hydraulic diffusivity, in length^2 per time units
-        ...           
-        Notes
-        -------
-        This calculation uses Equation 2 in Boldt-Leppin and Hendry (2003), https://doi.org/10.1111/j.1745-6584.2003.tb02385.x
-        """
-        return ((z1-z0)**2.)*np.pi/w*(np.log(a1/a0)**-2.)
-
-
-    #%%
-    @staticmethod
-    def D_BLHendry_phase(omega, z0, z1, p0, p1):
-        """
-        Calculate vertical hydraulic diffusivity as a function of the phase shift of a periodic (sinusoidal) signal.
-
-        Parameters
-        ----------
-        omega : float
-            Angular frequency, in radians
-        z0 : float
-            Elevation or depth of signal source; e.g. top of aquitard, in length units
-        z1 : float
-            Elevation or depth of signal response; e.g. base or midpoint of aquitard, in length units
-        p0 : float
-            Phase of signal at elevation or depth z0, in radians
-        p1 : float
-            Phase of signal at elevation or depth z1, in radians
-        ...
-        Returns
-        -------
-        D  : float
-            Vertical hydraulic diffusivity, in length^2 per time units
-        ...           
-        Notes
-        -------
-            This calculation uses Equation 3 in Boldt-Leppin and Hendry (2003), https://doi.org/10.1111/j.1745-6584.2003.tb02385.x
-        """
-        return np.pi/w*(((z1-z0)/(P1-P0))**2.)
-
-
-    #%%
-    @staticmethod
-    def power_spectral_density(dataset, sampling_frequency, method):
-        """        
-        Calculate the periodogram representation of an input dataset using one of three methods (assuming stationarity).
-        
-        Parameters
-        ----------
-        dataset : numpy array
-            Input dataset, as a function of uniform time steps
-        sampling_frequency : float
-            Frequency of sampling, in cycles per time units
-        method :
-            One of three possible methods: Welch, Barlett or Lomb-Scargle
-        Returns
-        -------
-        frequency : numpy array
-            Set of frequencies, from the reciprocal of dataset duration to the Nyquist frequency
-        power : numpy array
-            Set of power values, in L^2 units
-        Notes
-        -------
-            This method is a wrapper for scipy library implementations of three power spectral density calculation methods:
-            1. Bartlett method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.periodogram.html
-            2. Welch method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html
-            3. Lomb-Scargle method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lombscargle.html
-
-        """
-        if method.lower()=='bartlett':
-            frequency, power = sc.signal.periodogram(dataset, sampling_frequency)
-        elif method.lower()=='welch':
-            frequency, power = sc.signal.welch(dataset, sampling_frequency)
-        #elif method.lower()=='lombscargle':
-        #    frequency, power = sc.signal.lombscargle(dataset, sampling_frequency)
-        else:
-            print('Error: Periodogram method not available!')
-            return
-        return frequency, power
-
-
-    #%%
-    @staticmethod
-    def spectrogram(dataset, sampling_frequency, method):
-        """        
-        Calculate the spectrogram representation of an input dataset using the Short-Time Fourier Transform method (non-stationary).
-
-        Parameters
-        ----------
-        dataset : numpy array
-            Input dataset, as a function of uniform time steps
-        sampling_frequency : float
-            Frequency of sampling, in cycles per time units
-        Returns
-        -------
-        frequency : numpy array
-            Set of frequencies, from the reciprocal of dataset duration to the Nyquist frequency
-        times : numpy array
-            ** TBC ***
-        z : numpy complex
-            Complex variable representation of amplitude and phase values
-        Notes
-        -------
-            This method is a wrapper for scipy library implementations of three spectrogram calculation methods:
-            1. Short-Time Fourier Transform method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.stft.html
-            2. Welch method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.spectrogram.html
-            3. Continuous Wavelet Transform method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.cwt.html
-        """
-        if method.lower()=='stft':
-            frequency, times, z = sc.signal.stft(dataset, sampling_frequency)
-        elif method.lower()=='welch':
-            frequency, times, z = sc.signal.spectrogram(dataset, sampling_frequency)
-        #elif method.lower()=='cwt':
-        #    frequency, times, z = sc.signal.cwt(dataset, wavelet=sc.signal.ricker, widths=range(1, 31))
-        else:
-            print('Error: Spectrogram method not available!')
-            return
-        return frequency, times, z
-
-
-    #%%
-    @staticmethod
-    def coherence(dataset1, dataset2, sampling_frequency):
-        """
-        Calculate the coherence between two input datasets as a function of signal frequency.
-
-        Parameters
-        ----------
-        dataset1 : numpy array
-            Input dataset #1, as a function of uniform time steps
-        dataset2 : numpy array
-            Input dataset #2, as a function of uniform time steps
-        sampling_frequency : float
-            Frequency of sampling, in cycles per time units
-        Returns
-        -------
-        frequency : numpy array
-            Set of frequencies, from the reciprocal of dataset duration to the Nyquist frequency
-        coherence : numpy array
-            Coherence values
-        ...           
-        Notes
-        -------
-            This method is a wrapper for the scipy library implementation of coherence calculation, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.coherence.html
-        """
-        frequency, coherence = sc.signal.coherence(dataset1, dataset2, sampling_frequency)
-        return frequency, coherence
-
-
-    #%%
-    @staticmethod
-    def cross_spectral_density(dataset1, dataset2, sampling_frequency):
-        """
-        Calculate the cross-spectral density between two input datasets as a function of signal frequency.
-
-        Parameters
-        ----------
-        dataset1 : numpy array
-            Input dataset #1, as a function of uniform time steps
-        dataset2 : numpy array
-            Input dataset #2, as a function of uniform time steps
-        sampling_frequency : float
-            Frequency of sampling, in cycles per time units
-        Returns
-        -------
-        frequency : numpy array
-            Set of frequencies, from the reciprocal of dataset duration to the Nyquist frequency
-        csd : numpy array
-            Cross-spectral density values, in length^2 units
-        ...           
-        Notes
-        -------
-            This method is a wrapper for the scipy library implementation of cross-spectral density, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.csd.html
-        """
-        frequency, csd = sc.signal.csd(dataset1, dataset2, sampling_frequency)
-        return frequency, csd
-
-
 
 # further methods here ...
