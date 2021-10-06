@@ -515,6 +515,7 @@ class Freq_domain(object):
         The reg_times array is extended by value of "length" in both directions to improve averaging and window overlap at boundaries. High overlap values in combination with high
         The "stopper" values will cause reducion in window numbers at time array boundaries.   
         """
+        print(">> Reference: Method described in Schweizer et al. (2021) [https://doi.org/10.1007/s11004-020-09915-9]")
         # !!! how to allow data gaps in here??
         x = np.array(tf).flatten()
         y = np.array(data).flatten()
@@ -567,6 +568,7 @@ class Freq_domain(object):
              freqs and tt that when multiplied by theta is a
              sum of sinusoids.
         '''
+        print(">> Reference: Method described in Schweizer et al. (2021) [https://doi.org/10.1007/s11004-020-09915-9]")
         # !!! find a criteria for which a dataset can be analysed
         if ((tf.max() - tf.min()) < 20):
             raise Exception("To use HALS, the duration must be >=20 days!")
@@ -615,7 +617,8 @@ class Freq_domain(object):
             raise Exception("To use FFT, the data must not have gaps!")
         if ((tf.max() - tf.min()) < 60):
             raise Exception("To use FFT, the duration must be >=60 days!")
-            
+        
+        print(">> Reference: Method described in Schweizer et al. (2021) [https://doi.org/10.1007/s11004-020-09915-9]")
         spd = 1/(tf[1] - tf[0])
         fft_N = len(tf)
         hanning = np.hanning(fft_N)
