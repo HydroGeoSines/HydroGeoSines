@@ -26,7 +26,7 @@ def brf_total(Z):
        # print(Phi)
         return Z@c
     return brf
-            
+
 def quantise(data, step):
     ''' Quantization of a signal '''
     return step*np.floor((data/step)+1/2)
@@ -36,7 +36,7 @@ class Time_domain(object):
     def __init__(self, GW, BP):
         self.BP = BP
         self.GW = GW
-        
+
     @staticmethod
     def BE_average_of_ratios(dBPdt, dGWdt):
         """
@@ -57,7 +57,7 @@ class Time_domain(object):
         Notes
         -----
         This calculation uses Equation 12 in Gonthier (2007), https://pubs.usgs.gov/sir/2007/5111/pdf/sir2007-5111.pdf
-            
+
         ** Need to come up with a better way to avoid division by zero issues and similar
         -> maybe this works: https://stackoverflow.com/questions/26248654/how-to-return-0-with-divide-by-zero
         """
@@ -142,7 +142,7 @@ class Time_domain(object):
         Notes
         -----
         This calculation was described by Clark (1967), https://doi.org/10.1061/JYCEAJ.0001669
-        
+
         ** Need to check that Clark's rules are implemented the right way around
         """
         X, Y = dBPdt, dGWdt
@@ -174,7 +174,7 @@ class Time_domain(object):
         -------
         result : float
             Instantaneous barometric efficiency value calculated using the Davis and Rasmussen (1993) method.
-        
+
         Notes
         -----
         This calculation was described by Davis and Rasmussen (1993), https://doi.org/10.1061/JYCEAJ.0001669
@@ -241,7 +241,6 @@ class Time_domain(object):
         result = linregress(sX, sY)[0]
         return result
 
-    
     @staticmethod
     def regress_deconv(tf, GW, BP, ET=None, lag_h=24, et_method=None, fqs=None):
         print('>> Applying regression deconvolution ...')
@@ -301,14 +300,14 @@ class Time_domain(object):
                 X = np.hstack([v])
             # perform regression ...
             Z = np.hstack([np.ones([n,1]), X])
-            
+
             #%% perform least squares fitting
             # ----------------------------------------------
             # c  = np.linalg.lstsq(Z, dWL, rcond=None)[0]
-            # ----------------------------------------------            
+            # ----------------------------------------------
             c = 0.5*np.ones(Z.shape[1])
             c, covar = curve_fit(brf_total(Z), t, dWL, p0=c)
-            
+
             #%% compute the singular values
             sgl = svdvals(Z)
             # 'singular value' is important: 1 is perfect,
@@ -317,7 +316,7 @@ class Time_domain(object):
             # print('>> Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
                 raise Warning('The solution is ill-conditioned (condition number {}!'.format(condnum))
-                
+
             # ----------------------------------------------
             nc = len(c)
             # calculate the head corrections
@@ -326,7 +325,7 @@ class Time_domain(object):
             WLc = GW - np.concatenate([[0], dWLc])
             # set the corrected heads
             WLc += (np.nanmean(GW) - np.nanmean(WLc))
-            
+
             # adjust for mean offset
             # trend  = c[0]
             lag_t = np.linspace(0, lag_h, int((lag_h/24)*spd) + 1, endpoint=True)
@@ -346,7 +345,7 @@ class Time_domain(object):
                 cbrf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
             cbrf_stdev = np.sqrt(cbrf_var)
             params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'brf': cbrf, 'crf_stdev': cbrf_stdev}}
-            
+
             # consider ET if desired ...
             if et:
                 k = np.arange(nm+1, NP+nm+1)
@@ -364,7 +363,7 @@ class Time_domain(object):
                 params.update({'erf': {'freq': fqs, 'complex': trf, 'components': names}})
             # return the method results
             return WLc, params
-        
+
         # this method uses Earth tide time series
         elif(et_method == 'ts'):
             print('>> Using Earth tide time series in the regression ...')
@@ -380,7 +379,7 @@ class Time_domain(object):
             dt = t[1] - t[0]
             # the data
             WL = GW
-            
+
             #%% temporal derivatives
             spd = int(np.round(1/dt))
             #dt = 1./24.
@@ -388,7 +387,7 @@ class Time_domain(object):
             dWL = np.diff(WL)/dt
             if et:
                 dET = np.diff(ET)/dt
-                
+
             #%% prepare matrices ...
             lag = range(int((lag_h/24)*spd) + 1)
             n   = len(dBP)
@@ -400,7 +399,7 @@ class Time_domain(object):
                 k = np.arange(n-j)
                 ### need negative?
                 V[j+k, i] = -dBP[k]
-                
+
             #%%
             if et:
                 nm = len(lag)
@@ -415,11 +414,11 @@ class Time_domain(object):
                 XY = V
             # stack the matrices
             Z = np.hstack([np.ones([n,1]), XY])
-            
+
             #%% perform least squares fitting
             c = 0.5*np.ones(Z.shape[1])
             c, covar = curve_fit(brf_total(Z), t, dWL, p0=c)
-            
+
             #%% compute the singular values
             sgl = svdvals(Z)
             # 'singular value' is important: 1 is perfect,
@@ -428,7 +427,7 @@ class Time_domain(object):
             # print('>> Conditioning number: {:,.0f}'.format(condnum))
             if (condnum > 1e6):
                 raise Warning('Attention: The solution is ill-conditioned (condition number {}!'.format(condnum))
-                
+
             #%% determine the results
             nc = len(c)
             # calculate the head corrections
@@ -437,7 +436,7 @@ class Time_domain(object):
             WLc = GW - np.concatenate([[0], dWLc])
             # set the corrected heads
             WLc += (np.nanmean(GW) - np.nanmean(WLc))
-            
+
             #%% components
             # trend = c[0]
             lag_t = np.linspace(0, lag_h, int((lag_h/24)*spd) + 1, endpoint=True)
@@ -457,7 +456,7 @@ class Time_domain(object):
                 cbrf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
             cbrf_stdev = np.sqrt(cbrf_var)
             params = {'brf': {'lag': lag_t, 'irc': brf, 'irc_stdev': brf_stdev, 'brf': cbrf, 'crf_stdev': cbrf_stdev}}
-            
+
             if et:
                 erf = c[nm+1:2*nm+1]
                 erf_covar = covar[nm+1:2*nm+1,nm+1:2*nm+1]
@@ -474,13 +473,11 @@ class Time_domain(object):
                     cerf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
                 cerf_stdev = np.sqrt(cerf_var)
                 params.update({'erf': {'lag': lag_t, 'irc': erf, 'irc_stdev': erf_stdev, 'brf': cerf, 'crf_stdev': cerf_stdev}})
-                
+
             return WLc, params
         else:
             raise Exception("Error: Please only use available Earth tide methods!")
-            
 
-    #%%
     @staticmethod
     def autocorrelation(dataset):
         """
@@ -494,7 +491,7 @@ class Time_domain(object):
         -------
         results: numpy array
             Normalised autocorrelation values as functions of time lag, with delta-t equal to the sampling period
-        ...           
+        ...
         Notes
         -------
             *** TBC ***
@@ -504,15 +501,14 @@ class Time_domain(object):
         xp = x-np.mean(x)
         f = np.fft.fft(xp)
         psd = f.conjugate()*f
-        results = np.fft.ifft(psd).real[:x.size//2]/np.sum(xp**2)        
+        results = np.fft.ifft(psd).real[:x.size//2]/np.sum(xp**2)
         #results = f.conjugate()*f.real[:x.size//2]/numpy.var(x)/len(x) # alternate formulation for normalising results
         return results
 
     # https://stackoverflow.com/questions/643699/how-can-i-use-numpy-correlate-to-do-autocorrelation
 
-    #%%
     @staticmethod
-    def crosscorrelation(dataset1, dataset2):
+    def cross_correlation(dataset1, dataset2):
         """
         Calculate the cross-correlation between two input datasets as a function of time.
 
@@ -526,7 +522,7 @@ class Time_domain(object):
         -------
         results: numpy array
             Normalised cross correlation values as functions of time lag, with delta-t equal to the sampling period
-        ...           
+        ...
         Notes
         -------
             *** TBC ***
@@ -538,20 +534,59 @@ class Time_domain(object):
         fx = np.fft.fft(xp)
         fy = np.fft.fft(yp)
         csd = fx.conjugate()*fy
-        results = np.fft.ifft(csd).real[:x.size//2]/np.sum(xp**2)        
+        results = np.fft.ifft(csd).real[:x.size//2]/np.sum(xp**2)
         #results = fx.conjugate()*fy.real[:x.size//2]/numpy.var(x)/len(x) # alternate formulation for normalising results
         return results
 
-            
+    @staticmethod
+    def partial_cross_correlation(dataset1, dataset2):
+        """
+        Calculate the cross-correlation between two input datasets as a function of time.
+
+        Parameters
+        ----------
+        dataset1 : numpy array
+            Input dataset #1 as a function of uniform time steps
+        dataset2 : numpy array
+            Input dataset #2 as a function of uniform time steps
+        dataset3 : numpy array
+            Input dataset #3 as a function of uniform time steps
+        Returns
+        -------
+        results: numpy array
+            Normalised cross correlation values as functions of time lag, with delta-t equal to the sampling period
+        ...
+        Notes
+        -------
+            *** TBC ***
+        """
+        #results = sc.signal.correlate(dataset1, dataset2) # <<< scipy correlate function gives spurious results
+        x,y,z = dataset1, dataset2, dataset3
+        xp = x-np.mean(x)
+        yp = y-np.mean(y)
+        zp = z-np.mean(z)
+        fx = np.fft.fft(xp)
+        fy = np.fft.fft(yp)
+        fz = np.fft.fft(zp)
+        csd_xy = fx.conjugate()*fy
+        cc_xy  = np.fft.ifft(csd_xy).real[:x.size//2]/np.sum(xp**2)
+        res_xy =  
+        csd_xz = fx.conjugate()*fz
+        cc_xz = np.fft.ifft(csd_xz).real[:x.size//2]/np.sum(xp**2)
+
+        results = np.fft.ifft(csd).real[:x.size//2]/np.sum(xp**2)
+        #results = fx.conjugate()*fy.real[:x.size//2]/numpy.var(x)/len(x) # alternate formulation for normalising results
+        return results
+
 #%% Static Class for FREQUENCY DOMAIN METHODS #################################
 class Freq_domain(object):
-    
+
     #%%
     @staticmethod
     def lin_window_ovrlp(tf, data, length=3, stopper=3, n_ovrlp=3):
         """
         Windowed linear detrend function with optional window overlap
-        
+
         Parameters
         ----------
         time : N x 1 numpy array
@@ -560,21 +595,21 @@ class Freq_domain(object):
             Sample values.
         length : int
             Window size in days
-        stopper : int 
+        stopper : int
             minimum number of samples within each window needed for detrending
         n_ovrlp : int
             number of window overlaps relative to the defined window length
-            
+
         Returns
             -------
             y.detrend : array_like
                 estimated amplitudes of the sinusoids.
-        
+
         Notes
         -----
         A windowed linear detrend function with optional window overlap for pre-processing of non-uniformly sampled data.
         The reg_times array is extended by value of "length" in both directions to improve averaging and window overlap at boundaries. High overlap values in combination with high
-        The "stopper" values will cause reducion in window numbers at time array boundaries.   
+        The "stopper" values will cause reducion in window numbers at time array boundaries.
         """
         # !!! how to allow data gaps in here??
         x = np.array(tf).flatten()
@@ -582,17 +617,17 @@ class Freq_domain(object):
         y_detr      = np.zeros(shape=(y.shape[0]))
         counter     = np.zeros(shape=(y.shape[0]))
         A = np.vstack([x, np.ones(len(x))]).T
-        #num = 0 # counter to check how many windows are sampled   
-        interval    = length/(n_ovrlp+1) # step_size interval with overlap 
-        # create regular sampled array along t with step-size = interval.         
+        #num = 0 # counter to check how many windows are sampled
+        interval    = length/(n_ovrlp+1) # step_size interval with overlap
+        # create regular sampled array along t with step-size = interval.
         reg_times   = np.arange(x[0]-(x[1]-x[0])-length,x[-1]+length, interval)
         # extract indices for each interval
-        idx         = [np.where((x > tt-(length/2)) & (x <= tt+(length/2)))[0] for tt in reg_times]  
+        idx         = [np.where((x > tt-(length/2)) & (x <= tt+(length/2)))[0] for tt in reg_times]
         # exclude samples without values (np.nan) from linear detrend
         idx         = [i[~np.isnan(y[i])] for i in idx]
         # only detrend intervals that meet the stopper criteria
         idx         = [x for x in idx if len(x) >= stopper]
-        for i in idx:        
+        for i in idx:
             # find linear regression line for interval
             coe = np.linalg.lstsq(A[i],y[i],rcond=None)[0]
             # and subtract off data to detrend
@@ -601,16 +636,16 @@ class Freq_domain(object):
             np.add.at(y_detr,i,detrend)
             # count number of detrends per sample (depends on overlap)
             np.add.at(counter,i,1)
-    
+
         # window gaps, marked by missing detrend are set to np.nan
         counter[counter==0] = np.nan
         # create final detrend array
-        y_detrend = y_detr/counter       
+        y_detrend = y_detr/counter
         if len(y_detrend[np.isnan(y_detrend)]) > 0:
             # replace nan-values assuming a mean of zero
-            y_detrend[np.isnan(y_detrend)] = 0.0    
+            y_detrend[np.isnan(y_detrend)] = 0.0
         return y_detrend
-    
+
     #%%
     @staticmethod
     def harmonic_lsqr(tf, data, freqs):
@@ -631,7 +666,7 @@ class Freq_domain(object):
         # !!! find a criteria for which a dataset can be analysed
         if ((tf.max() - tf.min()) < 20):
             raise Exception("To use HALS, the duration must be >=20 days!")
-        
+
         N = data.shape[0]
         f = np.array(freqs)*2*np.pi
         num_freqs = len(f)
@@ -666,8 +701,7 @@ class Freq_domain(object):
         print(">> DC component: {:.6f}".format(dc_comp))
         result = {'freq': np.array(freqs), 'complex': hals_comp, 'error_var': error_variance, 'cond_num': condnum, 'offset': dc_comp, 'y_model': y_model}
         return result
-   
-   
+
     #%%
     @staticmethod
     def fft_comp(tf, data):
@@ -677,7 +711,7 @@ class Freq_domain(object):
             raise Exception("To use FFT, the data must not have gaps!")
         if ((tf.max() - tf.min()) < 60):
             raise Exception("To use FFT, the duration must be >=60 days!")
-            
+
         spd = 1/(tf[1] - tf[0])
         fft_N = len(tf)
         hanning = np.hanning(fft_N)
@@ -691,12 +725,11 @@ class Freq_domain(object):
         #fft_phs = -(np.arctan(fft_win.real/fft_win.imag))
         result = {'freq': fft_f, 'complex': fft, 'dc_comp': np.abs(fft[0])}
         return result
-    
-    
+
     #%%
     @staticmethod
     def BE_SISO(GW, BP, sampling_frequency, nperseg:int=None, noverlap:int=None):
-        '''        
+        '''
         Parameters
         ----------
         GW : N x 1 numpy array
@@ -709,27 +742,26 @@ class Freq_domain(object):
             The number of data points per segment.
         noverlap : int
             The amount of overlap between data points used when calculating power and cross spectral density outputs.
- 
+
         Returns
         -------
         result : scalar
             Instantaneous barometric efficiency calculated using a single input-single output (SISO) approach (Quilty and Roeloffs, 1991) using measured values or temporal derivatives.
- 
+
         Notes
         -----
             ...
         '''
-        # TODO: This methods also takes fs, nperseg + noverlap as parameters. Can only be used in overarching BE_method with default values. Can fs (sampling frequency) be calculated from GW data?    
+        # TODO: This methods also takes fs, nperseg + noverlap as parameters. Can only be used in overarching BE_method with default values. Can fs (sampling frequency) be calculated from GW data?
         f_csd, p_csd = csd(BP, GW, fs=sampling_frequency, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
         f_psd, p_psd = csd(BP, BP, fs=sampling_frequency, nperseg=nperseg, noverlap=noverlap) #, scaling='density', detrend=False)
         BE = np.abs(p_csd)/p_psd
         return f_csd, BE
 
-
     #%%
     @staticmethod
     def BE_MISO(GW, BP, ET, sampling_frequency, nperseg:int=None, noverlap:int=None):
-        '''        
+        '''
         Parameters
         ----------
         GW : N x 1 numpy array
@@ -754,7 +786,7 @@ class Freq_domain(object):
         -----
             ...
         '''
-        # TODO: This methods also takes fs, nperseg + noverlap as parameters. Can only be used in overarching BE_method with default values. Can fs (sampling frequency) be calculated from GW data?    
+        # TODO: This methods also takes fs, nperseg + noverlap as parameters. Can only be used in overarching BE_method with default values. Can fs (sampling frequency) be calculated from GW data?
         f, PSD_b = sc.signal.welch(BP, sampling_frequency)
         f, PSD_e = sc.signal.welch(ET, sampling_frequency)
         f, CSD_be = sc.signal.csd(BP, ET, sampling_frequency)
@@ -766,18 +798,17 @@ class Freq_domain(object):
             CSD_bw_hat = Hb*PSD_b + He*np.abs(CSD_be)
             CSD_ew_hat = He*PSD_e + Hb*np.abs(CSD_eb)
             return np.concatenate([CSD_bw_hat-np.abs(CSD_bw), CSD_ew_hat-np.abs(CSD_ew)])**2.
-        result = least_squares(phi, np.concatenate([0.5*np.ones(len(PSD_b)), 0.5*np.ones(len(PSD_e))]), 
+        result = least_squares(phi, np.concatenate([0.5*np.ones(len(PSD_b)), 0.5*np.ones(len(PSD_e))]),
                                args=(PSD_b, PSD_e, CSD_be, CSD_eb, CSD_bw, CSD_ew), method='lm')
         H = result.x
         Hb, He = H[:len(H)//2], H[len(H)//2:]
         return f, Hb, He
 
-
     #%%
     @staticmethod
     def BE_Rau(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex, amp_ratio:float=1):
         """
-        
+
         Parameters
         ----------
         BP_s2 : numpy complex
@@ -796,31 +827,30 @@ class Freq_domain(object):
         -------
         BE : float
             barometric efficiency of the subsurface.
-            
+
         Notes
         -------
         This calculation uses Equation 9 in Rau et al. (2020), https://doi.org/10.5194/hess-24-6033-2020
         """
-        
+
         GW_ET_s2 = (GW_m2 / ET_m2) * ET_s2
         GW_AT_s2 = GW_s2 - GW_ET_s2
         BE = (1/amp_ratio)*np.abs(GW_AT_s2 / BP_s2)
         print(">> Reference: Method by Rau et al. (2020) [https://doi.org/10.5194/hess-24-6033-2020]")
         print(">> Barometric efficiency (BE): {:.3f} [-]".format(BE))
-        
+
         # a phase check ...
         GW_ET_m2_dphi = np.angle(GW_m2 / ET_m2)
         if ((amp_ratio == 1) and (np.abs(GW_ET_m2_dphi) > 5)):
             raise Warning("Attention: The phase difference between GW and ET is {.1f}°. BE could be affected by amplitude damping!".format(np.degrees(GW_ET_m2_dphi)))
-            
+
         return BE
-    
-   
+
    #%%
     @staticmethod
     def BE_Acworth(BP_s2:complex, ET_m2:complex, ET_s2:complex, GW_m2:complex, GW_s2:complex):
         """
-        
+
         Parameters
         ----------
         BP_s2 : numpy complex
@@ -837,7 +867,7 @@ class Freq_domain(object):
         -------
         BE : float
             barometric efficiency of the subsurface.
-            
+
         Notes
         -------
         This calculation uses Equation 4 in Acworth et al. (2016), https://doi.org/10.1002/2016GL071328
@@ -846,13 +876,13 @@ class Freq_domain(object):
         BE = (np.abs(GW_s2)  + np.abs(ET_s2) * np.cos(np.angle(BP_s2) - np.angle(ET_s2)) * (np.abs(GW_m2) / np.abs(ET_m2))) / np.abs(BP_s2)
         print(">> Reference: Method by Acworth et al. (2016) [https://doi.org/10.1002/2016GL071328]")
         print(">> Barometric efficiency (BE): {:.3f} [-]".format(BE))
-        
+
         # provide a user warning ...
         if (np.abs(GW_m2) > np.abs(GW_s2)):
             raise Warning("Attention: There are significant ET components present in the GW data. Please use the 'rau' method for more accurate results!")
-            
+
         return BE
-    
+
     #%%
     @staticmethod
     def K_Ss_Hsieh(ET_m2:complex, GW_m2:complex, scr_len:float, case_rad:float, scr_rad:float):
@@ -865,7 +895,7 @@ class Freq_domain(object):
         print(">> Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
         if (np.degrees(phase_shift) > 1):
             raise Exception("The phase shift is {:.2f} but must be <1 ° for the Hsieh method!".format(np.degrees(phase_shift)))
-        
+
         #%% use the Hsieh model
         global Ker, Kei, Power, Sqrt
         Ker = np.frompyfunc(ker, 2, 1)
@@ -931,12 +961,12 @@ class Freq_domain(object):
             results = {}
 
         return results
-    
+
     #%%
     @staticmethod
     def K_Ss_Wang(ET_m2:complex, GW_m2:complex, scr_depth:float):
         # !!! need borehole construction parameters !!!
-        
+
         # M2 frequency
         f_m2 = const.const['_etfqs']['M2']
         amp_resp = np.abs(GW_m2 / (ET_m2*1e-9))
@@ -946,7 +976,7 @@ class Freq_domain(object):
         print(">> Phase shift (dPhi): {:.3f} [rad], {:.2f} [°]".format(phase_shift, np.degrees(phase_shift)))
         if (np.degrees(phase_shift) < 0):
             raise Exception("The phase shift is {:.2f} but must be >0 ° for the Wang method!".format(np.degrees(phase_shift)))
-        
+
         # the vertical flow / positive phase_shift model
         def vflow_amp(K, S_s, z=20, f=f_m2):
             D_h = K / S_s
@@ -981,20 +1011,19 @@ class Freq_domain(object):
             print(">> Amplitude ratio (Ar): {:.3f} [-]".format(amp_resp*Ss))
             print(">> Residuals: Ar: {:.2e}, dPhi: {:.2e}".format(fit.fun[0], fit.fun[1]))
             results = {'A_str': amp_resp, 'dPhi': phase_shift, 'A_r': amp_resp*Ss, 'K': K, 'Ss': Ss, 'A_r_residual': fit.fun[0], 'dPhi_residual': fit.fun[1], 'screen_depth': scr_depth}
-            
+
         else:
             print(">> Attention: The solver did not converge!")
             results = {}
 
         return results
 
-
     #%%
     @staticmethod
     def D_BLHendry_amplitude(omega, z0, z1, a0, a1):
         """
         Calculate vertical hydraulic diffusivity as a function of the amplitude attenuation of a periodic (sinusoidal) signal.
-        
+
         Parameters
         ----------
         omega : float
@@ -1012,13 +1041,12 @@ class Freq_domain(object):
         -------
         D  : float
             Vertical hydraulic diffusivity, in length^2 per time units
-        ...           
+        ...
         Notes
         -------
         This calculation uses Equation 2 in Boldt-Leppin and Hendry (2003), https://doi.org/10.1111/j.1745-6584.2003.tb02385.x
         """
         return ((z1-z0)**2.)*np.pi/w*(np.log(a1/a0)**-2.)
-
 
     #%%
     @staticmethod
@@ -1043,20 +1071,19 @@ class Freq_domain(object):
         -------
         D  : float
             Vertical hydraulic diffusivity, in length^2 per time units
-        ...           
+        ...
         Notes
         -------
             This calculation uses Equation 3 in Boldt-Leppin and Hendry (2003), https://doi.org/10.1111/j.1745-6584.2003.tb02385.x
         """
         return np.pi/w*(((z1-z0)/(P1-P0))**2.)
 
-
     #%%
     @staticmethod
     def power_spectral_density(dataset, sampling_frequency, method):
-        """        
+        """
         Calculate the periodogram representation of an input dataset using one of three methods (assuming stationarity).
-        
+
         Parameters
         ----------
         dataset : numpy array
@@ -1090,11 +1117,10 @@ class Freq_domain(object):
             return
         return frequency, power
 
-
     #%%
     @staticmethod
     def spectrogram(dataset, sampling_frequency, method):
-        """        
+        """
         Calculate the spectrogram representation of an input dataset using the Short-Time Fourier Transform method (non-stationary).
 
         Parameters
@@ -1129,7 +1155,6 @@ class Freq_domain(object):
             return
         return frequency, times, z
 
-
     #%%
     @staticmethod
     def coherence(dataset1, dataset2, sampling_frequency):
@@ -1150,14 +1175,13 @@ class Freq_domain(object):
             Set of frequencies, from the reciprocal of dataset duration to the Nyquist frequency
         coherence : numpy array
             Coherence values
-        ...           
+        ...
         Notes
         -------
             This method is a wrapper for the scipy library implementation of coherence calculation, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.coherence.html
         """
         frequency, coherence = sc.signal.coherence(dataset1, dataset2, sampling_frequency)
         return frequency, coherence
-
 
     #%%
     @staticmethod
@@ -1179,7 +1203,7 @@ class Freq_domain(object):
             Set of frequencies, from the reciprocal of dataset duration to the Nyquist frequency
         csd : numpy array
             Cross-spectral density values, in length^2 units
-        ...           
+        ...
         Notes
         -------
             This method is a wrapper for the scipy library implementation of cross-spectral density, https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.csd.html
