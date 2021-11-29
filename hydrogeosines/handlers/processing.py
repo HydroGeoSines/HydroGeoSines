@@ -532,8 +532,10 @@ class Processing(object):
                         group1 = group1.loc[filter_gw,:]
                     else:
                         group1 = GW
-                        
+                    
+                    # the first data
                     data1 = group1.value.values
+                    
                     # calculate time lags in days
                     ps      = group1.hgs.dt.spl_period(unit='h')/24
                     lags = np.arange(0., len(GW)*ps/2, ps)
@@ -552,7 +554,8 @@ class Processing(object):
                                 group2 = group2.loc[filter_gw,:]
                             else:
                                 group2 = GW
-                                
+                            
+                            # the second data 
                             data2 = group2.value.values
                             
                             # calculate cross-correlation
