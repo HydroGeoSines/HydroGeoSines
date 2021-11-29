@@ -480,7 +480,68 @@ class Time_domain(object):
             return WLc, params
         else:
             raise Exception("Error: Please only use available Earth tide methods!")
-            
+
+
+    # https://stackoverflow.com/questions/643699/how-can-i-use-numpy-correlate-to-do-autocorrelation
+    @staticmethod
+    def acorr(dataset):
+        """
+        Calculate the autocorrelation present in an input datasets as a function of time.
+
+        Parameters
+        ----------
+        dataset : numpy array
+            Input dataset as a function of uniform time steps
+        Returns
+        -------
+        results: numpy array
+            Normalised autocorrelation values as functions of time lag, with delta-t equal to the sampling period
+        ...
+        Notes
+        -------
+            *** TBC ***
+        """
+        #results = sc.signal.correlate(dataset, dataset) # <<< scipy correlate function gives spurious results
+        x = dataset
+        xp = x - np.mean(x)
+        f = np.fft.fft(xp)
+        psd = f.conjugate()*f
+        results = np.fft.ifft(psd).real[:x.size//2]/np.sum(xp**2)
+        #results = f.conjugate()*f.real[:x.size//2]/numpy.var(x)/len(x) # alternate formulation for normalising results
+        return results
+
+
+    @staticmethod
+    def xcorr(dataset1, dataset2):
+        """
+        Calculate the cross-correlation between two input datasets as a function of time.
+
+        Parameters
+        ----------
+        dataset1 : numpy array
+            Input dataset #1 as a function of uniform time steps
+        dataset2 : numpy array
+            Input dataset #2 as a function of uniform time steps
+        Returns
+        -------
+        results: numpy array
+            Normalised cross correlation values as functions of time lag, with delta-t equal to the sampling period
+        ...
+        Notes
+        -------
+            *** TBC ***
+        """
+        #results = sc.signal.correlate(dataset1, dataset2) # <<< scipy correlate function gives spurious results
+        x,y = dataset1, dataset2
+        xp = x-np.mean(x)
+        yp = y-np.mean(y)
+        fx = np.fft.fft(xp)
+        fy = np.fft.fft(yp)
+        csd = fx.conjugate()*fy
+        results = np.fft.ifft(csd).real[:x.size//2]/np.sum(xp**2)
+        #results = fx.conjugate()*fy.real[:x.size//2]/numpy.var(x)/len(x) # alternate formulation for normalising results
+        return results
+
             
 #%% Static Class for FREQUENCY DOMAIN METHODS #################################
 class Freq_domain(object):

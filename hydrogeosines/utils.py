@@ -64,7 +64,7 @@ def method_list(myClass, ID:str = None):
 
 
 def join_tuple_string(str_tuple) -> str:
-    if isinstance(str_tuple,tuple):    
+    if isinstance(str_tuple, tuple):    
         return '_'.join(str_tuple)
     elif isinstance(str_tuple, str):
         return str_tuple

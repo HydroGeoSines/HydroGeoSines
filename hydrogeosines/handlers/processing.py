@@ -433,8 +433,151 @@ class Processing(object):
 
         return out
 
+
+    #%% auto correlation
+    def acorr(self, loc:list=None, update=False):
+        #TODO! NOT adviced to use on site.data with non-aligned ET
+        # !!! Check for data gaps implemented. See try/except with data_regular attribute
+        name = (inspect.currentframe().f_code.co_name).lower()
+        print("-------------------------------------------------")
+        print("Method: {}".format(name))
+        
+        # output dict
+        out = {name: {}}
+        # make dataset regular
+        try:
+            data = self.data_regular
+        except AttributeError:
+            self.RegularAndAligned()
+            data = self.data_regular
+            
+        categories  = data.category.unique()
+            
+        # grouping by location and parts (loc_part)
+        gw_data     = data.hgs.filters.get_gw_data
+        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
+        
+        for gw_loc, GW in grouped:
+            if (loc is None) or (gw_loc[0] in loc):
+                print('Calculating auto-correlation for location: {}'.format(gw_loc[0]))
+                    
+                # loop through categories
+                for cat in categories:
+                    print('Data category: {}'.format(cat))
+                    ident = (*gw_loc, cat)
+                    # print(ident)
+                    if cat != "GW":
+                        group = getattr(data.hgs.filters, utils.join_tuple_string(("get", cat.lower(), "data")))
+                        filter_gw = group.datetime.isin(GW.datetime)
+                        group = group.loc[filter_gw,:]
+                    else:
+                        group = GW
+
+                    # calculate time lags in days
+                    ps      = group.hgs.dt.spl_period(unit='h')/24
+                    lags = np.arange(0., len(GW)*ps/2, ps)
+                    coeff = Time_domain.acorr(group.value.values)
+                    # apply the auto correlation method
+                    results  = {'lags': lags[:len(coeff)], 'coeff': coeff}
+
+                    # slim data container
+                    data_group = pd.DataFrame(data = {cat: group.value.values}, index=group.datetime)
+                    # nested output dict with list for [results, data, info]
+                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+
+                    out[name].update({ident: [results, data_group, info]})
+                    
+        if not len(out[name]):
+            raise Exception("Please use at least one valid location for '{}'!".format(name))
+            
+        if update:
+            utils.dict_update(self.results, out)
+            
+        return out
+
+    #%% cross correlation
+    def xcorr(self, loc:list=None, update=False):
+        #TODO! NOT adviced to use on site.data with non-aligned ET
+        # !!! Check for data gaps implemented. See try/except with data_regular attribute
+        name = (inspect.currentframe().f_code.co_name).lower()
+        print("-------------------------------------------------")
+        print("Method: {}".format(name))
+        
+        # output dict
+        out = {name: {}}
+        # make dataset regular
+        try:
+            data = self.data_regular
+        except AttributeError:
+            self.RegularAndAligned()
+            data = self.data_regular
+            
+        categories  = data.category.unique()
+        
+        # grouping by location and parts (loc_part)
+        gw_data     = data.hgs.filters.get_gw_data
+        grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
+        
+        for gw_loc, GW in grouped:
+            if (loc is None) or (gw_loc[0] in loc):
+                print('Calculating auto-correlation for location: {}'.format(gw_loc[0]))
+                
+                # loop through first categories
+                for cat1 in categories:
+                    
+                    # print(ident)
+                    if cat1 != "GW":
+                        group1 = getattr(data.hgs.filters, utils.join_tuple_string(("get", cat1.lower(), "data")))
+                        filter_gw = group1.datetime.isin(GW.datetime)
+                        group1 = group1.loc[filter_gw,:]
+                    else:
+                        group1 = GW
+                        
+                    data1 = group1.value.values
+                    # calculate time lags in days
+                    ps      = group1.hgs.dt.spl_period(unit='h')/24
+                    lags = np.arange(0., len(GW)*ps/2, ps)
+                    
+                    # loop through second categories
+                    for cat2 in categories:
+                        
+                        # only calculate if not equal category !
+                        if cat1 != cat2:
+                            print('Data categories: {}-{}'.format(cat1, cat2))
+                            ident = (*gw_loc, cat1 + "-" + cat2)
+                            # print(ident)
+                            if cat2 != "GW":
+                                group2 = getattr(data.hgs.filters, utils.join_tuple_string(("get", cat2.lower(), "data")))
+                                filter_gw = group2.datetime.isin(GW.datetime)
+                                group2 = group2.loc[filter_gw,:]
+                            else:
+                                group2 = GW
+                                
+                            data2 = group2.value.values
+                            
+                            # calculate cross-correlation
+                            coeff = Time_domain.xcorr(data1, data2)
+                            # apply the auto correlation method
+                            results  = {'lags': lags[:len(coeff)], 'coeff': coeff}
+                            
+                            # slim data container
+                            data_group = pd.DataFrame(data = {cat1: group1.value.values}, index=group1.datetime)
+                            # nested output dict with list for [results, data, info]
+                            info = {'unit': data.hgs.get_loc_unit(cat=cat1), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+                            
+                            out[name].update({ident: [results, data_group, info]})
+                    
+        if not len(out[name]):
+            raise Exception("Please use at least one valid location for '{}'!".format(name))
+            
+        if update:
+            utils.dict_update(self.results, out)
+            
+        return out
+    
+
     #%% fft
-    def fft(self, loc:list=None, detrend=True, update=False):
+    def fft(self, loc:list=None, detrend:bool=True, update:bool=False):
         #TODO! NOT adviced to use on site.data with non-aligned ET
         # !!! Check for data gaps implemented. See try/except with data_regular attribute
         name = (inspect.currentframe().f_code.co_name).lower()
@@ -470,7 +613,8 @@ class Processing(object):
                         group = group.loc[filter_gw,:]
                     else:
                         group = GW
-
+                    
+                    #??? is drop NaN here correct???
                     group   = group.hgs.filters.drop_nan
                     tf      = group.hgs.dt.to_zero
                     values  = group.value.values

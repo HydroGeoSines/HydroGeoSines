@@ -94,7 +94,7 @@ class Time(object):
         else:
             return self._obj.dt.tz_localize(None).dt.strftime(format)
 
-    def spl_freq(self, unit='s'):
+    def spl_period(self, unit='s'):
         #all(df.datetime.diff()[1:] == np.timedelta64(1, 's')) == True
         if (unit == 's'):
             factor = 3600
@@ -104,7 +104,12 @@ class Time(object):
             factor = 1
         else:
             raise Exception("Error: Time unit must either be 'h' (hour), 'm' (minute) or 's' (second)!")
-        return np.round(np.median(np.diff(self.to_num))*24*factor)
+        tmp = np.median(np.diff(self.to_num))*24*factor
+        if tmp > 1:
+            tmp = np.round(tmp)
+        else:
+            tmp = np.round(tmp, 3)
+        return tmp
 
 
     #data.index = pd.to_datetime(data.index.tz_localize(tz=pytz.FixedOffset(int(60*utc_offset))).tz_convert(pytz.utc))
