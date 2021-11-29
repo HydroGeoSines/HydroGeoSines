@@ -31,7 +31,7 @@ process_csiro_SiteA_B = hgs.Processing(csiro_site).by_gwloc(locations)
 #%%
 # add a regularly sampled data container to the processing object 
 # it is automatically reused in some of the methods, reducing computation times
-process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).make_regular()
+process_csiro = hgs.Processing(csiro_site).by_gwloc(locations).RegularAndAligned()
 
 # test hals method
 # hals_results  = process_csiro.hals()

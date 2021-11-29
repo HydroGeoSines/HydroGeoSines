@@ -567,6 +567,7 @@ class Freq_domain(object):
              freqs and tt that when multiplied by theta is a
              sum of sinusoids.
         '''
+        print(">> Reference: Method explained in Schweizer et al. (2021) [https://doi.org/10.1007/s11004-020-09915-9]")
         # !!! find a criteria for which a dataset can be analysed
         if ((tf.max() - tf.min()) < 20):
             raise Exception("To use HALS, the duration must be >=20 days!")

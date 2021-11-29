@@ -45,6 +45,7 @@ class Processing(object):
     def ET_calc(self, et_comp:str='g'):
         self.site.add_ET(et_comp=et_comp)
 
+    #%% make regular and align
     def RegularAndAligned(self, **kwargs):
         # only pass kwargs as arguments that acutally exist in BP_align
         BPalign_args = kwargs.copy()
@@ -114,6 +115,7 @@ class Processing(object):
             self.site.data = self.site.data.hgs.resample(freq)
             return self
 
+    #%% display info
     def info(self):
         #TODO! use the groupby method to run through locations. Otherwise the information is missleading as differences in sampling of the location parts are not represented.
         data = self.site.data
@@ -169,7 +171,7 @@ class Processing(object):
         except AttributeError:
             self.RegularAndAligned()
             data = self.data_regular
-
+            
         # extract data categories
         gw_data = data.hgs.filters.get_gw_data
         bp_data = data.hgs.filters.get_bp_data

@@ -20,7 +20,7 @@ process = hgs.Processing(fowlers_site)
 # it is automatically reused in some of the methods, reducing computation times
 
 locations = ["FG822-1", "FG822-2"]
-process_sub_loc = hgs.Processing(fowlers_site).by_gwloc(locations).make_regular()
+process_sub_loc = hgs.Processing(fowlers_site).by_gwloc(locations).RegularAndAligned()
 
 process_sub_date = hgs.Processing(fowlers_site).by_dates('2014-12-01', '2014-12-05')
 process_sub_date_loc = hgs.Processing(fowlers_site).by_gwloc("FG822-2").by_dates('2014-11-01', '2014-12-05')
