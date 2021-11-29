@@ -517,13 +517,16 @@ class Processing(object):
         # grouping by location and parts (loc_part)
         gw_data     = data.hgs.filters.get_gw_data
         grouped = gw_data.groupby(by=gw_data.hgs.filters.loc_part)
+    
         
         for gw_loc, GW in grouped:
             if (loc is None) or (gw_loc[0] in loc):
-                print('Calculating auto-correlation for location: {}'.format(gw_loc[0]))
+                print('Calculating cross-correlation for location: {}'.format(gw_loc[0]))
                 
                 # loop through first categories
-                for cat1 in categories:
+                for i in range(len(categories)):
+
+                    cat1 = categories[i]
                     
                     # print(ident)
                     if cat1 != "GW":
@@ -540,13 +543,14 @@ class Processing(object):
                     ps      = group1.hgs.dt.spl_period(unit='h')/24
                     lags = np.arange(0., len(GW)*ps/2, ps)
                     
-                    # loop through second categories
-                    for cat2 in categories:
+                    # loop through consecutive categories
+                    for j in range(i, len(categories)):
                         
+                        cat2 = categories[j]
                         # only calculate if not equal category !
                         if cat1 != cat2:
                             print('Data categories: {}-{}'.format(cat1, cat2))
-                            ident = (*gw_loc, cat1 + "-" + cat2)
+                            ident = (*gw_loc, cat1, cat2)
                             # print(ident)
                             if cat2 != "GW":
                                 group2 = getattr(data.hgs.filters, utils.join_tuple_string(("get", cat2.lower(), "data")))
@@ -564,7 +568,7 @@ class Processing(object):
                             results  = {'lags': lags[:len(coeff)], 'coeff': coeff}
                             
                             # slim data container
-                            data_group = pd.DataFrame(data = {cat1: group1.value.values}, index=group1.datetime)
+                            data_group = pd.DataFrame(data = {cat1: group1.value.values, cat2: group2.value.values}, index=group1.datetime)
                             # nested output dict with list for [results, data, info]
                             info = {'unit': data.hgs.get_loc_unit(cat=cat1), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
                             

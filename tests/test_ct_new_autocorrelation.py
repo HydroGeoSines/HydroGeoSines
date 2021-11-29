@@ -20,4 +20,4 @@ death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
 process = hgs.Processing(death_valley)
 
 #%% test gw_correct
-gw_corr_results  = process.acorr(loc='BLM-1')
+gw_acorr  = process.acorr(loc='BLM-1')
