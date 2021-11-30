@@ -540,7 +540,7 @@ class Processing(object):
                     data1 = group1.value.values
                     
                     # calculate time lags in days
-                    ps      = group1.hgs.dt.spl_period(unit='h')/24
+                    ps = group1.hgs.dt.spl_period(unit='h')/24
                     lags = np.arange(0., len(GW)*ps/2, ps)
                     
                     # loop through consecutive categories
