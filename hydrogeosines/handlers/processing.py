@@ -718,7 +718,7 @@ class Processing(object):
         return out
 
     #%% GW_correct
-    def GW_correct(self, lag_h=24, et_method:str="ts", fqs=None, update=False):
+    def GW_correct(self, lag_h=24, et_method:str=None, fqs=None, update=False):
         name    = (inspect.currentframe().f_code.co_name)
         # print(name)
         print("-------------------------------------------------")
@@ -766,25 +766,34 @@ class Processing(object):
             datetime = GW.datetime
             filter_gw = bp_data.datetime.isin(datetime)
             BP = bp_data.loc[filter_gw,:].value.values
-            if et_method in (None,"hals"):
+            if et_method in (None, "hals"):
                 ET = None
             elif et_method == 'ts':
                 if et_data is None:
                     ET = etides.calc_ET_align(GW, geoloc=self.site.geoloc)
                     ET = ET.value.values
+                    et_unit = 'm**2/s**2'
                 else:
                     filter_gw = et_data.datetime.isin(datetime)
                     ET = et_data.loc[filter_gw,:].value.values
+                    et_unit = data.hgs.get_loc_unit(cat='ET')
             else:
                 raise Exception("Error: Specified 'et_method' is not available!")
-
+            
             GW = GW.value.values
+            # print("ET METHOD ", et_method)
             WLc, results = Time_domain.regress_deconv(tf, GW, BP, ET, lag_h=lag_h, et_method=et_method, fqs=fqs)
             results["WLc"] = WLc
+            
             # add results to the out dictionary
-            data_group = pd.DataFrame(data = {"GW":GW,"BP":BP,"ET":ET},index=datetime,columns=["GW","BP","ET"])
-            info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': data.hgs.get_loc_unit(cat='ET'), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
-            out[name].update({gw_loc:[results, data_group, info]})
+            if et_method in (None, 'hals'):
+                data_group = pd.DataFrame(data = {"GW": GW,"BP": BP}, index=datetime, columns=["GW","BP"])
+                info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+            else:
+                data_group = pd.DataFrame(data = {"GW": GW,"BP": BP,"ET": ET}, index=datetime, columns=["GW","BP","ET"])
+                info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': et_unit, 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+
+            out[name].update({gw_loc: [results, data_group, info]})
 
         if update:
             utils.dict_update(self.results,out)

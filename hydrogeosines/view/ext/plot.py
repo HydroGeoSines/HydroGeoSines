@@ -146,6 +146,9 @@ class Plot(object):
         
         ax.legend(handles=[l1,l2], loc='best')
         
+        # fix date format issues
+        fig1.autofmt_xdate()
+        
         if isinstance(folder, str):
             print(">> Writing files to folder: {}".format(folder))
             
@@ -156,3 +159,4 @@ class Plot(object):
             fig2.savefig(filename, dpi=200, bbox_inches='tight')
         
         return fig1, fig2
+    

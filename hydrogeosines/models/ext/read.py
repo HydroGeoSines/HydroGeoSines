@@ -22,13 +22,25 @@ class Read(object):
         #self.attribute = variable
         
     #%%
-    def import_csv(self, filepath, input_category, utc_offset:float, unit = "m", how: str="add", loc_names=None, header = 0, check_duplicates=False):
-
+    def import_csv(self, filepath, input_category, utc_offset:float, unit = "m", how:str="add", loc_names=None, header = 0, check_duplicates=False):
+        
+        # determine which input category is empty so that this column can be ignored
+        use_cat = np.array([input_category]).flatten()
+        usecols = np.where(use_cat != "")[0]
+        input_category = use_cat[usecols]
+        
         # check for non valid categories
         utils.check_affiliation(input_category, self.VALID_CATEGORY)
 
+        # custom headers for locations
+        if loc_names != None:
+            loc_names = [0] + list(np.array([loc_names]).flatten()[usecols])
+        
+        if not isinstance(unit, str):
+            unit = list(np.array([unit]).flatten()[usecols])
+        
         # check for non valid pressure units (cat: GW, BP)
-        if any(cat in input_category for cat in ("GW","BP")):
+        if any(cat in input_category for cat in ("GW", "BP")):
             idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e in ("GW","BP")]
             utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_pucf'].keys())
 
@@ -37,16 +49,14 @@ class Read(object):
             idx = [ic for ic, e in enumerate(np.array(input_category).flatten()) if e == "ET"]
             utils.check_affiliation([u.lower() for u in np.array(unit).flatten()[idx]], self.const['_etunit'])
 
-        # custom headers for locations
-        if loc_names != None:
-            loc_names = list(np.array([loc_names]).flatten())
-
+        # make sure the first column is always used
+        usecols = np.concatenate(([0], usecols + 1), axis=0)
         # load the csv file into variable. column headers are required (header=0)
-        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header = header, names= loc_names)
-
-        # ignore column numbers beyond input length
-        ncols = len(np.array(input_category).flatten())
-        data = data.iloc[:, :ncols]
+        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header = header, names=loc_names, usecols=usecols)
+        
+        # # ignore column numbers beyond input length
+        # ncols = len(np.array(input_category).flatten())
+        # data = data.iloc[:, :ncols]
 
         data.index.rename(name="datetime", inplace=True) # streamline datetime name
 

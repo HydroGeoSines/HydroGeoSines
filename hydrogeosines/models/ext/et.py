@@ -196,5 +196,3 @@ class ET_data(object):
         print("Earth tide time series were calculated and added ...")
         return out
         
-
-        

@@ -6,7 +6,7 @@ import os, sys
 from contextlib import contextmanager
 
 
-def check_affiliation(values,valid):
+def check_affiliation(values, valid):
         if not all(x in valid for x in np.array(values).flatten()):
             raise ValueError("%r is not in %r." % (values, valid))                 
 

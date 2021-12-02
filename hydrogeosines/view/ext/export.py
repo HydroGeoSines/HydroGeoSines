@@ -87,14 +87,20 @@ class Export(object):
         et_unit = ''
         if 'ET_unit' in info:
             et_unit = info['ET_unit']
-            
-        # assemble the dataset ...
-        file1 = pd.DataFrame({'Datetime [UTC{:+.2f}]'.format(utc_offset): datetime, 
-                             "Baro [{:s}]".format(unit): data.BP,
-                             "Earth tides [{:s}]".format(et_unit): data.ET,
-                             loc[0] + " [{:s}]".format(unit): data.GW,
-                             loc[0] + '_corrected [{:s}]'.format(unit): np.around(results['WLc'], 4)})
         
+        # assemble the dataset ...
+        # check if ET is present ...
+        if "ET" in data.columns:
+            file1 = pd.DataFrame({'Datetime [UTC{:+.2f}]'.format(utc_offset): datetime, 
+                                 "Baro [{:s}]".format(unit): data.BP,
+                                 "Earth tides [{:s}]".format(et_unit): data.ET,
+                                 loc[0] + " [{:s}]".format(unit): data.GW,
+                                 loc[0] + '_corrected [{:s}]'.format(unit): np.around(results['WLc'], 4)})
+        else:
+            file1 = pd.DataFrame({'Datetime [UTC{:+.2f}]'.format(utc_offset): datetime, 
+                                 "Baro [{:s}]".format(unit): data.BP,
+                                 loc[0] + " [{:s}]".format(unit): data.GW,
+                                 loc[0] + '_corrected [{:s}]'.format(unit): np.around(results['WLc'], 4)})
         # save as CSV
         if 'dt_format' in kwargs:
             dt_format = kwargs['dt_format']

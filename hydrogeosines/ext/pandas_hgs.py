@@ -102,6 +102,7 @@ class HgsAccessor(object):
         df = self._obj
         idx     = df.category.isin(["GW","BP"]) & (df.unit != "m")
         if len(df[idx]) > 0:
+            print("Convert pressure to SI unit meter.")
             df.loc[idx, "value"] = self.unit_converter_vec(df[idx], unit_dict) 
             df.loc[:, "unit"]    = np.where(idx, "m", df.unit) 
         return df

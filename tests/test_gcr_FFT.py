@@ -11,9 +11,17 @@ import pandas as pd
 
 #%%  Testing MVC principal
 death_valley = hgs.Site('death valley', geoloc=[-116.471360, 36.408130, 688])
-death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
-                        input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","nstr"],
+# death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
+#                         input_category=["GW","BP","ET"], utc_offset=0, unit=["m","m","nstr"],
+#                         how="add", check_duplicates=True)
+
+death_valley.import_csv('tests/data/fowlers_gap/acworth_all.csv', 
+                        input_category=['BP', 'GW', 'GW', 'GW', 'ET'], 
+                        utc_offset = 10, 
+                        unit=['m', 'm', 'm', 'm', 'm**2/s**2'], 
+                        loc_names = ["Baro", "FG822-1", "FG822-2", "Smith", "ET"],
                         how="add", check_duplicates=True)
+
 
 #%%
 # tmp = death_valley.data.hgs.get_loc_unit('ET')
@@ -23,7 +31,7 @@ death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
 process = hgs.Processing(death_valley)
 
 # test hals method
-fft_results  = process.fft(update=True)
+fft_results  = process.hals(update=True)
 
 #%% Output
 csiro_output  = hgs.Output(fft_results) # process.results container or results
