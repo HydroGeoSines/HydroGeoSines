@@ -12,67 +12,169 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
 
-def annotate(data, **kws):
-    n = len(data)
-    ax = plt.gca()
-    ax.text(.1, .6, f"N = {n}", transform=ax.transAxes)
+from pandas.tseries.frequencies import to_offset
 
-def out_bound(data, **kws):
-    data = data.loc[data["variable"] == "perc_change"]
-    data_mean, data_std, outliers = out_values(data)    
-    ax = plt.gca()
-    ax.axhline(data_mean + (data_std * 3),ls="--",c="r")
-    ax.axhline(data_mean - (data_std * 3),ls="--",c="r")
-    ax.scatter(outliers["datetime"],outliers["value"],c="r",marker="x",s=10)
-    
-def out_values(data):
-    data_mean = data["value"].mean()
-    data_std =  data["value"].std()
-    outliers = data.loc[data["value"].abs() > data_std*3]
-    return data_mean, data_std, outliers
-    
-def gaps_highlighter(data, **kws):
-    if (data["variable"] == "raw").all() == True:
-        diff = data["datetime"].diff(periods=1).dt.total_seconds()
-        mcf = diff.mode()
-        gaps = data.loc[diff > mcf[0]]
-        ax = plt.gca()
-        ylims = ax.get_ylim()
-        ax.scatter(gaps["datetime"], [ylims[0]]*len(gaps),c="green",marker="x",s=10)
-        
+from .. import utils
+
+
 def percent_change(values):
     # Separate value from all previous values
     last_value = values.iloc[-1]
     previous_values = values.iloc[:-1]
     # Calculate % difference between last values and the mean of all pervious values
-    perc_change = (last_value - np.mean(previous_values)) / np.mean(previous_values)
+    perc_change = ((last_value - np.mean(previous_values)) / np.mean(previous_values))*100
     return perc_change
 
-def find_outliers(df, window = "24H"):
-    # drop missing values so % change is only calculated for datetimes with values
-    df = df.hgs.filters.drop_nan.reset_index(drop=True)
-    df["perc_change"] = df.groupby(df.hgs.filters.obj_col).rolling(window=window, 
-                                                             min_periods=1,     
-                                                             on = "datetime")["value"].aggregate(percent_change).reset_index()[df.columns]["value"]
-    df["ident"] = df["category"] + "_" + df["location"] + "_" + df["part"]
-    df.rename(columns={"value":"raw"},inplace=True)
-    df = pd.melt(df, id_vars=['ident',"datetime"], value_vars=["raw","perc_change"], value_name='value')
-    return df
+def data_stats(series):
+    data_mean = series.mean()
+    data_std =  series.std()
+    data_abs =  series.abs()
+    return data_mean, data_std, data_abs
 
-def inspect_data(df):
-    perc_change = df.loc[df["variable"] == "perc_change"]
-    outliers = out_values(perc_change)        
-    grid = sns.FacetGrid(df, col="ident", row="variable",sharey=False,legend_out = True,height=3,aspect=2)
-    #grid.refline(y=(test["value"].mean()+test["value"].std()*3))  #test["value"].mean()
-    grid.map_dataframe(sns.scatterplot, "datetime", "value", s=2, color=".1", marker="+") 
-    grid.set(xlim=(df.datetime.min(), df.datetime.max()))#, ylim=(0, 12), xticks=[10, 30, 50], yticks=[2, 6, 10])
-    grid.map_dataframe(out_bound)
-    grid.map_dataframe(gaps_highlighter)
-    grid.add_legend() 
+def consecutive_values(df, threshold: int = 1):
+    df.index.name = "idx"
+    df = df.reset_index()
+    #df['value_grp'] = (df["idx"].diff(1) != 1).astype('int').cumsum()
+    df['value_grp'] = (df["idx"].diff(1) > threshold).astype('int').cumsum()
     
-    for axes in grid.axes.flat:
-        _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=45, ha = "right")
+    out = pd.DataFrame({'StartDate' : df.groupby('value_grp').datetime.first().dt.tz_localize(None), 
+              'EndDate' : df.groupby('value_grp').datetime.last().dt.tz_localize(None),
+              'Size' : df.groupby('value_grp').size(), 
+              'StartIndex' : df.groupby('value_grp')["idx"].first(),
+              "AbsChange"  : df.groupby("value_grp")["value"].apply(lambda x:x.max()-x.min())}).reset_index(drop=True)    
+    return out
+
+def stationary(df): 
+    df = df.hgs.filters.drop_nan.reset_index(drop=True)     
+    groups = df.groupby(["location","part"])
+    for name, df_grp in groups:
+        print(name)
+        df_grp = df_grp.set_index("datetime")
+        rollmean = df_grp.resample(rule="D").mean()
+        rollstd = df_grp.resample(rule= "D").std()
+        # resample uses datetime at center of data. offset need to align with df_grp again
+        offset = "12h"
+        df_grp.index = df_grp.index - to_offset(offset)
+        
+        fig, axs = plt.subplots(2,1, figsize=(10,5), sharex = True, 
+                                    gridspec_kw={'height_ratios': [2,1]})
+        axs[0].plot(df_grp["value"], color="blue", label="raw_data")
+        axs[0].plot(rollmean, color="red", linestyle="--", label = "rolling_mean")
+        axs[1].plot(rollstd, color="black", label= "rolling_std")
+        axs[0].set_title(name)
+        for ax in axs.reshape(-1):
+            ax.legend(loc="best")        
+        plt.show()
+        
+def plot_outliers(df, window = "24H",cat="GW"): 
+    """
+    Visual examination of outliers in groundwater data.
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+    window : TYPE, optional
+        DESCRIPTION. The default is "24H".
+    cat : TYPE, optional
+        DESCRIPTION. The default is "GW".
+
+    Returns
+    -------
+    df_outliers : TYPE
+        DESCRIPTION.
+
+    #TODO!: three different types of outliers that need to be distinguished:
+        1) extreme values, spikes -> e.g. reading errors 
+        2) shifts (often encountered together with a change in sampling rate beforehand (e.g. due to maintainance))
+        3) sharp rises or falls (extreme changes in the system) -> e.g. pumping
+    """
     
-    grid.tight_layout()  
-    return outliers
+    # user defined style for plot
+    with plt.style.context("ggplot"):
+        # get category
+        df = df.loc[df.category.isin(list(np.array(cat).flatten()))]
+        df = df.hgs.filters.drop_nan.reset_index(drop=True)
+        #df["value"] = np.ma.masked_where(df["value"] == np.nan,df["value"])
+        
+        output = {}
+        # group by location and part
+        groups = df.groupby(["location","part"])
+        for name, df_grp in groups:
+            print("\nThe data for location '{}', part '{}' is being processed ...".format(name[0],name[1]))
+            # calculate percent_change
+            df_grp["perc_change"] = df_grp.rolling(window=window, min_periods=1,on="datetime")["value"].aggregate(percent_change)
+            
+            # calculate mean, std and abs for the percent change data
+            perc_mean, perc_std, perc_abs = data_stats(df_grp.perc_change)
+            
+            # get outliers
+            df_outliers =  df_grp.loc[perc_abs > perc_std*3]
+            
+            # sampling rate
+            diff = df_grp["datetime"].diff(periods=1).dt.total_seconds()
+            sph = (1/(diff/(60*60)))# samples per hour
+            mcf = sph.mode().values # most common sampling frequency
+            
+            # finds gaps
+            gaps = df_grp.loc[diff > mcf[0]]
+    
+            #ax.scatter(gaps["datetime"], [ylims[0]]*len(gaps),c="green",marker="x",s=10)
+            plt_labels = ["value","perc_change"]
+            y_labels = ["value [{}]".format(str(df_grp.unit.values[0])),"percent\n change [%]"]
+            fig, axs = plt.subplots(len(plt_labels)+1,1, figsize=(12,6), sharex = True, 
+                                    gridspec_kw={'height_ratios': [2]*len(plt_labels)+[1]})
+            fig.suptitle(utils.join_tuple_string(name)) #,fontsize=16
+            for i,var in enumerate(plt_labels):
+    
+                axs[i].plot(df_grp.datetime,df_grp[var], color="black",linewidth=1)
+                axs[i].scatter(df_outliers.datetime,df_outliers[var],marker="x",color="r",s=10)
+    
+                axs[i].set_ylabel(y_labels[i])
+                axs[i].spines[["top","right"]].set_visible(False)
+                               
+            # plt 3 std around mean
+            axs[1].axhline(perc_mean + (perc_std * 3),ls="--",c="r")
+            axs[1].axhline(perc_mean - (perc_std * 3),ls="--",c="r")
+            
+            axs[2].scatter(df_grp["datetime"],sph, color="black",s=10)
+            axs[2].axhline(mcf,ls="--",c="g")
+            axs[2].set_ylabel("sampling\n rate [s/h]")
+
+            plt.gcf().autofmt_xdate(rotation=30, ha='right')
+            plt.tight_layout()
+            plt.show()
+            
+            # find consecutive outliers (clusters)
+            grouped_outliers = consecutive_values((df_outliers))
+            
+            # prompt if user would like to print the table to the console
+            while True:
+                answer = input("\nWould you like to print the top outliers to the console? (Yes/No) ").lower()
+                if answer in ("yes","no"):
+                    break
+                else:
+                    print("That is not a valid answer! Please try again ...")
+  
+            if answer == "yes":  
+                if len(grouped_outliers) < 5:
+                    num_entries = len(grouped_outliers)
+                    print("\nThese are the {} outlier-clusters sorted by their abs(change_in_value) and size:".format(num_entries))
+                else:
+                    num_entries = 5
+                    print("\nThese are the top 5 outlier-clusters sorted by their abs(change_in_value) and size:")
+                print(grouped_outliers.sort_values(by=["AbsChange","Size"],ascending=[False,False]).head(num_entries))
+            
+            # show clusters of outliers by color in a new plot?
+            
+            # prompt what to do for a specific range of values
+            
+            # use "between_dates" of pandas to replace values within a certain time frame
+            
+            # append output
+            result = {name:grouped_outliers}
+            output.update(result)
+        return output
