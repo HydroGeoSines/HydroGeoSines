@@ -1,8 +1,9 @@
-import numpy
-import pandas
-import matplotlib
+import numpy as np
+import pandas as pd
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import pygtide
-import streamlit
+import streamlit as st
 
 st.subheader("Groundwater pressure dataset")
 gw = st.file_uploader("Upload dataset", type=["csv"], key='gw')
