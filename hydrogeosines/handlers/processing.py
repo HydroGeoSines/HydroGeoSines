@@ -115,8 +115,9 @@ class Processing(object):
             self.site.data = self.site.data.hgs.resample(freq)
             return self
 
-    #%% display info
-    def info(self):
+
+    #%% describe the dataset
+    def describe(self):
         #TODO! use the groupby method to run through locations. Otherwise the information is missleading as differences in sampling of the location parts are not represented.
         data = self.site.data
         print("-------------------------------------------------")
@@ -154,12 +155,14 @@ class Processing(object):
 
             print("-------------------------------------------------")
 
+
     #%% BE_time
     def BE_time(self, method:str="all", derivative=True, update=False):
         print("-------------------------------------------------")
         print("Processing BE_time method ...")
         name = (inspect.currentframe().f_code.co_name).lower()
         # output dict
+        info = {"site": self.site._name}
         out = {name:{}}
         # get BE Time domain methods
         method_list = utils.method_list(Time_domain, ID="BE")
@@ -190,7 +193,7 @@ class Processing(object):
 
             # aggregate data for results container
             data_group = pd.DataFrame(data = {"GW": GW, "BP": BP}, index=datetime, columns=["GW", "BP"])
-            info = {"derivative": derivative, 'unit': '-', 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+            utils.dict_update(info, {"derivative": derivative, 'unit': '-', 'utc_offset': self.site.utc_offset[gw_loc[0]]})
 
             # select method
             if method.lower() == 'all':
@@ -234,6 +237,7 @@ class Processing(object):
         mfd = max_freq_diff[freq_method.lower()]
 
         # output dict
+        info = {"site": self.site._name}
         out = {name:{}}
 
         # !!! check if method results already exist to save time.
@@ -262,7 +266,7 @@ class Processing(object):
         for group, val in grouped:
             print("-------------------------------------------------")
             print('Location: {}, Part: {}'.format(group[0], group[1]))
-            info = {'method': method, 'unit': '-', 'utc_offset': self.site.utc_offset[group[0]]}
+            utils.dict_update(info, {'method': method, 'unit': '-', 'utc_offset': self.site.utc_offset[group[0]]})
             # print(group)
             complex_dict = {}
             for cat in val.category.unique():
@@ -280,6 +284,7 @@ class Processing(object):
                         else:
                             raise Exception("{} component for {} is required, but the closest component is too far away!".format(key.upper(),cat))
 
+
             #%% BE method by Rau et al. (2020)
             if method.lower() == 'rau':
                 # see if the response amplitude ratio was set previously
@@ -291,21 +296,15 @@ class Processing(object):
                     warnings.warn("Attention: Amplitude ratio is required for accurate BE results! Please run method 'K_Ss_estimate(loc='{}', update=True)' before!".format(group[0]))
 
                 # print(amp_ratio)
-                results = Freq_domain.BE_Rau(complex_dict["BP_s2"],
-                                            complex_dict["ET_m2"],
-                                            complex_dict["ET_s2"],
-                                            complex_dict["GW_m2"],
-                                            complex_dict["GW_s2"], amp_ratio=amp_ratio)
+                results = Freq_domain.BE_Rau(complex_dict["BP_s2"], complex_dict["ET_m2"], complex_dict["ET_s2"],
+                                            complex_dict["GW_m2"], complex_dict["GW_s2"], amp_ratio=amp_ratio)
 
                 out[name].update({group:[results, data, info]})
 
             #%% BE method by Acworth et al. (2016)
             elif method.lower() == 'acworth':
-                results = Freq_domain.BE_Acworth(complex_dict["BP_s2"],
-                                            complex_dict["ET_m2"],
-                                            complex_dict["ET_s2"],
-                                            complex_dict["GW_m2"],
-                                            complex_dict["GW_s2"],)
+                results = Freq_domain.BE_Acworth(complex_dict["BP_s2"], complex_dict["ET_m2"], complex_dict["ET_s2"],
+                                            complex_dict["GW_m2"], complex_dict["GW_s2"])
 
                 out[name].update({group:[results, data, info]})
 
@@ -344,6 +343,7 @@ class Processing(object):
         mfd = max_freq_diff[freq_method.lower()]
 
         # output dict
+        info = {"site": self.site._name}
         out = {name:{}}
 
         # !!! check if method results already exist to save time.
@@ -415,7 +415,7 @@ class Processing(object):
                     raise Exception("For method '{}' the screen radius (scr_rad) must have a valid value!".format(method.lower()))
 
                 results = Freq_domain.K_Ss_Hsieh(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_len, case_rad, scr_rad)
-                info = {'method': 'Hsieh', 'unit': 'm/s', 'utc_offset': self.site.utc_offset[group[0]]}
+                utils.dict_update(info, {'method': 'Hsieh', 'unit': 'm/s', 'utc_offset': self.site.utc_offset[group[0]]})
                 out[name].update({group:[results, data, info]})
                 pass
 
@@ -425,7 +425,7 @@ class Processing(object):
                     raise Exception("For method '{}' the screen depth (scr_depth) must have a valid value!".format(method.lower()))
 
                 results = Freq_domain.K_Ss_Wang(complex_dict["ET_m2"], complex_dict["GW_m2"], scr_depth)
-                info = {'method': 'Wang', 'unit': 'm/s', 'utc_offset': self.site.utc_offset[group[0]]}
+                utils.dict_update(info, {'method': 'Wang', 'unit': 'm/s', 'utc_offset': self.site.utc_offset[group[0]]})
                 out[name].update({group:[results,data,info]})
 
         if update:
@@ -443,6 +443,7 @@ class Processing(object):
         print("Method: {}".format(name))
         
         # output dict
+        info = {"site": self.site._name}
         out = {name: {}}
         # make dataset regular
         try:
@@ -483,7 +484,7 @@ class Processing(object):
                     # slim data container
                     data_group = pd.DataFrame(data = {cat: group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
-                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+                    utils.dict_update(info, {'unit': data.hgs.get_loc_unit(cat=cat), 'utc_offset': self.site.utc_offset[gw_loc[0]]})
 
                     out[name].update({ident: [results, data_group, info]})
                     
@@ -504,6 +505,7 @@ class Processing(object):
         print("Method: {}".format(name))
         
         # output dict
+        info = {"site": self.site._name}
         out = {name: {}}
         # make dataset regular
         try:
@@ -570,7 +572,7 @@ class Processing(object):
                             # slim data container
                             data_group = pd.DataFrame(data = {cat1: group1.value.values, cat2: group2.value.values}, index=group1.datetime)
                             # nested output dict with list for [results, data, info]
-                            info = {'unit': data.hgs.get_loc_unit(cat=cat1), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+                            utils.dict_update(info, {'unit': data.hgs.get_loc_unit(cat=cat1), 'utc_offset': self.site.utc_offset[gw_loc[0]]})
                             
                             out[name].update({ident: [results, data_group, info]})
                     
@@ -592,6 +594,7 @@ class Processing(object):
         print("Method: {}".format(name))
 
         # output dict
+        info = {"site": self.site._name}
         out = {name:{}}
         # make dataset regular
         try:
@@ -636,8 +639,8 @@ class Processing(object):
                     #slim data container
                     data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
-                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
-                            'utc_offset': self.site.utc_offset[gw_loc[0]]}
+                    utils.dict_update(info, {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
+                            'utc_offset': self.site.utc_offset[gw_loc[0]]})
 
                     out[name].update({ident: [results, data_group, info]})
 
@@ -656,6 +659,7 @@ class Processing(object):
         print("-------------------------------------------------")
         print("Method: {}".format(name))
         # output dict
+        info = {"site": self.site._name}
         out = {name:{}}
         # data
         data        = self.site.data
@@ -705,8 +709,8 @@ class Processing(object):
                     data_group = pd.DataFrame(data = {cat:group.value.values}, index=group.datetime)
                     # nested output dict with list for [results, data, info]
                     # print(cat)
-                    info = {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
-                            'utc_offset': self.site.utc_offset[gw_loc[0]]}
+                    utils.dict_update(info, {'unit': data.hgs.get_loc_unit(cat=cat), 'ET_unit': data.hgs.get_loc_unit(cat='ET'),
+                            'utc_offset': self.site.utc_offset[gw_loc[0]]})
                     out[name].update({ident: [results, data_group, info]})
 
         if not len(out[name]):
@@ -729,6 +733,7 @@ class Processing(object):
         #TODO!: define dictionary with valid et_methods to use the utils.check_affiliation() method
         # output dict
         name = name.lower()
+        info = {"site": self.site._name}
         out = {name:{}}
 
         # make GW data regular and align it with BP
@@ -788,14 +793,14 @@ class Processing(object):
             # add results to the out dictionary
             if et_method in (None, 'hals'):
                 data_group = pd.DataFrame(data = {"GW": GW,"BP": BP}, index=datetime, columns=["GW","BP"])
-                info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+                utils.dict_update(info, {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'utc_offset': self.site.utc_offset[gw_loc[0]]})
             else:
                 data_group = pd.DataFrame(data = {"GW": GW,"BP": BP,"ET": ET}, index=datetime, columns=["GW","BP","ET"])
-                info    = {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': et_unit, 'utc_offset': self.site.utc_offset[gw_loc[0]]}
+                utils.dict_update(info, {'info': sig.parameters, 'unit': data.hgs.get_loc_unit(), 'ET_unit': et_unit, 'utc_offset': self.site.utc_offset[gw_loc[0]]})
 
             out[name].update({gw_loc: [results, data_group, info]})
 
         if update:
-            utils.dict_update(self.results,out)
+            utils.dict_update(self.results, out)
 
         return out

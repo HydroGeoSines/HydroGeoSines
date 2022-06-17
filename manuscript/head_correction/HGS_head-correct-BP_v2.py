@@ -13,14 +13,14 @@ fowlers.import_csv('manuscript/head_correction/FG-86_data.csv',
                         input_category = ['BP', 'GW'], 
                         loc_names = ["Baro", "FG86"],
                         utc_offset = 10,
-                        unit=['hpa', 'm'],
-                        how="add", check_duplicates=True)
+                        unit = ['hpa', 'm'],
+                        how = "add", check_duplicates=True)
 
 #%%
-process = hgs.Processing(fowlers).by_dates(start='2017-03-01', stop='2017-05-01')
+process = hgs.Processing(fowlers).by_dates(start='2017-02-01', stop='2017-05-01')
 
 #%%
-process.info()
+process.describe()
 
 #%% test gw_correct
 gw_correct_results  = process.GW_correct(lag_h=12)
@@ -28,5 +28,5 @@ gw_correct_results  = process.GW_correct(lag_h=12)
 #%%
 correct_output  = hgs.Output(gw_correct_results)
 
-fig = correct_output.plot(folder="export")
-data = correct_output.export(folder="export")
+fig = correct_output.plot(folder="manuscript\head_correction\export")
+data = correct_output.export(folder="manuscript\head_correction\export")

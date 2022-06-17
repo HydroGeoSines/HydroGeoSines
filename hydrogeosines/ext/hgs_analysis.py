@@ -409,7 +409,7 @@ class Time_domain(object):
                 cerf_var[i] = np.sum(diag) + 2*np.sum(triaglow)
             cerf_stdev = np.sqrt(cerf_var)
             params.update({'erf': {'lag': lag_t, 'irc': erf, 'irc_stdev': erf_stdev, 'brf': cerf, 'crf_stdev': cerf_stdev}})  
-                
+        
         # return the method results
         return WLc, params
 

@@ -19,10 +19,12 @@ class Site(Read, ET):
     VALID_CATEGORY  = {"ET", "BP", "GW"}
     const           = const
 
-    def __init__(self, name, geoloc=None, data=None, *args, **kwargs):
+    def __init__(self, name:str=None, geoloc:list=None, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # The site name
+        if name is None:
+            name = "Site-1"
         self._name  = name
         # The Geo-Location
         self.geoloc = geoloc

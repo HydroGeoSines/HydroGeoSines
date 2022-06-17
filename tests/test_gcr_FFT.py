@@ -31,7 +31,7 @@ death_valley.import_csv('tests/data/fowlers_gap/acworth_all.csv',
 process = hgs.Processing(death_valley)
 
 # test hals method
-fft_results  = process.hals(update=True)
+fft_results  = process.fft(update=True)
 
 #%% Output
 csiro_output  = hgs.Output(fft_results) # process.results container or results

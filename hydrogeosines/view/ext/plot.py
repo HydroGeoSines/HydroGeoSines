@@ -22,17 +22,17 @@ class Plot(object):
     
     #%%
     @staticmethod
-    def plot_BE_time(loc, results, data, info=None):
+    def plot_BE_time(site, loc, results, data, info=None):
         pass
     
     #%%
     @staticmethod
-    def plot_BE_freq(loc, results, data, info=None):
+    def plot_BE_freq(site, loc, results, data, info=None):
         pass
     
     #%%
     @staticmethod
-    def plot_HALS(loc, results, data, info=None, folder=None, **kwargs):
+    def plot_HALS(site, loc, results, data, info=None, folder=None, **kwargs):
         print("Plotting location: {:s}".format(loc[0]))
         if 'figsize' in kwargs:
             fig, ax = plt.subplots(figsize=kwargs['figsize'])
@@ -46,20 +46,21 @@ class Plot(object):
         unit = '?'
         if 'unit' in info:
             unit = info['unit']
+            
         ax.set_ylabel("Amplitude [" + unit + "]")
-        ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.set_title(info['site'] + ': ' + loc[0] + ' (' + loc[2] + ', ' + loc[1] + ')')
         ax.set_xlim([-np.pi, np.pi])
         ax.legend()
         if isinstance(folder, str):
             print(">> Writing files to folder: {}".format(folder))
-            filename = folder + '/FFT_' + loc[0] + '_(' + loc[1] + ').png'
-            plt.savefig(filename, dpi=200, bbox_inches='tight')
+            filename = folder + '/' + site + "_" + loc[0] + '_(' + loc[1] + ')'
+            plt.savefig(filename + '_HALS.png', dpi=200, bbox_inches='tight')
             
         return fig
     
     #%%
     @staticmethod
-    def plot_FFT(loc, results, data, info=None, folder=None, **kwargs):
+    def plot_FFT(site, loc, results, data, info=None, folder=None, **kwargs):
         print("Plotting location: {:s}".format(loc[0]))
         if 'figsize' in kwargs:
             fig, ax = plt.subplots(figsize=kwargs['figsize'])
@@ -83,7 +84,7 @@ class Plot(object):
         if 'unit' in info:
             unit = info['unit']
         ax.set_ylabel("Amplitude [$" + unit.replace('**', '^') + "$]")
-        ax.set_title(loc[2] + ': ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.set_title(info['site'] + ': ' + loc[0] + ' (' + loc[2] + ', ' + loc[1] + ')')
         
         if 'xlim' in kwargs:
             ax.set_xlim(kwargs['xlim'])
@@ -92,14 +93,14 @@ class Plot(object):
             
         if isinstance(folder, str):
             print(">> Writing files to folder: {}".format(folder))
-            filename = folder + '/FFT_' + loc[0] + '_(' + loc[2] + "," + loc[1] + ').png'
-            plt.savefig(filename, dpi=200, bbox_inches='tight')
+            filename = folder + '/' + site + "_" + loc[0] + '_(' + loc[1] + ')'
+            plt.savefig(filename + '_FFT.png', dpi=200, bbox_inches='tight')
         
         return fig
     
     #%%
     @staticmethod
-    def plot_GW_correct(loc, results, data, info=None, folder=None, **kwargs):
+    def plot_GW_correct(site, loc, results, data, info=None, folder=None, **kwargs):
         print("Plotting location: {:s}".format(loc[0]))
         if 'utc_offset' in info:
             datetime = data.index.tz_convert(tz=pytz.FixedOffset(int(60*info['utc_offset']))).tz_localize(None)
@@ -120,7 +121,7 @@ class Plot(object):
         ax.plot(datetime, data.GW, c=[0.7,0.7,0.7], lw=0.5, label='Measured')
         ax.plot(datetime, results['WLc'], c='k', lw=0.5, label='Corrected')
         ax.set_xlim([datetime[0], datetime[-1]])
-        ax.set_title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.set_title(info['site'] + ': ' + loc[0] + ' (' + loc[1] + ') ')        
         ax.set_ylabel("Head [" + unit + "]")
         ax.set_xlabel('Datetime [UTC{:+.2f}]'.format(utc_offset))
         ax.legend()
@@ -138,7 +139,7 @@ class Plot(object):
         
         ax.set_xlabel('Lag time [hours]')
         
-        ax.set_title('GW: ' + loc[0] + ' (' + loc[1] + ') ')
+        ax.set_title(info['site'] + ': ' + loc[0] + ' (' + loc[1] + ') ')
 
         ax.set_ylabel("BRF [-]")
         ax.set_ylim([-0.05, 1.1])
@@ -150,13 +151,12 @@ class Plot(object):
         fig1.autofmt_xdate()
         
         if isinstance(folder, str):
+            filename = folder + '/' + site + "_" + loc[0] + '_(' + loc[1] + ')'
+            
             print(">> Writing files to folder: {}".format(folder))
             
-            filename = folder + '/GW_correct_' + loc[0] + '_(' + loc[1] + ').png'
-            fig1.savefig(filename, dpi=200, bbox_inches='tight')
-            
-            filename = folder + '/GW_correct_BRF_' + loc[0] + '_(' + loc[1] + ').png'
-            fig2.savefig(filename, dpi=200, bbox_inches='tight')
+            fig1.savefig(filename + '_GW_correct.png', dpi=200, bbox_inches='tight')
+            fig2.savefig(filename + '_GW_correct_BRF.png', dpi=200, bbox_inches='tight')
         
         return fig1, fig2
     
