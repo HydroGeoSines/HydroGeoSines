@@ -68,7 +68,6 @@ class ET(object):
             # !!! to allow irregular time stamps, interpolate the Earth tide data (cubic spline)
             et_interp = interp1d(et_utc_tf, data.iloc[:, 1].values, kind='cubic')
             et = et_interp(dt_utc_tf)
-            
             #######################################################
             # MERGE EARTH TIDES WITH LONG TABLE
             et_data = pd.DataFrame({'datetime': dt_utc, 'value': et})
@@ -85,6 +84,8 @@ class ET(object):
             self.data = self.data.sort_values(by=["category","location"])
             # no dublicate indices
             self.data = self.data.reset_index(drop=True)
+            # add compulsory UTC offset
+            self.utc_offset['ET'] = 0
             # self.data = self.data.hgs.check_duplicates
             print("Earth tide time series were calculated and added ...")
         except ImportError:

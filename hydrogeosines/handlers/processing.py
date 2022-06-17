@@ -90,6 +90,7 @@ class Processing(object):
         self.site.data = self.site.data[pos]
         return self
 
+    #%%
     def by_gwloc(self, gw_loc):
         print("Filter dataset by location ...")
         # get idx to subset GW locations
@@ -101,6 +102,7 @@ class Processing(object):
         self.site.data = self.site.data[~(pos_cat & (~pos))]
         return self
 
+    #%% 
     def decimate(self, factor:int=2):
         if factor <= 1:
             raise Warning("Decimation with factor 1 is not necessary!")
