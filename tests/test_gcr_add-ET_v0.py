@@ -14,3 +14,8 @@ raw = data.pivot(index='datetime', columns=['category', 'location'], values='val
 #%%
 acworth_site.add_ET(et_comp='nstr')
 # heads = data.pivot(index='datetime', columns=['category', 'location'], values='value')
+
+#%%
+process = hgs.Processing(acworth_site)
+
+process.describe()

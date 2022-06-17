@@ -30,7 +30,8 @@ example_site.import_csv('tests/data/notebook/BP_record.csv',
                         how="add", check_duplicates=True)
 
 #%%
-process = hgs.Processing(example_site) #.decimate(2).by_dates(start='2015-11-01', stop='2016-02-01').by_gwloc("FG822-2")
+example_site.add_ET(et_comp='nstr')
 
 #%%
+process = hgs.Processing(example_site) #.decimate(2).by_dates(start='2015-11-01', stop='2016-02-01').by_gwloc("FG822-2")
 process.describe()

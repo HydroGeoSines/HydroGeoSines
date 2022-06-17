@@ -90,6 +90,7 @@ class Processing(object):
         self.site.data = self.site.data[pos]
         return self
 
+    #%%
     def by_gwloc(self, gw_loc):
         print("Filter dataset by location ...")
         # get idx to subset GW locations
@@ -101,6 +102,7 @@ class Processing(object):
         self.site.data = self.site.data[~(pos_cat & (~pos))]
         return self
 
+    #%% 
     def decimate(self, factor:int=2):
         if factor <= 1:
             raise Warning("Decimation with factor 1 is not necessary!")
@@ -133,8 +135,8 @@ class Processing(object):
                 print("Stop:  {} UTC".format(stop.strftime('%d/%m/%Y %H:%M:%S')))
                 print("UTC offset: {:+.2f} h".format(self.site.utc_offset[loc]))
                 # sampling frequency ...
-                subdata = data.loc[(data.category == cat) & (data.location == loc), 'datetime']
-                subdata_null = data.loc[(data.category == cat) & (data.location == loc) & ~data.value.isnull(), 'datetime']
+                subdata = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].sort_values()
+                subdata_null = data.loc[(data.category == cat) & (data.location == loc) & ~data.value.isnull(), 'datetime'].sort_values()
                 diff = subdata_null.diff()
                 spl_min, spl_med, spl_max = diff.min(), diff.median(), diff.max()
                 idx = ~(diff.iloc[1:] == spl_min)
