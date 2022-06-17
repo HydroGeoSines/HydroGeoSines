@@ -17,7 +17,7 @@ class Export(object):
         
     #%%
     @staticmethod
-    def export_FFT(loc, results, data, folder=False, info=None, **kwargs):
+    def export_FFT(site, loc, results, data, folder=False, info=None, **kwargs):
         print("Exporting location: {:s}".format(loc[0]))
         if 'unit' in info:
             unit = info['unit']
@@ -38,20 +38,21 @@ class Export(object):
         # write a file?
         if isinstance(folder, str):
             print(">> Writing file(s) to folder: {}".format(folder))
-            filename = folder + "/" + "FFT_" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ").csv"
-            file.to_csv(filename, index=False)
+            filename = folder + "/" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ")"
+            file.to_csv(filename + "_FFT.csv", index=False)
         
         return file.copy()
         
     #%%
     @staticmethod
-    def export_HALS(loc, results, data, folder=False, info=None, **kwargs):
+    def export_HALS(site, loc, results, data, folder=False, info=None, **kwargs):
         print("Exporting location: {:s}".format(loc[0]))
         if 'unit' in info:
             unit = info['unit']
         et_unit = ''
         if 'ET_unit' in info:
             et_unit = info['ET_unit']
+            
         filename = ''
 
         if loc[2] in ['GW', 'BP']:
@@ -66,14 +67,14 @@ class Export(object):
         
         if isinstance(folder, str):
             print(">> Writing file(s) to folder: {}".format(folder))
-            filename = folder + "/" + "HALS_" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ").csv"
-            file.to_csv(filename, index=False)
+            filename = folder + "/" + site + "_" + loc[0] + "_(" + loc[2]  + "," + str(loc[1]) + ")"
+            file.to_csv(filename + "_HALS.csv", index=False)
         
         return file.copy()
     
     #%%
     @staticmethod
-    def export_GW_correct(loc, results, data, folder=False, info=None, **kwargs):
+    def export_GW_correct(site, loc, results, data, folder=False, info=None, **kwargs):
         print("Exporting location: {:s}".format(loc[0]))
         # search for relevant info ...
         if 'utc_offset' in info:
@@ -106,6 +107,10 @@ class Export(object):
             dt_format = kwargs['dt_format']
         else:
             dt_format = '%d/%m/%Y %H:%M:%S'
+        
+        # %%%
+        if isinstance(folder, str):
+            filename = folder + "/" + site + "_" + loc[0] + "_(" + str(loc[1]) + ")"
             
         #%% export the additional data ...
         # barometric response function ...
@@ -115,11 +120,8 @@ class Export(object):
         
         if isinstance(folder, str):
             print(">> Writing file(s) to folder: {}".format(folder))
-            filename = folder + "/" + "GW_correct_" + loc[0] + "_(" + str(loc[1]) + ").csv"
-            file1.to_csv(filename, index=False, date_format=dt_format)
-            
-            filename = folder + "/" + "GW_correct_BRF_" + loc[0] + "_(" + str(loc[1]) + ").csv"
-            file2.to_csv(filename, index=False)
+            file1.to_csv(filename + "_GW_correct.csv", index=False, date_format=dt_format)
+            file2.to_csv(filename + "_GW_correct_BRF.csv", index=False)
                 
         # earth tide response function ...        
         if 'erf' in results:
@@ -130,9 +132,7 @@ class Export(object):
                      'ERF [-]': results['erf']['brf'], })
                 
                 if isinstance(folder, str):
-                    filename = folder + "/"
-                    filename += "GW_correct_ERF_" + loc[0] + "_(" + str(loc[1]) + ").csv"
-                    file3.to_csv(filename, index=False)
+                    file3.to_csv(filename + "_GW_correct_ERF.csv", index=False)
                 
             elif 'freq' in results['erf']:
                 file3 = pd.DataFrame({'Frequency [cpd]': results['erf']['freq'],
@@ -141,9 +141,7 @@ class Export(object):
                      'Phase [rad]': np.angle(results['erf']['complex']), })
                 
                 if isinstance(folder, str):
-                    filename = folder + "/"
-                    filename += "GW_correct_ERF_" + loc[0] + "_(" + str(loc[1]) + ").csv"
-                    file3.to_csv(filename, index=False)
+                    file3.to_csv(filename + "_GW_correct_ERF.csv", index=False)
             else:
                 
                 raise Warning("Earth tide results could not be exported!")

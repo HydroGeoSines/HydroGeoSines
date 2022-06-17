@@ -29,7 +29,7 @@ class Output(Export,Plot):
     @staticmethod
     def _validate(obj):
         # check if object is of class Processing or a dictionary
-        if not isinstance(obj, (Processing,dict)):
+        if not isinstance(obj, (Processing, dict)):
             raise AttributeError("Object must either be of Class Processing or Dictonary!")   
             #print(id(Processing)) # test id of class location to compare across package
         # check if entries in results dict exist
@@ -58,9 +58,10 @@ class Output(Export,Plot):
                     results = results_list[0]
                     data    = results_list[1]
                     info    = results_list[2]
+                    site = info['site']
                     #info    = results_list[2] #not in use for most methods
                     # use the propper printing function
-                    figure[loc] = getattr(Plot, plot_method)(loc, results, data, folder=folder, info=info, **kwargs)
+                    figure[loc] = getattr(Plot, plot_method)(site, loc, results, data, folder=folder, info=info, **kwargs)
         
         else:
             # check for non valid method 
@@ -70,7 +71,8 @@ class Output(Export,Plot):
                 results = results_list[0]
                 data    = results_list[1]
                 info    = results_list[2]
-                figure[loc] = getattr(Plot, plot_method)(loc, results, data, folder=folder, info=info, **kwargs)
+                site = info['site']
+                figure[loc] = getattr(Plot, plot_method)(site, loc, results, data, folder=folder, info=info, **kwargs)
         
         # return the figure strcúcture ...
         return figure
@@ -96,9 +98,10 @@ class Output(Export,Plot):
                     results = results_list[0]
                     data    = results_list[1]
                     info    = results_list[2]
+                    site = info['site']
                     #info    = results_list[2] #not in use for most methods
                     # use the propper printing function
-                    export[loc] = getattr(Export, export_method)(loc, results, data, folder=folder, info=info, **kwargs)   
+                    export[loc] = getattr(Export, export_method)(site, loc, results, data, folder=folder, info=info, **kwargs)   
         
         else:
             export = {}
@@ -109,7 +112,8 @@ class Output(Export,Plot):
                 results = results_list[0]
                 data    = results_list[1]
                 info    = results_list[2]
-                export[loc] = getattr(Export, export_method)(loc, results, data, folder=folder, info=info, **kwargs) 
+                site = info['site']
+                export[loc] = getattr(Export, export_method)(site, loc, results, data, folder=folder, info=info, **kwargs) 
         
         # return the export strcúcture ...
         return export

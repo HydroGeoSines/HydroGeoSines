@@ -11,14 +11,14 @@ def check_affiliation(values, valid):
             raise ValueError("%r is not in %r." % (values, valid))                 
 
 
-def zip_formatter(arg1,*args):
+def zip_formatter(arg1, *args):
     args = list(args)
     valid = (str,float,int)
     # check for single string arguments
     if (any(isinstance(a,valid) for a in args)):         
         idx = np.where([isinstance(a,valid) for a in args])[0]
         args_list = [[args[i]]*len(arg1) for i in idx]
-        # check if there are any non string arguements left
+        # check if there are any non string arguments left
         check = [x for x in args if x not in [args[i] for i in idx]]
         if check != []:
             #print("A list of values remains")
