@@ -80,7 +80,6 @@ class Read(object):
 
         # format table with multiindex and melt
         locations = data.columns
-        print(locations, input_category, unit)
         header = utils.zip_formatter(locations, input_category, unit)
 
         data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])
