@@ -9,8 +9,6 @@ import pandas as pd
 import numpy as np
 import os
 
-from pygtide import pygtide as pyg
-
 from scipy.interpolate import interp1d
 
 class ET(object):
@@ -18,7 +16,7 @@ class ET(object):
     #attr = attr
     et_unit = {-1: 'm**2/s**2', 0: 'nm/s**2', 1: 'mas', 2: 'mm', 3: 'mm', 4: 'nstr', 5: 'nstr', 6: 'nstr', 7: 'nstr', 8: 'nstr', 9: 'mm'}
     
-    def __init__(self, *args, **kwargs):        
+    def __init__(self, *args, **kwargs):  
         pass  
         #add attributes specific to Load here
         #self.attribute = variable            
@@ -39,13 +37,10 @@ class ET(object):
             raise Exception('Error: Geo-location (WGS84 longitude, latitude and height) must be set!')
             
         # check if PyGTide is available
-        try:            
-            # !!!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
-            # change the current directory for PyGTide to work properly
-            os.chdir('pygtide')
-            # !!!!!!!!!!!!!!!!!
+        try:
+            import pygtide as pgt
             # create a PyGTide object
-            pt = pyg.pygtide()
+            pt = pgt.pygtide()
             # convert to UTC
             dt_utc = self.data.hgs.dt.unique_utc
             # define the start date in UTC
@@ -66,9 +61,6 @@ class ET(object):
             pt.predict(self.geoloc[1], self.geoloc[0], self.geoloc[2], start, duration, samplerate, tidalcompo=et_comp_i, tidalpoten=et_cat)
             # retrieve the results as dataframe
             data = pt.results()
-            # !!!!!!!!!!!!!! really important !!!!!!!!!!!!!!!
-            # change working directory back to normal ...
-            os.chdir('..')
             # print(data.iloc[:30, 0:3])
             # convert time to floating point for matching
             td = (data['UTC'] - pd.to_datetime('1899-12-30', utc=True)).dt
@@ -95,10 +87,8 @@ class ET(object):
             self.data = self.data.reset_index(drop=True)
             # self.data = self.data.hgs.check_duplicates
             print("Earth tide time series were calculated and added ...")
-            
-            # !!!!!!!!!!!!!!!!!
         except ImportError:
-            raise Exception('Error: The PyGTide module was not found!')
+            raise Exception('Error: Addition of Earth tides requires the PyGTide module. Please install: https://github.com/hydrogeoscience/pygtide')
         pass
 
 class ET_data(object):
@@ -154,7 +144,7 @@ class ET_data(object):
         os.chdir('pygtide')
         # !!!!!!!!!!!!!!!!!
         # create a PyGTide object
-        pt = pyg.pygtide()
+        pt = pgt.pygtide()
         # ! Conversion not utc not necessary -> done at import into site object
         # ! better write a check function for processing class whether dt of data is UTC
         # convert to UTC
