@@ -12,7 +12,7 @@ import pandas as pd
 #%%  Testing MVC principal
 death_valley = hgs.Site('death valley', geoloc=[-116.471360, 36.408130, 688])
 death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
-                        input_category=["GW","BP","ET"],
+                        input_category=["GW","BP"],
                         unit=["m","m","nstr"],
                         utc_offset=0,
                         how="add", check_duplicates=True)
@@ -22,7 +22,7 @@ death_valley.import_csv('tests/data/death_valley/Rau_et_al_2021.csv',
 process = hgs.Processing(death_valley)
 
 #%%
-process.info()
+process.describe()
 
 #%% test gw_correct
 gw_correct_results  = process.GW_correct(lag_h=8, et_method='ts')

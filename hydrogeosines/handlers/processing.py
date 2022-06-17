@@ -135,8 +135,8 @@ class Processing(object):
                 print("Stop:  {} UTC".format(stop.strftime('%d/%m/%Y %H:%M:%S')))
                 print("UTC offset: {:+.2f} h".format(self.site.utc_offset[loc]))
                 # sampling frequency ...
-                subdata = data.loc[(data.category == cat) & (data.location == loc), 'datetime']
-                subdata_null = data.loc[(data.category == cat) & (data.location == loc) & ~data.value.isnull(), 'datetime']
+                subdata = data.loc[(data.category == cat) & (data.location == loc), 'datetime'].sort_values()
+                subdata_null = data.loc[(data.category == cat) & (data.location == loc) & ~data.value.isnull(), 'datetime'].sort_values()
                 diff = subdata_null.diff()
                 spl_min, spl_med, spl_max = diff.min(), diff.median(), diff.max()
                 idx = ~(diff.iloc[1:] == spl_min)
