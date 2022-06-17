@@ -23,7 +23,7 @@ process = hgs.Processing(fowlers) #.decimate(2).by_dates(start='2015-11-01', sto
 
 
 #%%
-process.info()
+process.describe()
 
 #%% test gw_correct
 gw_correct_results  = process.GW_correct(lag_h=24, et_method='hals')

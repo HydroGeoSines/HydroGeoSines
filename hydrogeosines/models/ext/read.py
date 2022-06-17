@@ -22,7 +22,7 @@ class Read(object):
         #self.attribute = variable
         
     #%%
-    def import_csv(self, filepath, input_category, utc_offset:float, unit = "m", how:str="add", loc_names=None, header = 0, check_duplicates=False):
+    def import_csv(self, filepath, input_category, utc_offset:float, unit="m", how:str="add", loc_names=None, header = 0, check_duplicates=False):
         
         # determine which input category is empty so that this column can be ignored
         use_cat = np.array([input_category]).flatten()
@@ -36,7 +36,9 @@ class Read(object):
         if loc_names != None:
             loc_names = [0] + list(np.array([loc_names]).flatten()[usecols])
         
-        if not isinstance(unit, str):
+        if isinstance(unit, str):
+            unit = [unit]
+        else:
             unit = list(np.array([unit]).flatten()[usecols])
         
         # check for non valid pressure units (cat: GW, BP)
@@ -78,7 +80,9 @@ class Read(object):
 
         # format table with multiindex and melt
         locations = data.columns
+        print(locations, input_category, unit)
         header = utils.zip_formatter(locations, input_category, unit)
+
         data.columns = pd.MultiIndex.from_tuples(header, names=["location","category","unit"])
         data = pd.melt(data.reset_index(), id_vars="datetime", var_name=["location","category","unit"], value_name="value").rename(columns=str.lower)
 
@@ -95,6 +99,7 @@ class Read(object):
         if how == "add":
             self.data = self.data.append(data)
             print("A new time series was added ...")
+            
         #TODO: Implement other methods
         else:
             raise ValueError("Method not available")
