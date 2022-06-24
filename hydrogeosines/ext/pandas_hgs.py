@@ -169,7 +169,7 @@ class HgsAccessor(object):
         """
         diff = self._obj.datetime.diff()
         # find gaps larger than td_threshold
-        mask = diff.dt.total_seconds() >= dt_threshold
+        mask = diff.dt.total_seconds() > dt_threshold
         idx = diff[mask].index # get start index of data block
         # split index into blocks
         blocks = np.split(self._obj.index, idx, axis=0)

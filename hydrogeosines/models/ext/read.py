@@ -22,7 +22,7 @@ class Read(object):
         #self.attribute = variable
         
     #%%
-    def import_csv(self, filepath, input_category, utc_offset:float, unit="m", how:str="add", loc_names=None, header = 0, check_duplicates=False):
+    def import_csv(self, filepath, input_category, utc_offset:float, unit="m", how:str="add", loc_names=None, header = 0, check_duplicates=False, dayfirst=True):
         
         # determine which input category is empty so that this column can be ignored
         use_cat = np.array([input_category]).flatten()
@@ -54,7 +54,7 @@ class Read(object):
         # make sure the first column is always used
         usecols = np.concatenate(([0], usecols + 1), axis=0)
         # load the csv file into variable. column headers are required (header=0)
-        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=True, header = header, names=loc_names, usecols=usecols)
+        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=dayfirst, header = header, names=loc_names, usecols=usecols)
         
         # # ignore column numbers beyond input length
         # ncols = len(np.array(input_category).flatten())
