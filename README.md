@@ -10,6 +10,11 @@ Developed by:
 * Chris Turnadge - CSIRO Adelaide (Australia)
 * Todd Rasmussen - University of Georgia (USA)
 
+
+### Usage
+
+Some of the methods have been implemented for use here: [groundwater.app](https://groundwater.app)
+
 ### Example notebooks
 
 [Groundwater head correction from Earth tides and atmospheric pressure](examples/Notebooks/Groundwater_head_correction.ipynb)
