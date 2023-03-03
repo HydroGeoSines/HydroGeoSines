@@ -24,10 +24,10 @@ process = hgs.Processing(site)
 process.describe()
 
 #%% test gw_correct
-gw_correct_results  = process.GW_correct(lag_h=8, et_method='hals')
+gw_correct_results  = process.GW_correct(lag_h=8, et_method='ts')
 
 correct_output  = hgs.Output(gw_correct_results)
 
 #%%
-correct_output.export(folder='export')
-correct_output.plot(folder='export')
+# correct_output.export(folder='export')
+# correct_output.plot(folder='export')

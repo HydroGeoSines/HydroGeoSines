@@ -22,7 +22,7 @@ class Read(object):
         #self.attribute = variable
         
     #%%
-    def import_csv(self, filepath, input_category, utc_offset:float, unit="m", how:str="add", loc_names=None, header = 0, check_duplicates=False, dayfirst=True):
+    def import_csv(self, filepath, input_category, utc_offset:float, unit="m", how:str="add", loc_names=None, header = 0, check_duplicates=False, dayfirst=True, dt_format=None):
         
         # determine which input category is empty so that this column can be ignored
         use_cat = np.array([input_category]).flatten()
@@ -63,7 +63,12 @@ class Read(object):
         # make sure the first column is always used
         usecols = np.concatenate(([0], usecols + 1), axis=0)
         # load the csv file into variable. column headers are required (header=0)
-        data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=dayfirst, header = header, names=loc_names, usecols=usecols)
+        if dt_format is None:
+            data = pd.read_csv(filepath, parse_dates=True, index_col=0, infer_datetime_format=True, dayfirst=dayfirst, header = header, names=loc_names, usecols=usecols)
+        else:
+            data = pd.read_csv(filepath, index_col=0, header = header, names=loc_names, usecols=usecols)
+            data.index = pd.to_datetime(data.index, format=dt_format)
+            
         # # ignore column numbers beyond input length
         # ncols = len(np.array(input_category).flatten())
         # data = data.iloc[:, :ncols]
@@ -122,7 +127,7 @@ class Read(object):
             self.data = self.data.hgs.check_duplicates
 
     #%%
-    def import_df(self, dataframe, input_category, utc_offset:float, unit="m", how:str="add", loc_names=None, check_duplicates=False, dayfirst=True, format:str=None):
+    def import_df(self, dataframe, input_category, utc_offset:float, unit="m", how:str="add", loc_names=None, check_duplicates=False, dayfirst=True, dt_format:str=None):
         
         # determine which input category is empty so that this column can be ignored
         use_cat = np.array([input_category]).flatten()
@@ -175,7 +180,11 @@ class Read(object):
         data.rename(columns={data.columns[0]: "datetime"}, inplace=True)
         # check datetime
         if not np.issubdtype(data['datetime'].dtype, np.datetime64):
-            data.loc[:, 'datetime'] = pd.to_datetime(data.loc[:, 'datetime'], infer_datetime_format=True, dayfirst=dayfirst, format=format)
+            if dt_format is None:
+                data.loc[:, 'datetime'] = pd.to_datetime(data.loc[:, 'datetime'], infer_datetime_format=True, dayfirst=dayfirst)
+            else:
+                data.loc[:, 'datetime'] = pd.to_datetime(data.loc[:, 'datetime'], format=dt_format)
+            
         data.set_index("datetime", inplace=True)
         
         # make sure the first column is a correctly identified datetime

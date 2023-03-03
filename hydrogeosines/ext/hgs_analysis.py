@@ -261,12 +261,11 @@ class Time_domain(object):
 
         # print(">> DEBUG: PERFORM HALS")
         t  = tf
-        # make time relative to avoid ET least squares errors
-        dt = t[1] - t[0]
-        spd = int(np.round(1/dt))
+        # samples per day
+        spd = int(np.round(1/(t[1] - t[0])))
         # make the dataset relative
-        dBP = np.diff(BP)/dt
-        dWL = np.diff(GW)/dt
+        dBP = np.diff(BP)
+        dWL = np.diff(GW)
         # setup general parameters
         nlag = int((lag_h/24)*spd)
         n    = len(dBP)
@@ -308,7 +307,7 @@ class Time_domain(object):
                 raise Exception("Error: Compliant Earth tide time series must be available!")
             
             # make the dataset relative
-            dET = np.diff(ET)/dt
+            dET = np.diff(ET)
             lag = range(int((lag_h/24)*spd) + 1)
             print('>> Using Earth tide time series in the regression ...')
             nm = len(lag)
@@ -345,7 +344,7 @@ class Time_domain(object):
         # ----------------------------------------------
         nc = len(c)
         # calculate the head corrections
-        dWLc = dt*np.cumsum(np.dot(X, c[1:nc]))
+        dWLc = np.cumsum(np.dot(X, c[1:nc]))
         # deal with the missing values
         WLc = GW - np.concatenate([[0], dWLc])
         # set the corrected heads

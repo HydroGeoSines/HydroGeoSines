@@ -23,7 +23,7 @@ process = hgs.Processing(site)
 hals_results  = process.hals(update=True)
 
 #%% estimate hydraulic properties ...
-hyd_prop  = process.K_Ss_estimate(loc='BLM-2', scr_len=10, case_rad=0.127, scr_rad=0.127, scr_depth=78, update=True)
+hyd_prop  = process.K_Ss_estimate(loc='BLM-1', scr_len=106, case_rad=0.127, scr_rad=0.127, scr_depth=78, update=True)
 # print(hyd_prop)
 
 #%% quantify BE using the frequency domain approach

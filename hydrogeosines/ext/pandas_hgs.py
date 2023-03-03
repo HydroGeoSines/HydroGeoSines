@@ -71,6 +71,7 @@ class HgsAccessor(object):
         # mask possible other categories values
         df = df[df["category"].isin(["GW", cat])]
         df = df.hgs.pivot
+        
         # check if any BP entry is null and if for any row all the GW entries are null        
         if (df[cat].isnull().any().bool() == False) and (df["GW"].isnull().all().any() == False):
             if silent == False:
@@ -131,15 +132,17 @@ class HgsAccessor(object):
         return out
     
     #%%
-    def resample_by_group(self, freq_groupby, origin:str= "start_day"):
+    def resample_by_group(self, freq_groupby, origin:str= "start"):
         #TODO: write validation logic for freq_groupby. It must be same length as number of groups, e.g. len(cat*loc*unit)
         # resample by median for each location and category individually
         out = []
         for i in range(len(freq_groupby)):
             # create mask for valid index
-            a = self._obj.loc[:,self.filters.obj_col].isin(freq_groupby.index[i]).all(axis=1)  
-            # resample                
+            a = self._obj.loc[:,self.filters.obj_col].isin(freq_groupby.index[i]).all(axis=1)
+            # resample       
+            print(self.filters.obj_col)
             temp = self._obj[a].groupby(self.filters.obj_col).resample(str(int(freq_groupby[i]))+"S", on="datetime", origin=origin).mean()
+            print(temp)
             temp = temp.reset_index()
             out.append(temp) 
         out = pd.concat(out, axis=0, ignore_index=True, join="inner", verify_integrity=True) 

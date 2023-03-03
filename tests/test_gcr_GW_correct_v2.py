@@ -21,19 +21,18 @@ fowlers.import_csv('tests/data/fowlers_gap/acworth_all.csv',
 #%%
 process = hgs.Processing(fowlers) #.decimate(2).by_dates(start='2015-11-01', stop='2016-02-01').by_gwloc("FG822-2")
 
-
 #%%
 process.describe()
 
 #%% test gw_correct
 gw_correct_results  = process.GW_correct(lag_h=24, et_method='hals')
 
-#%%
-be_results  = process.BE_time(method="all")
+# #%%
+# be_results  = process.BE_time(method="all")
 
-#%%
-correct_output  = hgs.Output(gw_correct_results)
+# #%%
+# correct_output  = hgs.Output(gw_correct_results)
 
-fig = correct_output.plot(folder="export")
+# fig = correct_output.plot(folder="export")
 
-data = correct_output.export(folder="export")
+# data = correct_output.export(folder="export")
